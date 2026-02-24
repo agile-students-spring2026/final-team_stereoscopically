@@ -1,8 +1,20 @@
 # User Experience Design
 
-This repository contains instructions and files for two assignments that together comprise the user experience design phase of a web app.
+## App Map
 
-Replace the contents of this file with the completed assignments, as described in:
+LoremIpsum
 
-- [app map & wireframe instructions](instructions-0a-app-map-wireframes.md).
-- [prototype instructions](instructions-0b-prototyping.md)
+## Wireframe
+
+Create New
+![create-new](ux-design/wireframe-createnew.png)
+This screen is where the user starts a new creation by choosing what they want to make (image/GIF) and uploading the file.
+
+
+| GIF Editor | Image Editor |
+|---|---|
+| ![GIF Editor](ux-design/wireframe-GIFeditor.png) | ![Image Editor](ux-design/wireframe-imageditor.png) |
+
+Delete Preview
+![delete-preview](ux-design/wireframe-deletepreview.png)
+This is a popup that confirms if the user wants to delete a creation.
