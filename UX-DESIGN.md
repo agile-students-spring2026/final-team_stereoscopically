@@ -1,26 +1,31 @@
 # User Experience Design
 
 ## App Map
-
-LoremIpsum
-
+Lorem Ipsum
 ## Wireframes
 
 ### Create New
-<img src="ux-design/wireframe-createnew.png" alt="Create New" width="320">
+<img src="ux-design/wireframe-createnew.png" alt="Create New wireframe" width="260">
 
-This screen is where the user starts a new creation by choosing what they want to make (image/GIF) and uploading the file.
+Start a new creation by selecting an input method (camera/upload) and choosing what to create (image or GIF).
 
-### GIF Editor + Image Editor
+---
 
-| GIF Editor | Image Editor |
-|---|---|
-| <img src="ux-design/wireframe-GIFeditor.png" alt="GIF Editor" width="260"> | <img src="ux-design/wireframe-imageditor.png" alt="Image Editor" width="260"> |
+### GIF Editor
+<img src="ux-design/wireframe-GIFeditor.png" alt="GIF Editor wireframe" width="260">
 
-GIF Editor: Lets the user preview and edit a GIF (ex: trim/resize) before saving.  
-Image Editor: Lets the user resize/crop and adjust an image into a sticker/emote before saving.
+Edit a GIF by previewing it and applying changes (ex: trim/resize) before saving.
+
+---
+
+### Image Editor
+<img src="ux-design/wireframe-imageditor.png" alt="Image Editor wireframe" width="320">
+
+Edit an image into the correct sticker/emote format (resize/crop/adjust) before saving.
+
+---
 
 ### Delete Preview
-<img src="ux-design/wireframe-deletepreview.png" alt="Delete Preview" width="320">
+<img src="ux-design/wireframe-deletepreview.png" alt="Delete Preview wireframe" width="320">
 
-This is a confirmation popup that asks the user to confirm or cancel deleting a creation.
+Confirm deletion by showing the creation being removed and allowing the user to cancel or confirm.
