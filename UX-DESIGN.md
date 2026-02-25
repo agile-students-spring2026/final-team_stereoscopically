@@ -86,17 +86,17 @@ Allows the user to make the first sticker if the My Creations is empty.
 
 This view appears when the user has saved creations—they can browse and tap their past creations to view or manage them.
 
+### Detail
+<img src="ux-design/Detail.png" alt="Detail Wireframe" width="200">
+
+Opens when the user taps a saved creation. Shows a preview of the creation and provides options to re-edit, download, or delete it.
+
 ### Delete Preview
 <img src="ux-design/wireframe-deletepreview.png" alt="Delete Preview wireframe" width="200">
 
 Confirm deletion by showing the creation being removed and allowing the user to cancel or confirm.
 
 ---
-
-### Detail
-<img src="ux-design/Detail.png" alt="Detail Wireframe" width="200">
-
-Opens when the user taps a saved creation. Shows a preview of the creation and provides options to re-edit, download, or delete it.
 
 ### Settings
 <img src="ux-design/Settings.png" alt="Settings Wireframe" width="200">
