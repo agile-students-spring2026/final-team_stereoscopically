@@ -38,7 +38,7 @@ Start a new creation by selecting an input method (camera/upload) and choosing w
 
 Confirm deletion by showing the creation being removed and allowing the user to cancel or confirm.
 
-
+---
 
 ### Preset Sizes
 
@@ -46,7 +46,6 @@ Confirm deletion by showing the creation being removed and allowing the user to 
 
 View options for preset sizes for the user to export their sticker to a specific platform.
 
----
 
 ### Color Filters
 
@@ -54,3 +53,8 @@ View options for preset sizes for the user to export their sticker to a specific
 
 Add custom filters to a creation by adjusting brightness, contrast, saturation, and sharpness. 
 
+### Color Filters
+
+<img src="ux-design/Color Filters Screen.png" alt="Color Filters Wireframe" width=200>
+
+Add and customize text on the creation by entering text and adjusting font, size, and positon. 
