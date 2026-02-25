@@ -1,7 +1,13 @@
 # User Experience Design
 
+## Prototype
+
+Access the app's clickable mobile prototype through this [Figma link](https://www.figma.com/design/aboG9oKW0zIedQf6kyGbwP/team_stereroscopically?node-id=0-1&t=zhOgPhULQd3bxOfR-1).
+
 ## App Map
-Lorem Ipsum
+
+<img src="ux-design/team_stereroscopically.png" alt="App Map" width=450>
+
 ## Wireframes
 
 ### Welcome Page
@@ -44,14 +50,14 @@ Confirm deletion by showing the creation being removed and allowing the user to 
 
 <img src="ux-design/Preset Sizes.png" alt="View Preset Sizes wireframe" width=200>
 
-View options for preset sizes for the user to export their sticker to a specific platform.
+Choose a given preset size for the user to export a sticker to a specific platform, or create a custom sticker size. 
 
 
 ### Color Filters
 
 <img src="ux-design/Color Filters Screen.png" alt="Color Filters Wireframe" width=200>
 
-Add custom filters to a creation by adjusting brightness, contrast, saturation, and sharpness. 
+Apply custom filters to a creation by adjusting brightness, contrast, saturation, and sharpness. 
 
 ### Color Filters
 
