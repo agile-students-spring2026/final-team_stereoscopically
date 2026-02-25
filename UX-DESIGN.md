@@ -76,13 +76,6 @@ Add and customize text on the creation by entering text and adjusting font, size
 
 ---
 
-### Delete Preview
-<img src="ux-design/wireframe-deletepreview.png" alt="Delete Preview wireframe" width="200">
-
-Confirm deletion by showing the creation being removed and allowing the user to cancel or confirm.
-
----
-
 ### My Creations (Empty)
 <img src="ux-design/My Creations (Empty).png" alt="My Creations (Empty) Wireframe" width="200">
 
@@ -92,6 +85,13 @@ Allows the user to make the first sticker if the My Creations is empty.
 <img src="ux-design/My Creations (Populated).png" alt="My Creations (Populated) Wireframe" width="200">
 
 This view appears when the user has saved creations—they can browse and tap their past creations to view or manage them.
+
+### Delete Preview
+<img src="ux-design/wireframe-deletepreview.png" alt="Delete Preview wireframe" width="200">
+
+Confirm deletion by showing the creation being removed and allowing the user to cancel or confirm.
+
+---
 
 ### Detail
 <img src="ux-design/Detail.png" alt="Detail Wireframe" width="200">
