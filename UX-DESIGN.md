@@ -59,8 +59,8 @@ Choose a given preset size for the user to export a sticker to a specific platfo
 
 Apply custom filters to a creation by adjusting brightness, contrast, saturation, and sharpness. 
 
-### Color Filters
+### Text Filters
 
-<img src="ux-design/Color Filters Screen.png" alt="Color Filters Wireframe" width=200>
+<img src="ux-design/Text Screen.png" alt="Color Filters Wireframe" width=200>
 
 Add and customize text on the creation by entering text and adjusting font, size, and positon. 
