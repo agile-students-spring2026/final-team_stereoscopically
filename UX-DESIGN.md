@@ -38,11 +38,18 @@ Start a new creation by selecting an input method (camera/upload) and choosing w
 | <img src="ux-design/wireframe-GIFeditor.png" alt="GIF Editor wireframe" width="200"><br><br> Edit a GIF by previewing it and applying changes (ex: trim/resize) before saving. | <img src="ux-design/wireframe-imageditor.png" alt="Image Editor wireframe" width="200"><br><br>Edit an image into the correct sticker/emote format (resize/crop/adjust) before saving. |
 
 ---
+### Filter Main Screen 
 
-### Delete Preview
-<img src="ux-design/wireframe-deletepreview.png" alt="Delete Preview wireframe" width="200">
+<img src="ux-design/Filter Main Screen.png" alt="View Preset Sizes wireframe" width=200>
 
-Confirm deletion by showing the creation being removed and allowing the user to cancel or confirm.
+Allows the user to choose between preset filters, adding text, or adjusting color filters to customize the creation. 
+
+---
+### Preset Filter Screen
+
+<img src="ux-design/Preset Filter Screen.png" alt="View Preset Sizes wireframe" width=200>
+
+Allows the user to preview and apply predefined filter styles to quickly customize the appearance of the creation. 
 
 ---
 
@@ -64,3 +71,11 @@ Apply custom filters to a creation by adjusting brightness, contrast, saturation
 <img src="ux-design/Text Screen.png" alt="Color Filters Wireframe" width=200>
 
 Add and customize text on the creation by entering text and adjusting font, size, and positon. 
+
+---
+
+### Delete Preview
+<img src="ux-design/wireframe-deletepreview.png" alt="Delete Preview wireframe" width="200">
+
+Confirm deletion by showing the creation being removed and allowing the user to cancel or confirm.
+
