@@ -1,7 +1,9 @@
 # User Experience Design
 
 ## App Map
-Lorem Ipsum
+
+<img src="ux-design/team_stereroscopically.png" alt="App Map" width=450>
+
 ## Wireframes
 
 ### Welcome Page
