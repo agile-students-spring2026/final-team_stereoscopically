@@ -21,8 +21,13 @@ The Minimum Viable Product will allow users to:
 - Bella D'Aquino - [GitHub Account Link](https://github.com/belladaq)
 - Faith Winford - [GitHub Account Link](https://github.com/fwinford)
 - Lily Luo - [GitHub Account Link](https://github.com/lilyluo7412)
-- Lia Jang 
+- Lia Yoonseo Jang 
 
 
 ## Contributions
 Find the guidelines for contributing to this project at [this link](https://github.com/agile-students-spring2026/final-team_stereoscopically/blob/master/CONTRIBUTING.md). 
+
+
+## UX Design
+
+Find the wireframes, app map, and clickable prototype for this project at [this link](https://github.com/agile-students-spring2026/final-team_stereoscopically/blob/master/UX-DESIGN.md).
