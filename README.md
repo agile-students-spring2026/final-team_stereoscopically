@@ -1,19 +1,33 @@
-# Project Repository
+# StickerCreate Web App
 
-This repository will be used for team projects.
+## Description
 
-Several sets of instructions are included in this repository. They should each be treated as separate assignments with their own due dates and sets of requirements.
+This project came from a desire to make online chats more engaging and entertaining with properly formatted custom stickers. Often times the gifs, emojis, and stickers that internet chat users want to send are sized incorrectly and difficult to edit. Our integrated app will allow users to create and resize their personal stickers, edit and apply filters, and create gifs from videos all in one place.
 
-1. See the [App Map & Wireframes](instructions-0a-app-map-wireframes.md) and [Prototyping](./instructions-0b-prototyping.md) instructions for the requirements of the initial user experience design of the app.
+## Product Vision Statement
 
-1. Delete the contents of this file and replace with the contents of a proper README.md, as described in the [project setup instructions](./instructions-0c-project-setup.md)
+Our vision is to build a lightweight application that allows users to quickly resize images and convert videos into GIFs. 
 
-1. See the [Sprint Planning instructions](instructions-0d-sprint-planning.md) for the requirements of Sprint Planning for each Sprint.
+The Minimum Viable Product will allow users to: 
+- Upload image and video files
+- Resize images to standard preset sizes or custom dimensions
+- Convert videos into GIF format
+- Preview a creation
+- Download finished stickers or GIFs directly to device
 
-1. See the [Front-End Development instructions](./instructions-1-front-end.md) for the requirements of the initial Front-End Development.
 
-1. See the [Back-End Development instructions](./instructions-2-back-end.md) for the requirements of the initial Back-End Development.
+## Team Members 
 
-1. See the [Database Integration instructions](./instructions-3-database.md) for the requirements of integrating a database into the back-end.
+- Bella D'Aquino - [GitHub Account Link](https://github.com/belladaq)
+- Faith Winford - [GitHub Account Link](https://github.com/fwinford)
+- Lily Luo - [GitHub Account Link](https://github.com/lilyluo7412)
+- Lia Yoonseo Jang 
 
-1. See the [Deployment instructions](./instructions-4-deployment.md) for the requirements of deploying an app.
+
+## Contributions
+Find the guidelines for contributing to this project at [this link](https://github.com/agile-students-spring2026/final-team_stereoscopically/blob/master/CONTRIBUTING.md). 
+
+
+## UX Design
+
+Find the wireframes, app map, and clickable prototype for this project at [this link](https://github.com/agile-students-spring2026/final-team_stereoscopically/blob/master/UX-DESIGN.md).
