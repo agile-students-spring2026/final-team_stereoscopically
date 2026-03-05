@@ -32,3 +32,20 @@ We use GitHub for collaboration.
 `cd project-name`
 
 More setup and testing instructions will be added in later sprints. 
+
+## Coding Standards 
+
+- Write clear and readable code. 
+- Use meaningful variable and function names. 
+- Keep the code consistent with the existing project structure. 
+- Comment code when necessary to explain complex logic. 
+
+## Git Workflow 
+
+We use GitHub for collaboration.
+
+- Do not push directly to the main branch. 
+- Create a new branch for your work. 
+- Commit and push your changes. 
+- Open a Pull Request before merging to main. 
+- At least one teammate should review the Pull Request before merging. 
