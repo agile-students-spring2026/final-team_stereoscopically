@@ -21,7 +21,7 @@ The Minimum Viable Product will allow users to:
 - Bella D'Aquino - [GitHub Account Link](https://github.com/belladaq)
 - Faith Winford - [GitHub Account Link](https://github.com/fwinford)
 - Lily Luo - [GitHub Account Link](https://github.com/lilyluo7412)
-- Lia Yoonseo Jang 
+- Lia Yoonseo Jang - [GitHub Account Link](https://github.com/LiaYoonseoJang)
 
 
 ## Contributions
