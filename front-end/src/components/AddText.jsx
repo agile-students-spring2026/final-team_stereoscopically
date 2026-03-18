@@ -13,7 +13,7 @@ function AddText({ onApply, onCancel }) {
         <h2 className="screen-title">Add Text</h2>
       </div>
       <div className="preview-box">
-        <span style={{ color: '#999', fontSize: '0.9rem' }}>Preview of Creation</span>
+        <span className="preview-label">Preview of Creation</span>
       </div>
       <div className="card">
         <label>
@@ -22,49 +22,41 @@ function AddText({ onApply, onCancel }) {
             placeholder="Enter text here"
             value={text}
             onChange={(e) => setText(e.target.value)}
-            style={{
-              width: '100%',
-              maxWidth: 280,
-              padding: '0.5rem',
-              marginBottom: '0.5rem',
-              border: '1px solid #1a1a1a',
-            }}
+            className="text-input"
           />
         </label>
-        <div style={{ marginBottom: '0.5rem' }}>
+        <div className="form-group">
           <span>Font: </span>
           <select
             value={font}
             onChange={(e) => setFont(e.target.value)}
-            style={{ padding: '0.25rem', border: '1px solid #1a1a1a' }}
+            className="form-select"
           >
             <option value="Arial">Arial</option>
             <option value="Helvetica">Helvetica</option>
             <option value="Georgia">Georgia</option>
           </select>
         </div>
-        <div style={{ marginBottom: '0.5rem' }}>
+        <div className="form-group">
           <span>Size: </span>
           {['small', 'medium', 'large'].map((s) => (
             <button
               key={s}
               type="button"
-              className="btn-secondary"
-              style={{ margin: '0.1rem', textTransform: 'capitalize' }}
+              className={`btn-secondary ${size === s ? 'active' : ''}`}
               onClick={() => setSize(s)}
             >
               {s}
             </button>
           ))}
         </div>
-        <div style={{ marginBottom: '0.5rem' }}>
+        <div className="form-group">
           <span>Position: </span>
           {['top', 'center', 'bottom'].map((p) => (
             <button
               key={p}
               type="button"
-              className="btn-secondary"
-              style={{ margin: '0.1rem', textTransform: 'capitalize' }}
+              className={`btn-secondary ${position === p ? 'active' : ''}`}
               onClick={() => setPosition(p)}
             >
               {p}
@@ -72,7 +64,7 @@ function AddText({ onApply, onCancel }) {
           ))}
         </div>
       </div>
-      <div className="card" style={{ display: 'flex', gap: '0.5rem', justifyContent: 'center' }}>
+      <div className="card-actions">
         <button type="button" className="btn-secondary" onClick={onCancel}>
           Cancel
         </button>
