@@ -7,11 +7,9 @@ const ImageEditor = ({ imageSrc, onBack, onOpenFilters }) => {
       <h2>Image Editor</h2>
 
       <ImagePreview src={imageSrc} />
-      <button onClick={onBack}>Back</button>
-      <button className="filters-trigger-button" onClick={onOpenFilters}>Add Filters</button>
-
-    </div>
-    <div className="editor-actions">
+      <button className="btn-primary" onClick={onBack}>Back</button>
+      <button className="btn-primary" onClick={onOpenFilters}>Add Filters</button>
+      
     </div>
     </>
   )

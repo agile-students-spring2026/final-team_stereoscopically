@@ -1,6 +1,7 @@
 import { useState } from 'react';
+import ImagePreview from './components/imagePreview';
 
-function AddText({ onApply, onCancel }) {
+function AddText({ imageSrc, onApply, onCancel }) {
   const [text, setText] = useState('');
   const [font, setFont] = useState('Arial');
   const [size, setSize] = useState('medium');
@@ -13,7 +14,8 @@ function AddText({ onApply, onCancel }) {
         <h2 className="screen-title">Add Text</h2>
       </div>
       <div className="preview-box">
-        <span style={{ color: '#999', fontSize: '0.9rem' }}>Preview of Creation</span>
+        {/* <span style={{ color: '#999', fontSize: '0.9rem' }}>Preview of Creation</span> */}
+        <ImagePreview src={imageSrc} />      
       </div>
       <div className="card">
         <label>

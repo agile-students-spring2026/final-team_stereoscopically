@@ -1,6 +1,7 @@
 import { useState } from 'react';
+import ImagePreview from './components/imagePreview';
 
-function PresetFilters({ onApply, onCancel }) {
+function PresetFilters({ imageSrc, onApply, onCancel }) {
   const [selectedStyle, setSelectedStyle] = useState('default');
 
   return (
@@ -10,8 +11,10 @@ function PresetFilters({ onApply, onCancel }) {
         <h2 className="screen-title">Preset Filters</h2>
       </div>
       <div className="preview-box">
-        <span style={{ color: '#999', fontSize: '0.9rem' }}>Preview of Creation</span>
-      </div>
+        {/* <span style={{ color: '#999', fontSize: '0.9rem' }}>Preview of Creation</span> */}
+
+        <ImagePreview src={imageSrc} />      
+        </div>
       <div className="card">
         {['default', 'style1', 'style2'].map((style) => (
           <button

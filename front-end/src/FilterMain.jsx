@@ -8,7 +8,7 @@ function FilterMain({ imageSrc, onPresetFilters, onAddText, onColorFilters }) {
         <h2 className="screen-title">Filters</h2>
       </div>
 
-      <div className="preview-section">
+      <div className="preview-box">
         <ImagePreview src={imageSrc} />
       </div>
 

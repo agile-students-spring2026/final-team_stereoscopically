@@ -1,6 +1,7 @@
 import { useState } from 'react';
+import ImagePreview from './components/imagePreview';
 
-function ColorFilters({ onApply, onCancel }) {
+function ColorFilters({ imageSrc, onApply, onCancel }) {
   const [brightness, setBrightness] = useState(100);
   const [contrast, setContrast] = useState(100);
   const [saturation, setSaturation] = useState(100);
@@ -15,7 +16,11 @@ function ColorFilters({ onApply, onCancel }) {
         <h2 className="screen-title">Color Filters</h2>
       </div>
       <div className="preview-box">
-        <span style={{ color: '#999', fontSize: '0.9rem' }}>Preview of Creation</span>
+
+        {/* <span style={{ color: '#999', fontSize: '0.9rem' }}>Preview of Creation</span> */}
+        
+        <ImagePreview src={imageSrc} />
+
       </div>
       <div className="card">
         <div>
