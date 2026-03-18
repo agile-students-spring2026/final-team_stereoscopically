@@ -2,10 +2,10 @@ import { useState } from 'react'
 import './App.css'
 import CreateNew from './components/CreateNew.jsx'
 import ImageEditor from './components/ImageEditor.jsx'
-import FilterMain from './FilterMain.jsx'
-import PresetFilters from './PresetFilters.jsx'
-import AddText from './AddText.jsx'
-import ColorFilters from './ColorFilters.jsx'
+import FilterMain from './components/FilterMain.jsx'
+import PresetFilters from './components/PresetFilters.jsx'
+import AddText from './components/AddText.jsx'
+import ColorFilters from './components/ColorFilters.jsx'
 
 function App() {
   const [selectedImage, setSelectedImage] = useState(null)
