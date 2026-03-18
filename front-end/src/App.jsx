@@ -1,11 +1,11 @@
 import { useState } from 'react'
 import './App.css'
-import CreateNew from './components/CreateNew.jsx'
-import ImageEditor from './components/ImageEditor.jsx'
-import FilterMain from './components/FilterMain.jsx'
-import PresetFilters from './components/PresetFilters.jsx'
-import AddText from './components/AddText.jsx'
-import ColorFilters from './components/ColorFilters.jsx'
+import CreateNew from './components/CreateNew'
+import ImageEditor from './components/ImageEditor'
+import FilterMain from './components/FilterMain'
+import PresetFilters from './components/PresetFilters'
+import AddText from './components/AddText'
+import ColorFilters from './components/ColorFilters'
 
 function App() {
   const [selectedImage, setSelectedImage] = useState(null)
