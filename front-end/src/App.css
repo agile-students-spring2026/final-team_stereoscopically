@@ -237,3 +237,36 @@ input[type='range']::-moz-range-thumb {
   gap: 0.5rem;
   justify-content: center;
 }
+
+/* Range Slider Wrapper */
+.slider-wrapper {
+  width: 100%;
+  max-width: 280px;
+  margin: 0.5rem auto;
+}
+
+/* Color Filters - Button Wrapper */
+.color-filters-actions {
+  display: flex;
+  gap: 0.5rem;
+  justify-content: center;
+}
+
+/* Preset Filters - Button Wrapper */
+.preset-filters-actions {
+  display: flex;
+  gap: 0.5rem;
+  justify-content: center;
+}
+
+.preset-filters-button {
+  margin: 0.25rem;
+  text-transform: capitalize;
+}
+
+/* Image Editor */
+.image-editor-img {
+  max-width: 300px;
+  border-radius: 8px;
+  border: 1px solid #ddd;
+}

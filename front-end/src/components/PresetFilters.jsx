@@ -10,22 +10,21 @@ function PresetFilters({ onApply, onCancel }) {
         <h2 className="screen-title">Preset Filters</h2>
       </div>
       <div className="preview-box">
-        <span style={{ color: '#999', fontSize: '0.9rem' }}>Preview of Creation</span>
+        <span className="preview-label">Preview of Creation</span>
       </div>
       <div className="card">
         {['default', 'style1', 'style2'].map((style) => (
           <button
             key={style}
             type="button"
-            className={`btn-secondary ${selectedStyle === style ? 'active' : ''}`}
-            style={{ margin: '0.25rem', textTransform: 'capitalize' }}
+            className={`btn-secondary preset-filters-button ${selectedStyle === style ? 'active' : ''}`}
             onClick={() => setSelectedStyle(style)}
           >
             {style === 'style1' ? 'Style 1' : style === 'style2' ? 'Style 2' : 'Default'}
           </button>
         ))}
       </div>
-      <div className="card" style={{ display: 'flex', gap: '0.5rem', justifyContent: 'center' }}>
+      <div className="preset-filters-actions">
         <button type="button" className="btn-secondary" onClick={onCancel}>
           Cancel
         </button>

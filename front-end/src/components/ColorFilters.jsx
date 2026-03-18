@@ -6,8 +6,6 @@ function ColorFilters({ onApply, onCancel }) {
   const [saturation, setSaturation] = useState(100);
   const [sharpness, setSharpness] = useState(100);
 
-  const sliderStyle = { width: '100%', maxWidth: 280, margin: '0.5rem auto' };
-
   return (
     <div className="app-container">
       <div className="screen-header">
@@ -15,7 +13,7 @@ function ColorFilters({ onApply, onCancel }) {
         <h2 className="screen-title">Color Filters</h2>
       </div>
       <div className="preview-box">
-        <span style={{ color: '#999', fontSize: '0.9rem' }}>Preview of Creation</span>
+        <span className="preview-label">Preview of Creation</span>
       </div>
       <div className="card">
         <div>
@@ -27,7 +25,7 @@ function ColorFilters({ onApply, onCancel }) {
               max="200"
               value={brightness}
               onChange={(e) => setBrightness(Number(e.target.value))}
-              style={sliderStyle}
+              className="slider-wrapper"
             />
           </label>
         </div>
@@ -40,7 +38,7 @@ function ColorFilters({ onApply, onCancel }) {
               max="200"
               value={contrast}
               onChange={(e) => setContrast(Number(e.target.value))}
-              style={sliderStyle}
+              className="slider-wrapper"
             />
           </label>
         </div>
@@ -53,7 +51,7 @@ function ColorFilters({ onApply, onCancel }) {
               max="200"
               value={saturation}
               onChange={(e) => setSaturation(Number(e.target.value))}
-              style={sliderStyle}
+              className="slider-wrapper"
             />
           </label>
         </div>
@@ -66,12 +64,12 @@ function ColorFilters({ onApply, onCancel }) {
               max="200"
               value={sharpness}
               onChange={(e) => setSharpness(Number(e.target.value))}
-              style={sliderStyle}
+              className="slider-wrapper"
             />
           </label>
         </div>
       </div>
-      <div className="card" style={{ display: 'flex', gap: '0.5rem', justifyContent: 'center' }}>
+      <div className="color-filters-actions">
         <button type="button" className="btn-secondary" onClick={onCancel}>
           Cancel
         </button>
