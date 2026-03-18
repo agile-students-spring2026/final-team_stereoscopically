@@ -23,7 +23,7 @@ const CreateNew = ({ onImageSelect }) => {
         id="image-upload"
         type="file"
         accept="image/*"
-        className="file-input-hidden"
+        style={{ display: 'none' }}
         onChange={handleImageChange}
       />
     </div>
