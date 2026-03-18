@@ -270,3 +270,66 @@ input[type='range']::-moz-range-thumb {
   border-radius: 8px;
   border: 1px solid #ddd;
 }
+
+/* CreateNew file input */
+.hidden-file-input {
+  display: none;
+}
+
+/* Image Editor */
+.image-editor-actions {
+  align-items: stretch;
+  gap: 0;
+}
+
+.image-editor-actions .btn-primary {
+  width: 100%;
+  flex: 1;
+}
+
+.image-editor-actions .btn-primary + .btn-primary {
+  margin-top: 0.75rem;
+}
+.image-cropper {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+}
+
+.cropper-container {
+  position: relative;
+  width: 100%;
+  max-width: 300px;
+  height: 300px;
+  border: 2px dashed #1a1a1a;
+  border-radius: 8px;
+  overflow: hidden;
+  background-color: #f9f9f9;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.cropper-image {
+  display: block;
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+}
+
+.crop-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+.cropper-info {
+  text-align: center;
+  font-size: 0.9rem;
+  color: #666;
+}

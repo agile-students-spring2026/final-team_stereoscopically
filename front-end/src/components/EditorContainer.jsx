@@ -15,7 +15,7 @@ function EditorContainer() {
     setSelectedImage(file)
     const preview = URL.createObjectURL(file)
     setImagePreviewUrl(preview)
-    setFilterScreen('filters-main')
+    setFilterScreen('editor')
     console.log('Image stored in App:', file)
   }
 
@@ -44,6 +44,14 @@ function EditorContainer() {
     }
 
     switch (filterScreen) {
+      case 'editor':
+        return (
+          <ImageEditor
+            imageSrc={imagePreviewUrl}
+            onBack={handleBackToUpload}
+            onOpenFilters={handleOpenFilters}
+          />
+        )
       case 'filters-main':
         return (
           <FilterMain

@@ -1,8 +1,34 @@
-const ImageEditor = ({ imageSrc }) => {
+import ImageCropper from './ImageCropper'
+
+const ImageEditor = ({ imageSrc, onOpenFilters, onBack }) => {
   return (
-    <div className="card image-editor">
-      <h2>Image Editor</h2>
-      <img src={imageSrc} alt="Uploaded preview" className="image-editor-img" />
+    <div className="app-container">
+      <div className="screen-header">
+        <div className="app-logo">StickerCreate</div>
+        <h2 className="screen-title">Image Editor</h2>
+      </div>
+      <div className="preview-box">
+        <img src={imageSrc} alt="Preview" className="preview-image" />
+      </div>
+      <div className="card image-editor-actions">
+        <button type="button" className="btn-primary" onClick={() => {}}>
+          Size
+        </button>
+        <button type="button" className="btn-primary" onClick={() => {}}>
+          Reframe
+        </button>
+        <button type="button" className="btn-primary" onClick={onOpenFilters}>
+          Filters
+        </button>
+      </div>
+      <div className="card-actions">
+        <button type="button" className="btn-secondary" onClick={onBack}>
+          Cancel
+        </button>
+        <button type="button" className="btn-primary">
+          Export
+        </button>
+      </div>
     </div>
   )
 }
