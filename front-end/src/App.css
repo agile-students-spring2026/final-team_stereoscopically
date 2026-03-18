@@ -277,6 +277,20 @@ input[type='range']::-moz-range-thumb {
 }
 
 /* Image Editor */
+.image-editor-container {
+  width: 100%;
+  max-width: 400px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.image-editor-title {
+  font-size: 1.25rem;
+  margin: 0 0 1rem 0;
+  text-align: center;
+}
+
 .image-editor-actions {
   align-items: stretch;
   gap: 0;

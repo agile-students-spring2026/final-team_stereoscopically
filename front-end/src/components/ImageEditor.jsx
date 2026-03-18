@@ -2,11 +2,8 @@ import ImageCropper from './ImageCropper'
 
 const ImageEditor = ({ imageSrc, onOpenFilters, onBack }) => {
   return (
-    <div className="app-container">
-      <div className="screen-header">
-        <div className="app-logo">StickerCreate</div>
-        <h2 className="screen-title">Image Editor</h2>
-      </div>
+    <div className="image-editor-container">
+      <h2 className="image-editor-title">Image Editor</h2>
       <div className="preview-box">
         <img src={imageSrc} alt="Preview" className="preview-image" />
       </div>
