@@ -12,8 +12,8 @@ const CreateNew = ({ onImageSelect }) => {
   }
 
   return (
-    <div>
-      <h1>Create New</h1>
+    <div className="card create-new">
+      <h2>Create New</h2>
 
       <label htmlFor="image-upload" className="upload-button">
         Upload Image
