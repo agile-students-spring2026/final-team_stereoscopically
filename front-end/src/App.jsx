@@ -9,29 +9,30 @@ function App() {
 
   const handleImageSelect = (file) => {
     setSelectedImage(file)
-
-    const previewUrl = URL.createObjectURL(file)
-    setImagePreviewUrl(previewUrl)
-
+    const preview = URL.createObjectURL(file)
+    setImagePreviewUrl(preview)
     console.log('Image stored in App:', file)
-    console.log('Preview URL:', previewUrl)
   }
 
-return (
-  <div className="app-container">
-    <header className="app-header">
-      <h1 className="app-title">StickerCreate</h1>
-    </header>
+  const handleBackToUpload = () => {
+    setSelectedImage(null)
+    setImagePreviewUrl(null)
+  }
 
-    <main className="app-main">
-      {imagePreviewUrl ? (
-        <ImageEditor imageSrc={imagePreviewUrl} />
-      ) : (
-        <CreateNew onImageSelect={handleImageSelect} />
-      )}
-    </main>
-  </div>
-)
+  return (
+    <div className="app-container">
+      <header className="app-header">
+        <h1 className="app-title">StickerCreate</h1>
+      </header>
+      <main className="app-main">
+        {!selectedImage ? (
+          <CreateNew onImageSelect={handleImageSelect} />
+        ) : (
+          <ImageEditor imageSrc={imagePreviewUrl} onBack={handleBackToUpload} />
+        )}
+      </main>
+    </div>
+  )
 }
 
 export default App
