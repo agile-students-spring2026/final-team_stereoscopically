@@ -1,4 +1,4 @@
-import ImagePreview from './components/ImagePreview.jsx'
+import ImagePreview from "./ImagePreview"
 
 const ImageEditor = ({ imageSrc, onBack, onOpenFilters }) => {
   return (

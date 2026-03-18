@@ -6,7 +6,6 @@ import FilterMain from './FilterMain.jsx'
 import PresetFilters from './PresetFilters.jsx'
 import AddText from './AddText.jsx'
 import ColorFilters from './ColorFilters.jsx'
-import ImagePreview from './components/ImagePreview.jsx'
 
 function App() {
   const [selectedImage, setSelectedImage] = useState(null)
@@ -53,6 +52,7 @@ function App() {
             onPresetFilters={() => setFilterScreen('preset')}
             onAddText={() => setFilterScreen('text')}
             onColorFilters={() => setFilterScreen('color')}
+            onBack={handleCloseFilters}
           />
         )
       case 'preset':

@@ -1,3 +1,5 @@
+import ImagePreview from './components/ImagePreview.jsx'
+
 function FilterMain({ onPresetFilters, onAddText, onColorFilters }) {
   return (
     <div className="app-container">
@@ -5,6 +7,11 @@ function FilterMain({ onPresetFilters, onAddText, onColorFilters }) {
         <div className="app-logo">StickerCreate</div>
         <h2 className="screen-title">Filters</h2>
       </div>
+
+      <div className="preview-section">
+              <ImagePreview src={imageSrc} />
+      </div>
+
       <div className="card filter-main-buttons">
         <button type="button" className="btn-primary" onClick={onPresetFilters}>
           Preset Filters
