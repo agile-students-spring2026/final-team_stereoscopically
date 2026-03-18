@@ -270,3 +270,8 @@ input[type='range']::-moz-range-thumb {
   border-radius: 8px;
   border: 1px solid #ddd;
 }
+
+/* File input hidden */
+.file-input-hidden {
+  display: none;
+}
