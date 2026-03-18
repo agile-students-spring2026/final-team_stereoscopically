@@ -63,22 +63,25 @@ function EditorContainer() {
       case 'preset':
         return (
           <PresetFilters
+            imageSrc={imagePreviewUrl}
             onApply={handleApplyFilters}
-            onCancel={() => setFilterScreen('filters-main')}
+            onCancel={() => setFilterScreen('editor')}
           />
         )
       case 'text':
         return (
           <AddText
+            imageSrc={imagePreviewUrl}
             onApply={handleApplyFilters}
-            onCancel={() => setFilterScreen('filters-main')}
+            onCancel={() => setFilterScreen('editor')}
           />
         )
       case 'color':
         return (
           <ColorFilters
+            imageSrc={imagePreviewUrl}
             onApply={handleApplyFilters}
-            onCancel={() => setFilterScreen('filters-main')}
+            onCancel={() => setFilterScreen('editor')}
           />
         )
       default:

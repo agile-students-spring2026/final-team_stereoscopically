@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import FilterScreen from './FilterScreen'
 
-function AddText({ onApply, onCancel }) {
+function AddText({ imageSrc, onApply, onCancel }) {
   const [text, setText] = useState('')
   const [font, setFont] = useState('Arial')
   const [size, setSize] = useState('medium')
@@ -14,6 +14,7 @@ function AddText({ onApply, onCancel }) {
   return (
     <FilterScreen
       title="Add Text"
+      imageSrc={imageSrc}
       onApply={handleApply}
       onCancel={onCancel}
     >

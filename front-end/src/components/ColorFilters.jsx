@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import FilterScreen from './FilterScreen'
 
-function ColorFilters({ onApply, onCancel }) {
+function ColorFilters({ imageSrc, onApply, onCancel }) {
   const [brightness, setBrightness] = useState(100)
   const [contrast, setContrast] = useState(100)
   const [saturation, setSaturation] = useState(100)
@@ -14,6 +14,7 @@ function ColorFilters({ onApply, onCancel }) {
   return (
     <FilterScreen
       title="Color Filters"
+      imageSrc={imageSrc}
       onApply={handleApply}
       onCancel={onCancel}
     >

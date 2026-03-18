@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import FilterScreen from './FilterScreen'
 
-function PresetFilters({ onApply, onCancel }) {
+function PresetFilters({ imageSrc, onApply, onCancel }) {
   const [selectedStyle, setSelectedStyle] = useState('default')
 
   const handleApply = () => {
@@ -11,6 +11,7 @@ function PresetFilters({ onApply, onCancel }) {
   return (
     <FilterScreen
       title="Preset Filters"
+      imageSrc={imageSrc}
       onApply={handleApply}
       onCancel={onCancel}
     >
