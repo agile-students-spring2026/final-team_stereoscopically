@@ -6,24 +6,25 @@ import FilterMain from './FilterMain.jsx'
 import PresetFilters from './PresetFilters.jsx'
 import AddText from './AddText.jsx'
 import ColorFilters from './ColorFilters.jsx'
+import ImagePreview from './components/ImagePreview.jsx'
 
 function App() {
   const [selectedImage, setSelectedImage] = useState(null)
   const [imagePreviewUrl, setImagePreviewUrl] = useState(null)
-  const [filterScreen, setFilterScreen] = useState('filters-main')
+  const [filterScreen, setFilterScreen] = useState('editor')
 
   const handleImageSelect = (file) => {
     setSelectedImage(file)
     const preview = URL.createObjectURL(file)
     setImagePreviewUrl(preview)
-    setFilterScreen('filters-main')
+    setFilterScreen('editor')
     console.log('Image stored in App:', file)
   }
 
   const handleBackToUpload = () => {
     setSelectedImage(null)
     setImagePreviewUrl(null)
-    setFilterScreen('editor')
+
   }
 
   const handleOpenFilters = () => {
@@ -48,6 +49,7 @@ function App() {
       case 'filters-main':
         return (
           <FilterMain
+            imageSrc={imagePreviewUrl}
             onPresetFilters={() => setFilterScreen('preset')}
             onAddText={() => setFilterScreen('text')}
             onColorFilters={() => setFilterScreen('color')}
@@ -56,6 +58,7 @@ function App() {
       case 'preset':
         return (
           <PresetFilters
+            imageSrc={imagePreviewUrl}
             onApply={handleApplyFilters}
             onCancel={() => setFilterScreen('filters-main')}
           />
@@ -63,6 +66,7 @@ function App() {
       case 'text':
         return (
           <AddText
+            imageSrc={imagePreviewUrl}
             onApply={handleApplyFilters}
             onCancel={() => setFilterScreen('filters-main')}
           />
@@ -70,6 +74,7 @@ function App() {
       case 'color':
         return (
           <ColorFilters
+            imageSrc={imagePreviewUrl}
             onApply={handleApplyFilters}
             onCancel={() => setFilterScreen('filters-main')}
           />

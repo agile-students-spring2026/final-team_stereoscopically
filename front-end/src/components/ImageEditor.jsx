@@ -1,9 +1,19 @@
-const ImageEditor = ({ imageSrc }) => {
+import ImagePreview from './components/ImagePreview.jsx'
+
+const ImageEditor = ({ imageSrc, onBack, onOpenFilters }) => {
   return (
+    <>
     <div className="card image-editor">
       <h2>Image Editor</h2>
-      <img src={imageSrc} alt="Uploaded preview" style={{ maxWidth: '300px', borderRadius: '8px', border: '1px solid #ddd' }} />
+
+      <ImagePreview src={imageSrc} />
+      <button onClick={onBack}>Back</button>
+      <button className="filters-trigger-button" onClick={onOpenFilters}>Add Filters</button>
+
     </div>
+    <div className="editor-actions">
+    </div>
+    </>
   )
 }
 
