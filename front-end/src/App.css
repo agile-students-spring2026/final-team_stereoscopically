@@ -1,14 +1,198 @@
-#root {
-  max-width: 1280px;
-  margin: 0 auto;
+
+/* App-specific Layout */
+
+.app-container {
+  min-height: 100vh;
+  width: 100vw;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  box-sizing: border-box;
+  padding: 2rem 1rem;
+  background-color: #f5f5f5;
+}
+
+.app-header {
+  text-align: center;
+  margin-bottom: 2rem;
+}
+
+.app-title {
+  font-size: 2.5rem;
+  margin: 0;
+}
+
+.app-main {
+  width: 100%;
+  max-width: 480px;
+  display: flex;
+  justify-content: center;
+}
+
+/* Screen header for editor and filters */
+
+.screen-header {
+  width: 100%;
+  max-width: 400px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1rem;
+}
+
+.app-logo {
+  font-weight: 600;
+  font-size: 1rem;
+}
+
+.screen-title {
+  font-size: 1.25rem;
+  margin: 0;
+}
+
+/* Preview area shared by filter screens */
+
+.preview-box {
+  width: 100%;
+  max-width: 400px;
+  height: 220px;
+  border-radius: 12px;
+  border: 1px solid #1a1a1a;
+  background-color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 1rem;
+  box-sizing: border-box;
+}
+
+.preview-image {
+  max-width: 90%;
+  max-height: 90%;
+  object-fit: contain;
+}
+
+.image-editor-screen {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+/* Shared Card Styles */
+
+.card {
+  width: 100%;
+  max-width: 400px;
   padding: 2rem;
+  border-radius: 12px;
+  border: 1px solid #e0e0e0;
+  background-color: #ffffff;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.card h2 {
+  font-size: 1.5rem;
+  margin: 0 0 1.5rem 0;
   text-align: center;
 }
 
-.card {
-  padding: 2em;
+/* Buttons – neutral black/white */
+
+.upload-button {
+  display: inline-block;
+  background-color: #646cff;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  padding: 0.75rem 1.5rem;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: background-color 200ms ease;
 }
 
-button {
-  margin: 1em;
+.upload-button:hover {
+  background-color: #5a54d1;
+}
+
+.upload-button:active {
+  background-color: #4a44b1;
+}
+
+.btn-primary,
+.btn-secondary {
+  min-width: 90px;
+  padding: 0.6rem 1.2rem;
+  border-radius: 8px;
+  border: 1px solid #000000;
+  background-color: #ffffff;
+  color: #000000;
+  font-size: 0.95rem;
+  cursor: pointer;
+  transition: background-color 150ms ease, color 150ms ease;
+}
+
+.btn-primary {
+  background-color: #000000;
+  color: #ffffff;
+}
+
+.btn-primary:hover {
+  background-color: #222222;
+}
+
+.btn-secondary:hover {
+  background-color: #f0f0f0;
+}
+
+.btn-secondary.active {
+  background-color: #000000;
+  color: #ffffff;
+}
+
+/* Layout tweaks for Filter main buttons */
+
+.filter-main-buttons {
+  align-items: stretch;
+}
+
+.filter-main-buttons .btn-primary {
+  width: 100%;
+}
+
+.filter-main-buttons .btn-primary + .btn-primary {
+  margin-top: 0.75rem;
+}
+
+/* Sliders for color filters */
+
+input[type='range'] {
+  -webkit-appearance: none;
+  appearance: none;
+  height: 4px;
+  border-radius: 999px;
+  background-color: #cccccc;
+  outline: none;
+}
+
+input[type='range']::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background-color: #000000;
+  cursor: pointer;
+}
+
+input[type='range']::-moz-range-thumb {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background-color: #000000;
+  cursor: pointer;
 }
