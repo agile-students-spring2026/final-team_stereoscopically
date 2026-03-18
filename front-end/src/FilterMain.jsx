@@ -1,6 +1,6 @@
 import ImagePreview from './components/ImagePreview.jsx'
 
-function FilterMain({ onPresetFilters, onAddText, onColorFilters }) {
+function FilterMain({ imageSrc, onPresetFilters, onAddText, onColorFilters }) {
   return (
     <div className="app-container">
       <div className="screen-header">
@@ -9,7 +9,7 @@ function FilterMain({ onPresetFilters, onAddText, onColorFilters }) {
       </div>
 
       <div className="preview-section">
-              <ImagePreview src={imageSrc} />
+        <ImagePreview src={imageSrc} />
       </div>
 
       <div className="card filter-main-buttons">

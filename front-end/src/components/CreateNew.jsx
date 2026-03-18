@@ -28,7 +28,6 @@ const CreateNew = ({ onImageSelect }) => {
         onChange={handleImageChange}
       />
 
-      {preview }
     </div>
   )
 }
