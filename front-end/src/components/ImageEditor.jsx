@@ -1,6 +1,48 @@
+import { useState } from 'react'
 import ImageCropper from './ImageCropper'
 
 const ImageEditor = ({ imageSrc, onOpenFilters, onBack }) => {
+  // Track if cropper is active
+  const [isReframing, setIsReframing] = useState(false)
+  // Track current crop data
+  const [cropData, setCropData] = useState(null)
+
+  const handleReframeClick = () => {
+    setIsReframing(true)
+  }
+
+  const handleCropChange = (data) => {
+    setCropData(data)
+  }
+
+  const handleApplyCrop = () => {
+    setIsReframing(false)
+    console.log('Crop applied:', cropData)
+  }
+
+  const handleCancelCrop = () => {
+    setIsReframing(false)
+    setCropData(null)
+  }
+
+  // Show cropper if reframing, otherwise show preview
+  if (isReframing) {
+    return (
+      <div className="image-editor-container">
+        <h2 className="image-editor-title">Reframe Image</h2>
+        <ImageCropper imageSrc={imageSrc} onCropChange={handleCropChange} />
+        <div className="card-actions">
+          <button type="button" className="btn-secondary" onClick={handleCancelCrop}>
+            Cancel
+          </button>
+          <button type="button" className="btn-primary" onClick={handleApplyCrop}>
+            Apply Crop
+          </button>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="image-editor-container">
       <h2 className="image-editor-title">Image Editor</h2>
@@ -11,7 +53,7 @@ const ImageEditor = ({ imageSrc, onOpenFilters, onBack }) => {
         <button type="button" className="btn-primary" onClick={() => {}}>
           Size
         </button>
-        <button type="button" className="btn-primary" onClick={() => {}}>
+        <button type="button" className="btn-primary" onClick={handleReframeClick}>
           Reframe
         </button>
         <button type="button" className="btn-primary" onClick={onOpenFilters}>
