@@ -1,12 +1,14 @@
 import React from 'react'
 
-const CreateNew = () => {
+const CreateNew = ({ onImageSelect }) => {
   const handleImageChange = (event) => {
     const file = event.target.files?.[0]
     if (!file) return
 
-    console.log('Selected file:', file)
-    // validation later
+    console.log('Selected file in CreateNew:', file)
+    if (onImageSelect) {
+      onImageSelect(file)
+    }
   }
 
   return (
