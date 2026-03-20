@@ -15,21 +15,33 @@ function resizeImageToDimensions(imageUrl, targetWidth, targetHeight) {
       canvas.width = targetWidth
       canvas.height = targetHeight
       const ctx = canvas.getContext('2d')
+      // Enable high-quality image rendering
+      ctx.imageSmoothingEnabled = true
+      ctx.imageSmoothingQuality = 'high'
+
       const imgAspect = img.width / img.height
       const targetAspect = targetWidth / targetHeight
       let sx, sy, sWidth, sHeight
+
+      // Scale image to fit target while maintaining aspect ratio
+      // If image is wider than target, fit to height
       if (imgAspect > targetAspect) {
         sHeight = img.height
         sWidth = img.height * targetAspect
         sx = (img.width - sWidth) / 2
         sy = 0
       } else {
+        // If image is taller than target, fit to width
         sWidth = img.width
         sHeight = img.width / targetAspect
         sx = 0
         sy = (img.height - sHeight) / 2
       }
+
+      // Draw with high quality
       ctx.drawImage(img, sx, sy, sWidth, sHeight, 0, 0, targetWidth, targetHeight)
+      
+      // Use PNG format for lossless quality
       canvas.toBlob(
         (blob) => {
           if (blob) {
