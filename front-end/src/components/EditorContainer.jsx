@@ -7,7 +7,7 @@ import PresetSizes from './PresetSizes'
 import AddText from './AddText'
 import ColorFilters from './ColorFilters'
 
-function resizeImageToDimensions(imageUrl, targetWidth, targetHeight) {
+function resizeImageToDimensions(imageUrl, targetWidth, targetHeight, preserveAspect = false) {
   return new Promise((resolve, reject) => {
     const img = new Image()
     img.onload = () => {
@@ -18,29 +18,56 @@ function resizeImageToDimensions(imageUrl, targetWidth, targetHeight) {
       // Enable high-quality image rendering
       ctx.imageSmoothingEnabled = true
       ctx.imageSmoothingQuality = 'high'
+      // Fill background with white for letterboxing
+      ctx.fillStyle = '#ffffff'
+      ctx.fillRect(0, 0, targetWidth, targetHeight)
 
       const imgAspect = img.width / img.height
       const targetAspect = targetWidth / targetHeight
-      let sx, sy, sWidth, sHeight
+      let sx, sy, sWidth, sHeight, dx, dy, dWidth, dHeight
 
-      // Scale image to fit target while maintaining aspect ratio
-      // If image is wider than target, fit to height
-      if (imgAspect > targetAspect) {
-        sHeight = img.height
-        sWidth = img.height * targetAspect
-        sx = (img.width - sWidth) / 2
-        sy = 0
-      } else {
-        // If image is taller than target, fit to width
+      if (preserveAspect) {
+        // Letterbox mode: fit entire image without cropping
         sWidth = img.width
-        sHeight = img.width / targetAspect
+        sHeight = img.height
         sx = 0
-        sy = (img.height - sHeight) / 2
+        sy = 0
+
+        if (imgAspect > targetAspect) {
+          // Image is wider, fit to width
+          dWidth = targetWidth
+          dHeight = targetWidth / imgAspect
+          dx = 0
+          dy = (targetHeight - dHeight) / 2
+        } else {
+          // Image is taller, fit to height
+          dHeight = targetHeight
+          dWidth = targetHeight * imgAspect
+          dx = (targetWidth - dWidth) / 2
+          dy = 0
+        }
+      } else {
+        // Crop and fit mode: fill entire canvas, may crop image
+        if (imgAspect > targetAspect) {
+          sHeight = img.height
+          sWidth = img.height * targetAspect
+          sx = (img.width - sWidth) / 2
+          sy = 0
+        } else {
+          sWidth = img.width
+          sHeight = img.width / targetAspect
+          sx = 0
+          sy = (img.height - sHeight) / 2
+        }
+        dx = 0
+        dy = 0
+        dWidth = targetWidth
+        dHeight = targetHeight
       }
 
       // Draw with high quality
-      ctx.drawImage(img, sx, sy, sWidth, sHeight, 0, 0, targetWidth, targetHeight)
-      
+      ctx.drawImage(img, sx, sy, sWidth, sHeight, dx, dy, dWidth, dHeight)
+
       // Use PNG format for lossless quality
       canvas.toBlob(
         (blob) => {
@@ -108,10 +135,13 @@ function EditorContainer() {
       return
     }
     try {
+      // Use letterbox (preserveAspect) for Discord sticker to avoid cropping
+      const shouldPreserveAspect = size.id === 'discord-sticker'
       const { file, url } = await resizeImageToDimensions(
         originalImageUrl,
         size.width,
-        size.height
+        size.height,
+        shouldPreserveAspect
       )
       // Revoke old preview URL if it's different from original
       if (imagePreviewUrl && imagePreviewUrl !== originalImageUrl) {
