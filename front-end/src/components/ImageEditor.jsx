@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import ImageCropper from './ImageCropper'
 
-const ImageEditor = ({ imageSrc, onOpenFilters, onBack }) => {
+const ImageEditor = ({ imageSrc, onOpenFilters, onBack, onSize }) => {
   // Track if cropper is active
   const [isReframing, setIsReframing] = useState(false)
   // Track current crop data
@@ -50,7 +50,7 @@ const ImageEditor = ({ imageSrc, onOpenFilters, onBack }) => {
         <img src={imageSrc} alt="Preview" className="preview-image" />
       </div>
       <div className="card image-editor-actions">
-        <button type="button" className="btn-primary" onClick={() => {}}>
+        <button type="button" className="btn-primary" onClick={onSize || (() => {})}>
           Size
         </button>
         <button type="button" className="btn-primary" onClick={handleReframeClick}>
@@ -60,7 +60,7 @@ const ImageEditor = ({ imageSrc, onOpenFilters, onBack }) => {
           Filters
         </button>
       </div>
-      <div className="card-actions">
+      <div className="card-actions" style={{ marginTop: '1.25rem' }}>
         <button type="button" className="btn-secondary" onClick={onBack}>
           Cancel
         </button>
