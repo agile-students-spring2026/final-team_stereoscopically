@@ -60,12 +60,15 @@ function resizeImageToDimensions(imageUrl, targetWidth, targetHeight) {
 function EditorContainer() {
   const [selectedImage, setSelectedImage] = useState(null)
   const [imagePreviewUrl, setImagePreviewUrl] = useState(null)
+  // Keep original image URL to always resize from original
+  const [originalImageUrl, setOriginalImageUrl] = useState(null)
   const [filterScreen, setFilterScreen] = useState('filters-main')
 
   const handleImageSelect = (file) => {
     setSelectedImage(file)
     const preview = URL.createObjectURL(file)
     setImagePreviewUrl(preview)
+    setOriginalImageUrl(preview)
     setFilterScreen('editor')
     console.log('Image stored in App:', file)
   }
@@ -73,6 +76,7 @@ function EditorContainer() {
   const handleBackToUpload = () => {
     setSelectedImage(null)
     setImagePreviewUrl(null)
+    setOriginalImageUrl(null)
     setFilterScreen('editor')
   }
 
@@ -98,17 +102,21 @@ function EditorContainer() {
       setFilterScreen('editor')
       return
     }
-    if (!imagePreviewUrl) {
+    // Always resize from the original image, not the preview
+    if (!originalImageUrl) {
       setFilterScreen('editor')
       return
     }
     try {
       const { file, url } = await resizeImageToDimensions(
-        imagePreviewUrl,
+        originalImageUrl,
         size.width,
         size.height
       )
-      if (imagePreviewUrl) URL.revokeObjectURL(imagePreviewUrl)
+      // Revoke old preview URL if it's different from original
+      if (imagePreviewUrl && imagePreviewUrl !== originalImageUrl) {
+        URL.revokeObjectURL(imagePreviewUrl)
+      }
       setSelectedImage(file)
       setImagePreviewUrl(url)
     } catch (err) {
