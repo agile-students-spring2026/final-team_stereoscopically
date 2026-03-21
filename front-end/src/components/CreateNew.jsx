@@ -1,6 +1,7 @@
-import React from 'react'
+import React, { useState } from 'react'
 
 const CreateNew = ({ onImageSelect }) => {
+
   const handleImageChange = (event) => {
     const file = event.target.files?.[0]
     if (!file) return
@@ -13,8 +14,8 @@ const CreateNew = ({ onImageSelect }) => {
 
   return (
     <div className="card create-new">
-      <h2>Create New</h2>
 
+      <h2>Create New</h2>
       <label htmlFor="image-upload" className="upload-button">
         Upload Image
       </label>
@@ -26,6 +27,7 @@ const CreateNew = ({ onImageSelect }) => {
         className="hidden-file-input"
         onChange={handleImageChange}
       />
+
     </div>
   )
 }
