@@ -196,3 +196,192 @@ input[type='range']::-moz-range-thumb {
   background-color: #000000;
   cursor: pointer;
 }
+
+/* AddText form styles */
+.text-input {
+  width: 100%;
+  max-width: 280px;
+  padding: 0.5rem;
+  margin-bottom: 0.5rem;
+  border: 1px solid #1a1a1a;
+  border-radius: 4px;
+  font-family: inherit;
+}
+
+.form-group {
+  margin-bottom: 0.5rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.form-select {
+  padding: 0.25rem;
+  border: 1px solid #1a1a1a;
+  border-radius: 4px;
+  font-family: inherit;
+}
+
+.form-group .btn-secondary {
+  text-transform: capitalize;
+  margin: 0.1rem;
+}
+
+.preview-label {
+  color: #999;
+  font-size: 0.9rem;
+}
+
+.card-actions {
+  display: flex;
+  gap: 0.5rem;
+  justify-content: center;
+}
+
+/* Range Slider Wrapper */
+.slider-wrapper {
+  width: 100%;
+  max-width: 280px;
+  margin: 0.5rem auto;
+}
+
+/* Color Filters - Button Wrapper */
+.color-filters-actions {
+  display: flex;
+  gap: 0.5rem;
+  justify-content: center;
+}
+
+/* Preset Filters - Button Wrapper */
+.preset-filters-actions {
+  display: flex;
+  gap: 0.5rem;
+  justify-content: center;
+}
+
+.preset-filters-button {
+  margin: 0.25rem;
+  text-transform: capitalize;
+}
+
+/* Image Editor */
+.image-editor-img {
+  max-width: 300px;
+  border-radius: 8px;
+  border: 1px solid #ddd;
+}
+
+/* CreateNew file input */
+.hidden-file-input {
+  display: none;
+}
+
+/* Image Editor */
+.image-editor-container {
+  width: 100%;
+  max-width: 400px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.image-editor-title {
+  font-size: 1.25rem;
+  margin: 0 0 1rem 0;
+  text-align: center;
+}
+
+.image-editor-actions {
+  align-items: stretch;
+  gap: 0;
+}
+
+.image-editor-actions .btn-primary {
+  width: 100%;
+  flex: 1;
+}
+
+.image-editor-actions .btn-primary + .btn-primary {
+  margin-top: 0.75rem;
+}
+.image-cropper {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+}
+
+.cropper-container {
+  position: relative;
+  width: 100%;
+  max-width: 300px;
+  height: 300px;
+  border: 2px dashed #1a1a1a;
+  border-radius: 8px;
+  overflow: hidden;
+  background-color: #f9f9f9;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.cropper-image {
+  display: block;
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+}
+
+.crop-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+.crop-box {
+  position: absolute;
+  border: 2px solid #646cff;
+  background-color: rgba(100, 108, 255, 0.1);
+  cursor: move;
+  pointer-events: auto;
+}
+
+.crop-handle {
+  position: absolute;
+  width: 12px;
+  height: 12px;
+  background-color: #646cff;
+  border: 2px solid white;
+  border-radius: 50%;
+  pointer-events: auto;
+}
+
+.crop-handle[data-handle='nw'] {
+  cursor: nwse-resize;
+  transform: translate(-50%, -50%);
+}
+
+.crop-handle[data-handle='ne'] {
+  cursor: nesw-resize;
+  transform: translate(50%, -50%);
+}
+
+.crop-handle[data-handle='sw'] {
+  cursor: nesw-resize;
+  transform: translate(-50%, 50%);
+}
+
+.crop-handle[data-handle='se'] {
+  cursor: nwse-resize;
+  transform: translate(50%, 50%);
+}
+
+.cropper-info {
+  text-align: center;
+  font-size: 0.9rem;
+  color: #666;
+}

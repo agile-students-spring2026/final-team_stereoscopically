@@ -1,13 +1,9 @@
 import { useState } from 'react'
 import './App.css'
-import CreateNew from './components/CreateNew.jsx'
-import ImageEditor from './components/ImageEditor.jsx'
-import FilterMain from './FilterMain.jsx'
-import PresetFilters from './PresetFilters.jsx'
-import AddText from './AddText.jsx'
-import ColorFilters from './ColorFilters.jsx'
+import EditorContainer from './components/EditorContainer'
 
 function App() {
+<<<<<<< HEAD
   const [selectedImage, setSelectedImage] = useState(null)
   const [imagePreviewUrl, setImagePreviewUrl] = useState(null)
   const [filterScreen, setFilterScreen] = useState('editor')
@@ -90,12 +86,16 @@ function App() {
     }
   }
 
+=======
+>>>>>>> origin/master
   return (
     <div className="app-container">
       <header className="app-header">
         <h1 className="app-title">StickerCreate</h1>
       </header>
-      <main className="app-main">{renderContent()}</main>
+      <main className="app-main">
+        <EditorContainer />
+      </main>
     </div>
   )
 }
