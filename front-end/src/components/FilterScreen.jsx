@@ -1,3 +1,5 @@
+import ImagePreview from "./ImagePreview"
+
 function FilterScreen({ title, children, imageSrc, onApply, onCancel }) {
   return (
     <div className="app-container">
@@ -7,7 +9,7 @@ function FilterScreen({ title, children, imageSrc, onApply, onCancel }) {
       </div>
       <div className="preview-box">
         {imageSrc ? (
-          <img src={imageSrc} alt="Preview" className="preview-image" />
+          <ImagePreview src={imageSrc} />
         ) : (
           <span className="preview-label">Preview of Creation</span>
         )}

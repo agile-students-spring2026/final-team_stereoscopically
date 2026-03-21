@@ -6,6 +6,7 @@ import PresetFilters from './PresetFilters'
 import PresetSizes from './PresetSizes'
 import AddText from './AddText'
 import ColorFilters from './ColorFilters'
+import ImagePreview from './ImagePreview'
 
 function resizeImageToDimensions(imageUrl, targetWidth, targetHeight, preserveAspect = false) {
   return new Promise((resolve, reject) => {
@@ -173,6 +174,7 @@ function EditorContainer() {
       case 'filters-main':
         return (
           <FilterMain
+            imageSrc={imagePreviewUrl}
             onPresetFilters={() => setFilterScreen('preset')}
             onAddText={() => setFilterScreen('text')}
             onColorFilters={() => setFilterScreen('color')}
@@ -205,6 +207,7 @@ function EditorContainer() {
       case 'preset-sizes':
         return (
           <PresetSizes
+            imageSrc={imagePreviewUrl}
             onSelect={handleSizeSelect}
             onCancel={() => setFilterScreen('editor')}
           />

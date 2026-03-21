@@ -44,6 +44,7 @@ const ImageEditor = ({ imageSrc, onOpenFilters, onBack, onSize }) => {
   }
 
   return (
+    <>
     <div className="image-editor-container">
       <h2 className="image-editor-title">Image Editor</h2>
       <div className="preview-box">

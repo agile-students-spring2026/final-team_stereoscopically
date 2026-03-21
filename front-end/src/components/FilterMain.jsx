@@ -1,6 +1,6 @@
-import ImagePreview from './components/ImagePreview.jsx'
+import ImagePreview from "./ImagePreview";
 
-function FilterMain({ imageSrc, onPresetFilters, onAddText, onColorFilters }) {
+function FilterMain({ imageSrc, onPresetFilters, onAddText, onColorFilters, onCancel }) {
   return (
     <div className="app-container">
       <div className="screen-header">
@@ -22,6 +22,11 @@ function FilterMain({ imageSrc, onPresetFilters, onAddText, onColorFilters }) {
         <button type="button" className="btn-primary" onClick={onColorFilters}>
           Color Filters
         </button>
+      </div>
+      <div className="card-actions">
+        <button type="button" className="btn-secondary" onClick={onCancel}>
+          Cancel
+        </button>        
       </div>
     </div>
   );
