@@ -175,7 +175,8 @@ function EditorContainer() {
             imageSrc={imagePreviewUrl}
             onBack={handleBackToUpload}
             onOpenFilters={handleOpenFilters}
-            onSize={handleOpenSizes}
+            onOpenSizes={handleOpenSizes}
+            onApplyCustomSize={handleSizeSelect}
             onExport={handleExportImage}
           />
         )
@@ -224,7 +225,8 @@ function EditorContainer() {
             imageSrc={imagePreviewUrl}
             onBack={handleBackToUpload}
             onOpenFilters={handleOpenFilters}
-            onSize={handleOpenSizes}
+            onOpenSizes={handleOpenSizes}
+            onApplyCustomSize={handleSizeSelect}
             onExport={handleExportImage}
           />
         )
