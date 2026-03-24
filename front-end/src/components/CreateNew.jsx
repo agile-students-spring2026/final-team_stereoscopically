@@ -1,31 +1,21 @@
-import React from 'react'
-
 const CreateNew = ({ onImageSelect, onVideoSelect }) => {
   const handleImageChange = (event) => {
     const file = event.target.files?.[0]
     if (!file) return
-
-    console.log('Selected file in CreateNew:', file)
-    if (onImageSelect) {
-      onImageSelect(file)
-    }
+    onImageSelect?.(file)
   }
 
   const handleVideoChange = (event) => {
     const file = event.target.files?.[0]
     if (!file) return
-
-    if (onVideoSelect){
-      onVideoSelect(file)
-    }
+    onVideoSelect?.(file)
   }
 
   return (
     <div className="card create-new">
       <h2>Create New</h2>
 
-      <div className='upload-options'>
-
+      <div className="upload-options">
         <label htmlFor="image-upload" className="upload-button">
           Upload Image
         </label>
