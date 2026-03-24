@@ -35,32 +35,23 @@ const GifEditor = ({ videoFile, onBack }) => {
                         src={videoUrl}
                         controls
                         className='preview-video'
-                        style={{maxWidth: '100%', borderRadius: '8px'}}
                     />
                     ) : (
                         <p className='preview-label'>Loading video preview...</p>
                         )}                    
             </div>
 
-            <div className='editor-controls'>
-                <div className='control-group'>
-                    <p className='hint-text'>
-                        Video format detected: <strong>{videoFile?.type}</strong>
-                    </p>
-                </div>
-            </div>
-
             <div className='card video-editor-actions'>
-                <button
-                    className='btn-primary'
-                    onClick={handleConvertToGif}
-                    disabled={isProcessing}
-                    >
-                    {isProcessing ? 'Processing...': 'Create GIF'}
+                <button type="button" className="btn-primary">
+                    Trim
+                </button>
+                
+                <button type="button" className="btn-primary">
+                    Reframe
                 </button>
 
                 <button type="button" className="btn-primary">
-                    Trim
+                    Filters
                 </button>
             </div>
 
@@ -68,11 +59,16 @@ const GifEditor = ({ videoFile, onBack }) => {
                 <button type="button" className="btn-secondary" onClick={onBack}>
                 Cancel
                 </button>
-                <button type="button" className="btn-primary">
-                Export
+
+                <button 
+                    type="button" 
+                    className="btn-primary" 
+                    onClick={handleConvertToGif}
+                    disabled={isProcessing}
+                    >
+                    {isProcessing ? 'Processing...': 'Create GIF'}
                 </button>
             </div>
-
         </div>
     )
 }

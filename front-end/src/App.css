@@ -301,9 +301,14 @@ input[type='range']::-moz-range-thumb {
   flex: 1;
 }
 
-.image-editor-actions .btn-primary + .btn-primary, .video-editor-actions {
+.image-editor-actions .btn-primary + .btn-primary {
   margin-top: 0.75rem;
 }
+
+.video-editor-actions .btn-primary {
+  margin-top: 0.75rem;
+}
+
 .image-cropper {
   width: 100%;
   display: flex;
