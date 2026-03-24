@@ -1,18 +1,21 @@
-import React, {useState, useEffect, useRef } from 'react'
+import React, { useEffect, useMemo, useRef, useState } from 'react'
 
 const GifEditor = ({ videoFile, onBack }) => {
-    const [videoUrl, setVideoUrl] = useState(null)
     const [isProcessing, setIsProcessing] = useState(false)
     const videoRef = useRef(null)
 
-    useEffect(() => {
-        if (videoFile) {
-            const url = URL.createObjectURL(videoFile)
-            setVideoUrl(url)
-
-            return () => URL.revokeObjectURL(url)
-        }
+    const videoUrl = useMemo(() => {
+        if (!videoFile) return null
+        return URL.createObjectURL(videoFile)
     }, [videoFile])
+
+    useEffect(() => {
+        return () => {
+            if (videoUrl) {
+                URL.revokeObjectURL(videoUrl)
+            }
+        }
+    }, [videoUrl])
 
     const handleConvertToGif = async () => {
         setIsProcessing(true)

@@ -121,10 +121,6 @@ function EditorContainer() {
     setFilterScreen('filters-main')
   }
 
-  const handleCloseFilters = () => {
-    setFilterScreen('editor')
-  }
-
   const handleApplyFilters = (data) => {
     console.log('Apply filters data:', data)
     setFilterScreen('editor')
