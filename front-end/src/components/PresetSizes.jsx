@@ -9,18 +9,11 @@ const PRESET_SIZES = [
 function PresetSizes({ onSelect, onCancel }) {
   return (
     <div className="app-container">
-      <div
-        className="screen-header"
-        style={{
-          flexDirection: 'column',
-          alignItems: 'flex-start',
-          gap: '0.5rem',
-        }}
-      >
-        <h2 className="screen-title" style={{ margin: 0 }}>
+      <div className="screen-header screen-header-column">
+        <h2 className="screen-title">
           Preset Sizes
         </h2>
-        <p style={{ fontSize: '0.85rem', color: '#666', margin: 0 }}>
+        <p className="screen-subtitle">
           Choose where you want to use your sticker
         </p>
       </div>

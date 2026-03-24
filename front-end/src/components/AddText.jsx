@@ -8,7 +8,7 @@ function AddText({ imageSrc, onApply, onCancel }) {
   const [position, setPosition] = useState('center')
 
   const handleApply = () => {
-    onApply({ text, font, size, position })
+    onApply?.({ text, font, size, position })
   }
 
   return (
