@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import ImageCropper from './ImageCropper'
 
-const ImageEditor = ({ imageSrc, onOpenFilters, onBack, onSize }) => {
+const ImageEditor = ({ imageSrc, onOpenFilters, onBack, onSize, onExport }) => {
   // Track if cropper is active
   const [isReframing, setIsReframing] = useState(false)
   // Track current crop data
@@ -64,7 +64,7 @@ const ImageEditor = ({ imageSrc, onOpenFilters, onBack, onSize }) => {
         <button type="button" className="btn-secondary" onClick={onBack}>
           Cancel
         </button>
-        <button type="button" className="btn-primary">
+        <button type="button" className="btn-primary" onClick={onExport}>
           Export
         </button>
       </div>
