@@ -1,21 +1,39 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react'
+import React, { useEffect, useRef, useState } from 'react'
 
 const GifEditor = ({ videoFile, onCancel }) => {
+    console.log('=== GifEditor MOUNTED ===')
+    console.log('videoFile prop:', videoFile)
+    console.log('videoFile type:', typeof videoFile)
+    console.log('videoFile instanceof File:', videoFile instanceof File)
+    
     const [isProcessing, setIsProcessing] = useState(false)
+    const [videoUrl, setVideoUrl] = useState(null)
     const videoRef = useRef(null)
 
-    const videoUrl = useMemo(() => {
-        if (!videoFile) return null
-        return URL.createObjectURL(videoFile)
-    }, [videoFile])
-
     useEffect(() => {
+        console.log('GifEditor effect: videoFile =', videoFile)
+        if (!videoFile) {
+            setVideoUrl(null)
+            return
+        }
+
+        let url
+        try {
+            url = URL.createObjectURL(videoFile)
+            console.log('GifEditor effect: created videoUrl =', url)
+            setVideoUrl(url)
+        } catch (err) {
+            console.error('GifEditor effect: ERROR creating blob URL', err)
+            setVideoUrl(null)
+        }
+
         return () => {
-            if (videoUrl) {
-                URL.revokeObjectURL(videoUrl)
+            if (url) {
+                console.log('GifEditor effect cleanup: revoking videoUrl =', url)
+                URL.revokeObjectURL(url)
             }
         }
-    }, [videoUrl])
+    }, [videoFile])
 
     const handleConvertToGif = async () => {
         setIsProcessing(true)
