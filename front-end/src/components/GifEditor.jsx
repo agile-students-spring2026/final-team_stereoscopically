@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react'
 
-const GifEditor = ({ videoFile, onBack }) => {
+const GifEditor = ({ videoFile, onCancel }) => {
     const [isProcessing, setIsProcessing] = useState(false)
     const videoRef = useRef(null)
 
@@ -28,23 +28,23 @@ const GifEditor = ({ videoFile, onBack }) => {
     }
 
     return (
-        <div className='video-editor-container'>
-            <h2 className='video-editor-title'>GIF Editor</h2>
+        <div className="video-editor-container">
+            <h2 className="video-editor-title">GIF Editor</h2>
 
-            <div className='preview-box'>
+            <div className="preview-box">
                 {videoUrl ? (
                     <video
                         ref={videoRef}
                         src={videoUrl}
                         controls
-                        className='preview-video'
+                        className="preview-video"
                     />
                     ) : (
-                        <p className='preview-label'>Loading video preview...</p>
+                        <p className="preview-label">Loading video preview...</p>
                         )}                    
             </div>
 
-            <div className='card video-editor-actions'>
+            <div className="card video-editor-actions">
                 <button type="button" className="btn-primary">
                     Trim
                 </button>
@@ -58,8 +58,8 @@ const GifEditor = ({ videoFile, onBack }) => {
                 </button>
             </div>
 
-            <div className="card-actions" style={{ marginTop: '1.25rem' }}>
-                <button type="button" className="btn-secondary" onClick={onBack}>
+            <div className="card-actions card-actions-spaced">
+                <button type="button" className="btn-secondary" onClick={() => onCancel?.()}>
                 Cancel
                 </button>
 

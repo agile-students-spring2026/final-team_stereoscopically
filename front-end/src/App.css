@@ -1,5 +1,6 @@
-
-/* App-specific Layout */
+/* ============================================================================
+   APP LAYOUT
+   ============================================================================ */
 
 .app-container {
   min-height: 100vh;
@@ -30,57 +31,9 @@
   justify-content: center;
 }
 
-/* Screen header for editor and filters */
-
-.screen-header {
-  width: 100%;
-  max-width: 400px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 1rem;
-}
-
-.app-logo {
-  font-weight: 600;
-  font-size: 1rem;
-}
-
-.screen-title {
-  font-size: 1.25rem;
-  margin: 0;
-}
-
-/* Preview area shared by filter screens */
-
-.preview-box {
-  width: 100%;
-  max-width: 400px;
-  height: 220px;
-  border-radius: 12px;
-  border: 1px solid #1a1a1a;
-  background-color: #ffffff;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin-bottom: 1rem;
-  box-sizing: border-box;
-}
-
-.preview-image, .preview-video {
-  max-width: 90%;
-  max-height: 90%;
-  object-fit: contain;
-}
-
-.image-editor-screen {
-  width: 100%;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-}
-
-/* Shared Card Styles */
+/* ============================================================================
+   SHARED CARD & CONTAINER STYLES
+   ============================================================================ */
 
 .card {
   width: 100%;
@@ -101,16 +54,27 @@
   text-align: center;
 }
 
+.card-actions {
+  display: flex;
+  gap: 0.5rem;
+  justify-content: center;
+}
+
+.card-actions-spaced {
+  margin-top: 1.25rem;
+}
+
+/* ============================================================================
+   CREATE NEW / UPLOAD SCREEN
+   ============================================================================ */
+
 .upload-options {
   width: 100%;
   display: flex;
   flex-direction: column;
   gap: 1rem;
   align-items: stretch;
-  text-align: center;
 }
-
-/* Buttons – neutral black/white */
 
 .upload-button {
   display: inline-block;
@@ -131,6 +95,14 @@
 .upload-button:active {
   background-color: #4a44b1;
 }
+
+.hidden-file-input {
+  display: none;
+}
+
+/* ============================================================================
+   BUTTONS & FORMS
+   ============================================================================ */
 
 .btn-primary,
 .btn-secondary {
@@ -163,50 +135,6 @@
   color: #ffffff;
 }
 
-/* Layout tweaks for Filter main buttons */
-
-.filter-main-buttons {
-  align-items: stretch;
-}
-
-.filter-main-buttons .btn-primary {
-  width: 100%;
-}
-
-.filter-main-buttons .btn-primary + .btn-primary {
-  margin-top: 0.75rem;
-}
-
-/* Sliders for color filters */
-
-input[type='range'] {
-  -webkit-appearance: none;
-  appearance: none;
-  height: 4px;
-  border-radius: 999px;
-  background-color: #cccccc;
-  outline: none;
-}
-
-input[type='range']::-webkit-slider-thumb {
-  -webkit-appearance: none;
-  appearance: none;
-  width: 16px;
-  height: 16px;
-  border-radius: 50%;
-  background-color: #000000;
-  cursor: pointer;
-}
-
-input[type='range']::-moz-range-thumb {
-  width: 16px;
-  height: 16px;
-  border-radius: 50%;
-  background-color: #000000;
-  cursor: pointer;
-}
-
-/* AddText form styles */
 .text-input {
   width: 100%;
   max-width: 280px;
@@ -236,57 +164,125 @@ input[type='range']::-moz-range-thumb {
   margin: 0.1rem;
 }
 
+/* ============================================================================
+   FILTER SCREENS & PREVIEW
+   ============================================================================ */
+
+.screen-header {
+  width: 100%;
+  max-width: 400px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1rem;
+}
+
+.app-logo {
+  font-weight: 600;
+  font-size: 1rem;
+}
+
+.screen-title {
+  font-size: 1.25rem;
+  margin: 0;
+}
+
+.screen-header-column {
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.5rem;
+}
+
+.screen-subtitle {
+  font-size: 0.85rem;
+  color: #666;
+  margin: 0;
+}
+
+.preview-box {
+  width: 100%;
+  max-width: 400px;
+  height: 220px;
+  border-radius: 12px;
+  border: 1px solid #1a1a1a;
+  background-color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 1rem;
+  box-sizing: border-box;
+}
+
+.preview-image,
+.preview-video {
+  max-width: 90%;
+  max-height: 90%;
+  object-fit: contain;
+}
+
 .preview-label {
   color: #999;
   font-size: 0.9rem;
 }
 
-.card-actions {
-  display: flex;
-  gap: 0.5rem;
-  justify-content: center;
+.filter-main-buttons {
+  align-items: stretch;
 }
 
-/* Range Slider Wrapper */
+.filter-main-buttons .btn-primary {
+  width: 100%;
+}
+
+.filter-main-buttons .btn-primary + .btn-primary {
+  margin-top: 0.75rem;
+}
+
+/* Color Filters Sliders */
+input[type='range'] {
+  -webkit-appearance: none;
+  appearance: none;
+  height: 4px;
+  border-radius: 999px;
+  background-color: #cccccc;
+  outline: none;
+}
+
+input[type='range']::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background-color: #000000;
+  cursor: pointer;
+}
+
+input[type='range']::-moz-range-thumb {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background-color: #000000;
+  cursor: pointer;
+  border: none;
+}
+
 .slider-wrapper {
   width: 100%;
   max-width: 280px;
   margin: 0.5rem auto;
 }
 
-/* Color Filters - Button Wrapper */
-.color-filters-actions {
-  display: flex;
-  gap: 0.5rem;
-  justify-content: center;
-}
-
-/* Preset Filters - Button Wrapper */
-.preset-filters-actions {
-  display: flex;
-  gap: 0.5rem;
-  justify-content: center;
-}
-
+/* Preset Filters Buttons */
 .preset-filters-button {
   margin: 0.25rem;
   text-transform: capitalize;
 }
 
-/* Image Editor */
-.image-editor-img {
-  max-width: 300px;
-  border-radius: 8px;
-  border: 1px solid #ddd;
-}
+/* ============================================================================
+   IMAGE EDITOR
+   ============================================================================ */
 
-/* CreateNew file input */
-.hidden-file-input {
-  display: none;
-}
-
-/* Image and Video Editors */
-.image-editor-container, .video-editor-container {
+.image-editor-container {
   width: 100%;
   max-width: 400px;
   display: flex;
@@ -294,18 +290,18 @@ input[type='range']::-moz-range-thumb {
   align-items: center;
 }
 
-.image-editor-title, .video-editor-title {
+.image-editor-title {
   font-size: 1.25rem;
   margin: 0 0 1rem 0;
   text-align: center;
 }
 
-.image-editor-actions, .video-editor-actions {
+.image-editor-actions {
   align-items: stretch;
   gap: 0;
 }
 
-.image-editor-actions .btn-primary, .video-editor-actions {
+.image-editor-actions .btn-primary {
   width: 100%;
   flex: 1;
 }
@@ -314,9 +310,37 @@ input[type='range']::-moz-range-thumb {
   margin-top: 0.75rem;
 }
 
+/* ============================================================================
+   GIF EDITOR
+   ============================================================================ */
+
+.video-editor-container {
+  width: 100%;
+  max-width: 400px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.video-editor-title {
+  font-size: 1.25rem;
+  margin: 0 0 1rem 0;
+  text-align: center;
+}
+
+.video-editor-actions {
+  align-items: stretch;
+  gap: 0;
+}
+
 .video-editor-actions .btn-primary {
+  width: 100%;
   margin-top: 0.75rem;
 }
+
+/* ============================================================================
+   IMAGE CROPPER
+   ============================================================================ */
 
 .image-cropper {
   width: 100%;

@@ -175,7 +175,7 @@ function EditorContainer() {
       return (
         <GifEditor
           videoFile={selectedFile}
-          onBack={handleBackToUpload}
+          onCancel={handleBackToUpload}
         />
       )
     }

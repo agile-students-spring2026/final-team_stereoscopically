@@ -8,7 +8,7 @@ function ColorFilters({ imageSrc, onApply, onCancel }) {
   const [sharpness, setSharpness] = useState(100)
 
   const handleApply = () => {
-    onApply({ brightness, contrast, saturation, sharpness })
+    onApply?.({ brightness, contrast, saturation, sharpness })
   }
 
   return (
