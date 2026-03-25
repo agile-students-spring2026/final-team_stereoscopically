@@ -5,7 +5,7 @@ function PresetFilters({ imageSrc, onApply, onCancel }) {
   const [selectedStyle, setSelectedStyle] = useState('default')
 
   const handleApply = () => {
-    onApply?.({ preset: selectedStyle })
+    onApply(selectedStyle)
   }
 
   return (

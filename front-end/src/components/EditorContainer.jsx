@@ -6,7 +6,6 @@ import PresetFilters from './PresetFilters'
 import PresetSizes from './PresetSizes'
 import AddText from './AddText'
 import ColorFilters from './ColorFilters'
-import GifEditor from './GifEditor'
 
 function resizeImageToDimensions(imageUrl, targetWidth, targetHeight, preserveAspect = false) {
   return new Promise((resolve, reject) => {
@@ -86,17 +85,14 @@ function resizeImageToDimensions(imageUrl, targetWidth, targetHeight, preserveAs
 }
 
 function EditorContainer() {
-  const [fileType, setFileType] = useState(null)
-  const [selectedFile, setSelectedFile] = useState(null)
-
+  const [selectedImage, setSelectedImage] = useState(null)
   const [imagePreviewUrl, setImagePreviewUrl] = useState(null)
   // Keep original image URL to always resize from original
   const [originalImageUrl, setOriginalImageUrl] = useState(null)
   const [filterScreen, setFilterScreen] = useState('filters-main')
 
   const handleImageSelect = (file) => {
-    setFileType('image')
-    setSelectedFile(file)
+    setSelectedImage(file)
     const preview = URL.createObjectURL(file)
     setImagePreviewUrl(preview)
     setOriginalImageUrl(preview)
@@ -104,14 +100,8 @@ function EditorContainer() {
     console.log('Image stored in App:', file)
   }
 
-  const handleVideoSelect = (file) => {
-    setFileType('video')
-    setSelectedFile(file)
-  }
-
   const handleBackToUpload = () => {
-    setSelectedFile(null)
-    setFileType(null)
+    setSelectedImage(null)
     setImagePreviewUrl(null)
     setOriginalImageUrl(null)
     setFilterScreen('editor')
@@ -119,6 +109,10 @@ function EditorContainer() {
 
   const handleOpenFilters = () => {
     setFilterScreen('filters-main')
+  }
+
+  const handleCloseFilters = () => {
+    setFilterScreen('editor')
   }
 
   const handleApplyFilters = (data) => {
@@ -161,7 +155,7 @@ function EditorContainer() {
       if (imagePreviewUrl && imagePreviewUrl !== originalImageUrl) {
         URL.revokeObjectURL(imagePreviewUrl)
       }
-      setSelectedFile(file)
+      setSelectedImage(file)
       setImagePreviewUrl(url)
     } catch (err) {
       console.error('Resize failed:', err)
@@ -170,22 +164,8 @@ function EditorContainer() {
   }
 
   const renderContent = () => {
-    if (!selectedFile) {
-      return (
-      <CreateNew 
-        onImageSelect={handleImageSelect} 
-        onVideoSelect={handleVideoSelect}
-        />
-      )
-    }
-
-    if (fileType === 'video'){
-      return (
-        <GifEditor
-          videoFile={selectedFile}
-          onCancel={handleBackToUpload}
-        />
-      )
+    if (!selectedImage) {
+      return <CreateNew onImageSelect={handleImageSelect} />
     }
 
     switch (filterScreen) {
