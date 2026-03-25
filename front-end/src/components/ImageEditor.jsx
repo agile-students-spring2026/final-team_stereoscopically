@@ -1,11 +1,13 @@
 import { useState } from 'react'
 import ImageCropper from './ImageCropper'
 
-const ImageEditor = ({ imageSrc, onOpenFilters, onBack, onSize }) => {
-  // Track if cropper is active
+const ImageEditor = ({ imageSrc, onOpenFilters, onBack, onOpenSizes, onApplyCustomSize, onExport }) => {  // Track if cropper is active
   const [isReframing, setIsReframing] = useState(false)
   // Track current crop data
   const [cropData, setCropData] = useState(null)
+
+  const [width,setWidth] = useState(300)
+  const [height,setHeight] = useState(300)
 
   const handleReframeClick = () => {
     setIsReframing(true)
@@ -29,7 +31,7 @@ const ImageEditor = ({ imageSrc, onOpenFilters, onBack, onSize }) => {
   if (isReframing) {
     return (
       <div className="image-editor-container">
-        <h2 className="image-editor-title">Reframe Image</h2>
+        <h2 className="image-editor-title">Crop Image</h2>
         <ImageCropper imageSrc={imageSrc} onCropChange={handleCropChange} />
         <div className="card-actions">
           <button type="button" className="btn-secondary" onClick={handleCancelCrop}>
@@ -50,21 +52,48 @@ const ImageEditor = ({ imageSrc, onOpenFilters, onBack, onSize }) => {
         <img src={imageSrc} alt="Preview" className="preview-image" />
       </div>
       <div className="card image-editor-actions">
-        <button type="button" className="btn-primary" onClick={onSize || (() => {})}>
-          Size
+        <button type="button" className="btn-primary" onClick={onOpenSizes || (() => {})}>
+          Preset Sizes
         </button>
         <button type="button" className="btn-primary" onClick={handleReframeClick}>
-          Reframe
+          Crop
         </button>
         <button type="button" className="btn-primary" onClick={onOpenFilters}>
           Filters
         </button>
       </div>
+      <div className="card">
+        <h3>Custom Size</h3>
+
+        <div style={{ display: 'flex', gap: '10px', marginBottom: '10px' }}>
+          <input 
+            type="number"
+            value={width}
+            onChange={(e) => setWidth(Number(e.target.value))}
+            placeholder="Width"
+          />
+          <input 
+            type="number"
+            value={height}
+            onChange={(e) => setHeight(Number(e.target.value))}
+            placeholder="Height"
+          />
+      </div>
+
+      <button 
+        type="button"
+        className="btn-primary"
+        onClick={() => onApplyCustomSize && onApplyCustomSize ({ id: 'custom', width, height })}
+      >
+        Apply Size 
+      </button>
+    </div>
+      <div className="card-actions" style={{ marginTop: '1.25rem' }}>
       <div className="card-actions card-actions-spaced">
         <button type="button" className="btn-secondary" onClick={onBack}>
           Cancel
         </button>
-        <button type="button" className="btn-primary">
+        <button type="button" className="btn-primary" onClick={onExport}>
           Export
         </button>
       </div>
