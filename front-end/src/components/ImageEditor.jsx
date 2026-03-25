@@ -89,6 +89,7 @@ const ImageEditor = ({ imageSrc, onOpenFilters, onBack, onOpenSizes, onApplyCust
       </button>
     </div>
       <div className="card-actions" style={{ marginTop: '1.25rem' }}>
+      <div className="card-actions card-actions-spaced">
         <button type="button" className="btn-secondary" onClick={onBack}>
           Cancel
         </button>
