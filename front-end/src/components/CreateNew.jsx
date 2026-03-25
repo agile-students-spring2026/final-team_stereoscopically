@@ -1,4 +1,9 @@
+import { useEffect, useRef, useState } from 'react'
+
 const CreateNew = ({ onImageSelect, onVideoSelect }) => {
+  const [cameraStream, setCameraStream] = useState(null)
+  const videoRef = useRef(null)
+
   const handleImageChange = (event) => {
     const file = event.target.files?.[0]
     if (!file) return
@@ -10,6 +15,19 @@ const CreateNew = ({ onImageSelect, onVideoSelect }) => {
     if (!file) return
     onVideoSelect?.(file)
   }
+
+  const handleOpenCamera = () => {
+    navigator.mediaDevices.getUserMedia({ video: true })
+      .then((stream) => {
+        setCameraStream(stream)
+      })
+  }
+
+  useEffect (() => {
+    if (videoRef.current && cameraStream) {
+      videoRef.current.srcObject = cameraStream
+    }
+  }, [cameraStream])
 
   return (
     <div className="card create-new">
@@ -39,7 +57,20 @@ const CreateNew = ({ onImageSelect, onVideoSelect }) => {
           className="hidden-file-input"
           onChange={handleVideoChange}
         />
+
+        <label className="upload-button" onClick={handleOpenCamera}>
+          Open Camera
+        </label>
       </div>
+
+      {cameraStream && (
+        <video
+          ref = {videoRef}
+          autoPlay
+          playsInline
+          style = {{width: '100%', marginTop: '12px', borderRadius: '12px'}}
+        />
+      )}
     </div>
   )
 }
