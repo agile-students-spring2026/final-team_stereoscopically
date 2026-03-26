@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import CreateNew from './CreateNew'
 import ImageEditor from './ImageEditor'
 import FilterMain from './FilterMain'
@@ -7,6 +7,7 @@ import PresetSizes from './PresetSizes'
 import AddText from './AddText'
 import ColorFilters from './ColorFilters'
 import GifEditor from './GifEditor'
+import { fetchMockImages } from '../services/mockMediaService'
 
 function resizeImageToDimensions(imageUrl, targetWidth, targetHeight, preserveAspect = false) {
   return new Promise((resolve, reject) => {
@@ -93,6 +94,54 @@ function EditorContainer() {
   // Keep original image URL to always resize from original
   const [originalImageUrl, setOriginalImageUrl] = useState(null)
   const [filterScreen, setFilterScreen] = useState('filters-main')
+  const [isMockLoading, setIsMockLoading] = useState(false)
+  const [mockError, setMockError] = useState(null)
+
+  useEffect(() => {
+    if (selectedFile) return
+
+    let isCancelled = false
+
+    const loadMockImage = async () => {
+      setIsMockLoading(true)
+      setMockError(null)
+
+      try {
+        const images = await fetchMockImages()
+        if (isCancelled) return
+
+        const firstImage = images?.[0]
+        if (!firstImage) {
+          setMockError('No mock images available yet.')
+          return
+        }
+
+        const preview = firstImage.previewSrc || firstImage.previewUrl || firstImage.src || firstImage.fullUrl
+        const source = firstImage.src || firstImage.fullUrl || preview
+
+        setFileType('image')
+        setSelectedFile({ id: firstImage.id, source: 'mock' })
+        setImagePreviewUrl(preview)
+        setOriginalImageUrl(source)
+        setFilterScreen('editor')
+      } catch (error) {
+        if (!isCancelled) {
+          console.error('[EditorContainer] Unable to load mock images', error)
+          setMockError('Failed to load sample media. Please try uploading an image instead.')
+        }
+      } finally {
+        if (!isCancelled) {
+          setIsMockLoading(false)
+        }
+      }
+    }
+
+    loadMockImage()
+
+    return () => {
+      isCancelled = true
+    }
+  }, [selectedFile])
 
   const handleImageSelect = (file) => {
     setFileType('image')
@@ -171,12 +220,24 @@ function EditorContainer() {
 
   const renderContent = () => {
     if (!selectedFile) {
-      return (
-      <CreateNew 
-        onImageSelect={handleImageSelect} 
-        onVideoSelect={handleVideoSelect}
-        />
-      )
+      if (isMockLoading) {
+        return (
+          <div className="card" role="status">
+            <p>Loading sample media...</p>
+          </div>
+        )
+      }
+
+      if (mockError) {
+        return (
+          <CreateNew
+            onImageSelect={handleImageSelect}
+            onVideoSelect={handleVideoSelect}
+          />
+        )
+      }
+
+      return null
     }
 
     if (fileType === 'video'){
