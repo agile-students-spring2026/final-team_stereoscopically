@@ -31,3 +31,20 @@ Find the guidelines for contributing to this project at [this link](https://gith
 ## UX Design
 
 Find the wireframes, app map, and clickable prototype for this project at [this link](https://github.com/agile-students-spring2026/final-team_stereoscopically/blob/master/UX-DESIGN.md).
+
+## Running the App Locally
+
+Follow these steps to get the front-end running locally in a development environment.
+
+### Prerequesites 
+Ensure you have Node.js and npm installed
+
+### Step by Step Instructions
+
+- Clone the repository to your local machine
+- Navigate to the front-end directory
+- Install dependencies: `npm install`
+ 
+- Start the development server: `npm run dev`
+
+- Open the app in your browser by navigating to: `http://localhost:5173/`
