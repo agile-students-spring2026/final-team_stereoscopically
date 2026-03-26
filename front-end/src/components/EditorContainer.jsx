@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useMemo, useState } from 'react'
 import CreateNew from './CreateNew'
 import ImageEditor from './ImageEditor'
 import FilterMain from './FilterMain'
@@ -7,9 +7,7 @@ import PresetSizes from './PresetSizes'
 import AddText from './AddText'
 import ColorFilters from './ColorFilters'
 import GifEditor from './GifEditor'
-import { resolveMockMediaSelection } from '../services/mockMediaService'
-import usePixabayMedia from '../hooks/usePixabayMedia'
-import { derivePreviewUrl, deriveSourceUrl } from '../services/mediaSelection'
+import useMediaSelection from '../hooks/useMediaSelection'
 
 const SCREENS = {
   EDITOR: 'editor',
@@ -116,110 +114,31 @@ function resizeImageToDimensions(imageUrl, targetWidth, targetHeight, preserveAs
 
 function EditorContainer() {
   const preferredMockMediaType = useMemo(() => getPreferredMockMediaType(), [])
-  const [mediaType, setMediaType] = useState(null)
-  const [selectedMedia, setSelectedMedia] = useState(null)
-
-  const [previewUrl, setPreviewUrl] = useState(null)
-  // Keep original image URL to always resize from original
-  const [sourceUrl, setSourceUrl] = useState(null)
-  const [screen, setScreen] = useState(SCREENS.FILTERS_MAIN)
-  const [isMockLoading, setIsMockLoading] = useState(false)
-  const [mockError, setMockError] = useState(null)
-  const imageApi = usePixabayMedia('image', { auto: false })
-  const videoApi = usePixabayMedia('video', { auto: false })
-
-  const applyImageSelection = useCallback((mediaItem, options = {}) => {
-    if (!mediaItem) return false
-    const preview = derivePreviewUrl(mediaItem, options.previewUrl)
-    const source = deriveSourceUrl(mediaItem, options.sourceUrl, preview)
-
-    if (!preview) return false
-
-    setMediaType('image')
-    setSelectedMedia(mediaItem)
-    setPreviewUrl(preview)
-    setSourceUrl(source)
+  const {
+    mediaType,
+    selectedMedia,
+    previewUrl,
+    sourceUrl,
+    isLoading: isSelectionLoading,
+    error: selectionError,
+    selectImage,
+    selectVideo,
+    resetSelection,
+    applyTransformedImage,
+  } = useMediaSelection(preferredMockMediaType)
+  const [screen, setScreen] = useState(SCREENS.EDITOR)
+  const handleImageSelect = () => {
+    selectImage()
     setScreen(SCREENS.EDITOR)
-    return true
-  }, [])
-
-  const applyVideoSelection = useCallback((mediaItem) => {
-    if (!mediaItem) return false
-    setMediaType('video')
-    setSelectedMedia(mediaItem)
-    setPreviewUrl(null)
-    setSourceUrl(null)
-    setScreen(SCREENS.EDITOR)
-    return true
-  }, [])
-
-  useEffect(() => {
-    if (selectedMedia) return
-
-    let isCancelled = false
-
-    const loadMockMedia = async () => {
-      setIsMockLoading(true)
-      setMockError(null)
-
-      try {
-        const result = await resolveMockMediaSelection(preferredMockMediaType)
-        if (isCancelled) return
-
-        if (result.error) {
-          setMockError(result.error)
-          return
-        }
-
-        const applied =
-          result.fileType === 'video'
-            ? applyVideoSelection(result.selectedFile)
-            : applyImageSelection(result.selectedFile, {
-                previewUrl: result.previewUrl,
-                sourceUrl: result.sourceUrl,
-              })
-
-        if (!applied) {
-          setMockError('Unable to prepare sample media. Please try again later.')
-        }
-      } catch (error) {
-        if (!isCancelled) {
-          console.error('[EditorContainer] Unable to load mock media', error)
-          setMockError('Failed to load sample media. Please try uploading your own file instead.')
-        }
-      } finally {
-        if (!isCancelled) {
-          setIsMockLoading(false)
-        }
-      }
-    }
-
-    loadMockMedia()
-
-    return () => {
-      isCancelled = true
-    }
-  }, [selectedMedia, preferredMockMediaType, applyImageSelection, applyVideoSelection])
-
-  const handleImageSelect = async () => {
-    setMockError(null)
-
-    await imageApi.fetchAndSelect(({ item, previewUrl, sourceUrl }) =>
-      applyImageSelection(item, { previewUrl, sourceUrl })
-    )
   }
 
-  const handleVideoSelect = async () => {
-    setMockError(null)
-
-    await videoApi.fetchAndSelect(({ item }) => applyVideoSelection(item))
+  const handleVideoSelect = () => {
+    selectVideo()
+    setScreen(SCREENS.EDITOR)
   }
 
   const handleBackToUpload = () => {
-    setSelectedMedia(null)
-    setMediaType(null)
-    setPreviewUrl(null)
-    setSourceUrl(null)
+    resetSelection()
     setScreen(SCREENS.EDITOR)
   }
 
@@ -258,8 +177,7 @@ function EditorContainer() {
       if (previewUrl && previewUrl !== sourceUrl) {
         URL.revokeObjectURL(previewUrl)
       }
-      setSelectedMedia(file)
-      setPreviewUrl(url)
+      applyTransformedImage(file, url)
     } catch (err) {
       console.error('Resize failed:', err)
     }
@@ -267,9 +185,6 @@ function EditorContainer() {
   }
 
   const renderContent = () => {
-    const isSelectionLoading = isMockLoading || imageApi.isLoading || videoApi.isLoading
-    const selectionError = mockError || imageApi.error?.message || videoApi.error?.message || null
-
     if (!selectedMedia) {
       if (isSelectionLoading) {
         return (
