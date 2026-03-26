@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { fetchPixabayImages, fetchPixabayVideos } from '../services/pixabayService'
-import { resolveMockMediaSelection } from '../services/mockMediaService'
 import { derivePreviewUrl, deriveSourceUrl } from '../services/mediaSelection'
 
 const getFetcherByType = (type) => (type === 'video' ? fetchPixabayVideos : fetchPixabayImages)
@@ -83,37 +82,43 @@ const usePixabayMedia = (type = 'image', options = {}) => {
       setIsLoading(true)
       setError(null)
 
-      const mediaItems = await loadMedia()
-      let applied = false
+      try {
+        const mediaItems = await loadMedia()
 
-      if (mediaItems?.length && applySelection) {
-        const firstItem = mediaItems[0]
-        const previewUrl = derivePreviewUrl(firstItem)
-        const sourceUrl = deriveSourceUrl(firstItem, null, previewUrl)
-        applied = applySelection({
-          item: { ...firstItem, isApi: true },
+        if (!mediaItems?.length) {
+          setError(buildError('No media available from Pixabay right now.'))
+          return false
+        }
+
+        if (!applySelection) {
+          return false
+        }
+
+        const randomIndex = Math.floor(Math.random() * mediaItems.length)
+        const chosenItem = mediaItems[randomIndex]
+        const previewUrl = derivePreviewUrl(chosenItem)
+        const sourceUrl = deriveSourceUrl(chosenItem, null, previewUrl)
+
+        if (!previewUrl) {
+          setError(buildError('Selected media is missing a preview URL.'))
+          return false
+        }
+
+        const applied = applySelection({
+          item: { ...chosenItem, isApi: true },
           previewUrl,
           sourceUrl,
           type,
         })
-      }
 
-      if (!applied && applySelection) {
-        const fallback = await resolveMockMediaSelection(type)
-        if (!fallback.error && fallback.selectedFile) {
-          applied = applySelection({
-            item: fallback.selectedFile,
-            previewUrl: fallback.previewUrl,
-            sourceUrl: fallback.sourceUrl,
-            type: fallback.fileType,
-          })
-        } else if (fallback.error) {
-          setError(new Error(fallback.error))
+        if (!applied) {
+          setError(buildError('Unable to apply the selected Pixabay media.'))
         }
-      }
 
-      setIsLoading(false)
-      return applied
+        return applied
+      } finally {
+        setIsLoading(false)
+      }
     },
     [loadMedia, type]
   )

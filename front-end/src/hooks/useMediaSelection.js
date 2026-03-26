@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import usePixabayMedia from './usePixabayMedia'
-import { resolveMockMediaSelection } from '../services/mockMediaService'
 import { derivePreviewUrl, deriveSourceUrl } from '../services/mediaSelection'
 
 const normalizeType = (type) => {
@@ -8,14 +7,15 @@ const normalizeType = (type) => {
   return 'image'
 }
 
-const useMediaSelection = (preferredMockMediaType = 'image') => {
+const useMediaSelection = (preferredMockMediaType = 'image', options = {}) => {
+  const { autoBootstrap = false } = options
   const normalizedPreference = useMemo(() => normalizeType(preferredMockMediaType), [preferredMockMediaType])
   const [mediaType, setMediaType] = useState(null)
   const [selectedMedia, setSelectedMedia] = useState(null)
   const [previewUrl, setPreviewUrl] = useState(null)
   const [sourceUrl, setSourceUrl] = useState(null)
   const [selectionError, setSelectionError] = useState(null)
-  const [isMockLoading, setIsMockLoading] = useState(false)
+  const [isBootstrapLoading, setIsBootstrapLoading] = useState(false)
 
   const imageApi = usePixabayMedia('image', { auto: false })
   const videoApi = usePixabayMedia('video', { auto: false })
@@ -43,53 +43,63 @@ const useMediaSelection = (preferredMockMediaType = 'image') => {
     return true
   }, [])
 
-  const bootstrapMockSelection = useCallback(async () => {
-    setIsMockLoading(true)
+  const fetchInitialImage = useCallback(() => {
+    return imageApi.fetchAndSelect(({ item, previewUrl, sourceUrl }) =>
+      applyImageSelection(item, { previewUrl, sourceUrl })
+    )
+  }, [applyImageSelection, imageApi])
+
+  const fetchInitialVideo = useCallback(() => {
+    return videoApi.fetchAndSelect(({ item }) => applyVideoSelection(item))
+  }, [applyVideoSelection, videoApi])
+
+  const bootstrapInitialSelection = useCallback(async () => {
+    setIsBootstrapLoading(true)
     setSelectionError(null)
 
     try {
-      const result = await resolveMockMediaSelection(normalizedPreference)
+      const attempts =
+        normalizedPreference === 'video'
+          ? [fetchInitialVideo, fetchInitialImage]
+          : [fetchInitialImage, fetchInitialVideo]
 
-      if (result.error) {
-        setSelectionError(result.error)
-        return false
+      for (const attempt of attempts) {
+        const applied = await attempt()
+        if (applied) {
+          return true
+        }
       }
 
-      if (result.fileType === 'video') {
-        return applyVideoSelection(result.selectedFile)
-      }
-
-      return applyImageSelection(result.selectedFile, {
-        previewUrl: result.previewUrl,
-        sourceUrl: result.sourceUrl,
-      })
+      setSelectionError('Unable to load media from Pixabay right now. Please try again later.')
+      return false
     } catch (error) {
-      console.error('[useMediaSelection] Unable to load mock media', error)
-      setSelectionError('Failed to load sample media. Please try uploading your own file instead.')
+      console.error('[useMediaSelection] Unable to load Pixabay media', error)
+      setSelectionError('Unable to load media from Pixabay right now. Please try again later.')
       return false
     } finally {
-      setIsMockLoading(false)
+      setIsBootstrapLoading(false)
     }
-  }, [applyImageSelection, applyVideoSelection, normalizedPreference])
+  }, [fetchInitialImage, fetchInitialVideo, normalizedPreference])
 
   useEffect(() => {
+    if (!autoBootstrap) return undefined
     if (selectedMedia) return undefined
 
     let cancelled = false
 
-    const loadMock = async () => {
-      const applied = await bootstrapMockSelection()
+    const loadInitial = async () => {
+      const applied = await bootstrapInitialSelection()
       if (!applied && !cancelled) {
-        setSelectionError((prev) => prev ?? 'Unable to prepare sample media. Please try again later.')
+        setSelectionError((prev) => prev ?? 'Unable to prepare media. Please try again later.')
       }
     }
 
-    loadMock()
+    loadInitial()
 
     return () => {
       cancelled = true
     }
-  }, [bootstrapMockSelection, selectedMedia])
+  }, [autoBootstrap, bootstrapInitialSelection, selectedMedia])
 
   const selectImage = useCallback(async () => {
     setSelectionError(null)
@@ -133,7 +143,7 @@ const useMediaSelection = (preferredMockMediaType = 'image') => {
     return true
   }, [])
 
-  const isSelectionLoading = isMockLoading || imageApi.isLoading || videoApi.isLoading
+  const isSelectionLoading = isBootstrapLoading || imageApi.isLoading || videoApi.isLoading
   const combinedError = selectionError || imageApi.error?.message || videoApi.error?.message || null
 
   return {

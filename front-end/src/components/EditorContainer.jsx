@@ -125,16 +125,20 @@ function EditorContainer() {
     selectVideo,
     resetSelection,
     applyTransformedImage,
-  } = useMediaSelection(preferredMockMediaType)
+  } = useMediaSelection(preferredMockMediaType, { autoBootstrap: false })
   const [screen, setScreen] = useState(SCREENS.EDITOR)
-  const handleImageSelect = () => {
-    selectImage()
-    setScreen(SCREENS.EDITOR)
+  const handleImageSelect = async () => {
+    const applied = await selectImage()
+    if (applied) {
+      setScreen(SCREENS.EDITOR)
+    }
   }
 
-  const handleVideoSelect = () => {
-    selectVideo()
-    setScreen(SCREENS.EDITOR)
+  const handleVideoSelect = async () => {
+    const applied = await selectVideo()
+    if (applied) {
+      setScreen(SCREENS.EDITOR)
+    }
   }
 
   const handleBackToUpload = () => {
@@ -186,24 +190,14 @@ function EditorContainer() {
 
   const renderContent = () => {
     if (!selectedMedia) {
-      if (isSelectionLoading) {
-        return (
-          <div className="card" role="status">
-            <p>Loading sample media...</p>
-          </div>
-        )
-      }
-
-      if (selectionError) {
-        return (
-          <CreateNew
-            onImageSelect={handleImageSelect}
-            onVideoSelect={handleVideoSelect}
-          />
-        )
-      }
-
-      return null
+      return (
+        <CreateNew
+          onImageSelect={handleImageSelect}
+          onVideoSelect={handleVideoSelect}
+          isLoading={isSelectionLoading}
+          errorMessage={selectionError}
+        />
+      )
     }
 
     if (mediaType === 'video'){
