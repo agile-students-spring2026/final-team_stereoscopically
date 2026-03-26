@@ -1,48 +1,59 @@
-import React, { useEffect, useRef, useState } from 'react'
+import React, { useEffect, useMemo, useRef, useState } from 'react'
 
 const GifEditor = ({ videoFile, onCancel }) => {
-    console.log('=== GifEditor MOUNTED ===')
-    console.log('videoFile prop:', videoFile)
-    console.log('videoFile type:', typeof videoFile)
-    console.log('videoFile instanceof File:', videoFile instanceof File)
-    
     const [isProcessing, setIsProcessing] = useState(false)
-    const [videoUrl, setVideoUrl] = useState(null)
+    const [statusMessage, setStatusMessage] = useState(null)
     const videoRef = useRef(null)
+    const conversionTimeoutRef = useRef(null)
 
-    useEffect(() => {
-        console.log('GifEditor effect: videoFile =', videoFile)
-        if (!videoFile) {
-            setVideoUrl(null)
-            return
+    const resolveVideoUrl = (source) => {
+        if (!source) return null
+        if (typeof source === 'string') return source
+        return source.src || source.fullUrl || source.previewSrc || source.previewUrl || null
+    }
+
+    const videoUrl = useMemo(() => {
+        if (!videoFile) return null
+
+        if (videoFile instanceof File) {
+            try {
+                return URL.createObjectURL(videoFile)
+            } catch (error) {
+                console.error('[GifEditor] Unable to create preview for uploaded video', error)
+                return null
+            }
         }
 
-        let url
-        try {
-            url = URL.createObjectURL(videoFile)
-            console.log('GifEditor effect: created videoUrl =', url)
-            setVideoUrl(url)
-        } catch (err) {
-            console.error('GifEditor effect: ERROR creating blob URL', err)
-            setVideoUrl(null)
+        return resolveVideoUrl(videoFile)
+    }, [videoFile])
+
+    useEffect(() => {
+        if (!(videoFile instanceof File) || !videoUrl) {
+            return undefined
         }
 
         return () => {
-            if (url) {
-                console.log('GifEditor effect cleanup: revoking videoUrl =', url)
-                URL.revokeObjectURL(url)
-            }
+            URL.revokeObjectURL(videoUrl)
         }
-    }, [videoFile])
+    }, [videoFile, videoUrl])
 
-    const handleConvertToGif = async () => {
+    useEffect(() => () => {
+        if (conversionTimeoutRef.current) {
+            clearTimeout(conversionTimeoutRef.current)
+        }
+    }, [])
+
+    const handleConvertToGif = () => {
+        if (!videoUrl || isProcessing) return
+
         setIsProcessing(true)
-        console.log('Starting GIF Conversion for: ', videoFile.name)
+        setStatusMessage('Converting clip to GIF…')
 
-        setTimeout(() => {
-            alert('GIF conversion logic has not been implemented yet...')
+        conversionTimeoutRef.current = setTimeout(() => {
+            setStatusMessage('GIF export is on the roadmap. You will be able to download the generated GIF in a future update.')
             setIsProcessing(false)
-        }, 2000 )
+            conversionTimeoutRef.current = null
+        }, 2000)
     }
 
     return (
@@ -51,22 +62,17 @@ const GifEditor = ({ videoFile, onCancel }) => {
 
             <div className="preview-box">
                 {videoUrl ? (
-                    <video
-                        ref={videoRef}
-                        src={videoUrl}
-                        controls
-                        className="preview-video"
-                    />
-                    ) : (
-                        <p className="preview-label">Loading video preview...</p>
-                        )}                    
+                    <video ref={videoRef} src={videoUrl} controls className="preview-video" />
+                ) : (
+                    <p className="preview-label">Upload a video to start editing.</p>
+                )}
             </div>
 
             <div className="card video-editor-actions">
                 <button type="button" className="btn-primary">
                     Trim
                 </button>
-                
+
                 <button type="button" className="btn-primary">
                     Reframe
                 </button>
@@ -78,18 +84,24 @@ const GifEditor = ({ videoFile, onCancel }) => {
 
             <div className="card-actions card-actions-spaced">
                 <button type="button" className="btn-secondary" onClick={() => onCancel?.()}>
-                Cancel
+                    Cancel
                 </button>
 
-                <button 
-                    type="button" 
-                    className="btn-primary" 
+                <button
+                    type="button"
+                    className="btn-primary"
                     onClick={handleConvertToGif}
-                    disabled={isProcessing}
-                    >
-                    {isProcessing ? 'Processing...': 'Create GIF'}
+                    disabled={isProcessing || !videoUrl}
+                >
+                    {isProcessing ? 'Processing...' : 'Create GIF'}
                 </button>
             </div>
+
+            {statusMessage && (
+                <p className="preview-label" style={{ marginTop: '0.75rem' }}>
+                    {statusMessage}
+                </p>
+            )}
         </div>
     )
 }
