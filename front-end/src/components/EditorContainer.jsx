@@ -129,14 +129,6 @@ function EditorContainer() {
   const handleOpenSizes = () => {
     setFilterScreen('preset-sizes')
   }
-  const handleExportImage = () => {
-    if(!imagePreviewUrl) return
-
-    const link = document.createElement('a')
-    link.href = imagePreviewUrl
-    link.download = 'sticker.png'
-    link.click()
-  }
 
   const handleSizeSelect = async (size) => {
     if (!size.width || !size.height) {
@@ -195,9 +187,7 @@ function EditorContainer() {
             imageSrc={imagePreviewUrl}
             onBack={handleBackToUpload}
             onOpenFilters={handleOpenFilters}
-            onOpenSizes={handleOpenSizes}
-            onApplyCustomSize={handleSizeSelect}
-            onExport={handleExportImage}
+            onSize={handleOpenSizes}
           />
         )
       case 'filters-main':
@@ -245,9 +235,7 @@ function EditorContainer() {
             imageSrc={imagePreviewUrl}
             onBack={handleBackToUpload}
             onOpenFilters={handleOpenFilters}
-            onOpenSizes={handleOpenSizes}
-            onApplyCustomSize={handleSizeSelect}
-            onExport={handleExportImage}
+            onSize={handleOpenSizes}
           />
         )
     }
