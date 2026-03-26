@@ -1,4 +1,5 @@
 import { normalizePixabayImageHits, normalizePixabayVideoHits } from './mediaNormalizer'
+import { derivePreviewUrl, deriveSourceUrl } from './mediaSelection'
 
 const MOCK_BASE_PATH = '/mock/pixabay';
 const RESOURCE_FILES = {
@@ -50,12 +51,6 @@ const fetchMockMedia = async (resource, query = DEFAULT_QUERY) => {
 
 export const fetchMockImages = async (query) => fetchMockMedia('images', query);
 export const fetchMockVideos = async (query) => fetchMockMedia('videos', query);
-
-const derivePreviewUrl = (mediaItem = {}) =>
-  mediaItem.previewSrc || mediaItem.previewUrl || mediaItem.src || mediaItem.fullUrl || null;
-
-const deriveSourceUrl = (mediaItem = {}, fallbackPreview = null) =>
-  mediaItem.src || mediaItem.fullUrl || fallbackPreview || null;
 
 const MEDIA_TYPE_META = {
   image: {
