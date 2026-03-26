@@ -66,30 +66,29 @@ const ImageEditor = ({ imageSrc, onOpenFilters, onBack, onOpenSizes, onApplyCust
         <h3>Custom Size</h3>
 
         <div style={{ display: 'flex', gap: '10px', marginBottom: '10px' }}>
-          <input 
+          <input
             type="number"
             value={width}
             onChange={(e) => setWidth(Number(e.target.value))}
             placeholder="Width"
           />
-          <input 
+          <input
             type="number"
             value={height}
             onChange={(e) => setHeight(Number(e.target.value))}
             placeholder="Height"
           />
-      </div>
+        </div>
 
-      <button 
-        type="button"
-        className="btn-primary"
-        onClick={() => onApplyCustomSize && onApplyCustomSize ({ id: 'custom', width, height })}
-      >
-        Apply Size 
-      </button>
-    </div>
-      <div className="card-actions" style={{ marginTop: '1.25rem' }}>
-      <div className="card-actions card-actions-spaced">
+        <button
+          type="button"
+          className="btn-primary"
+          onClick={() => onApplyCustomSize && onApplyCustomSize({ id: 'custom', width, height })}
+        >
+          Apply Size
+        </button>
+      </div>
+      <div className="card-actions card-actions-spaced" style={{ marginTop: '1.25rem' }}>
         <button type="button" className="btn-secondary" onClick={onBack}>
           Cancel
         </button>
