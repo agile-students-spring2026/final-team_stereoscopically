@@ -34,7 +34,6 @@ const getPreferredMockMediaType = () => {
   return 'image'
 }
 
-
 function resizeImageToDimensions(imageUrl, targetWidth, targetHeight, preserveAspect = false) {
   return new Promise((resolve, reject) => {
     const img = new Image()
@@ -126,7 +125,9 @@ function EditorContainer() {
     resetSelection,
     applyTransformedImage,
   } = useMediaSelection(preferredMockMediaType, { autoBootstrap: false })
+
   const [screen, setScreen] = useState(SCREENS.EDITOR)
+
   const handleImageSelect = async () => {
     const applied = await selectImage()
     if (applied) {
@@ -155,7 +156,7 @@ function EditorContainer() {
   }
 
   const handleOpenSizes = () => {
-    setFilterScreen('preset-sizes')
+    setScreen(SCREENS.PRESET_SIZES)
   }
 
   const handleSizeSelect = async (size) => {
@@ -163,13 +164,13 @@ function EditorContainer() {
       setScreen(SCREENS.EDITOR)
       return
     }
-    // Always resize from the original image, not the preview
+
     if (!sourceUrl) {
       setScreen(SCREENS.EDITOR)
       return
     }
+
     try {
-      // Use letterbox (preserveAspect) for Discord sticker to avoid cropping
       const shouldPreserveAspect = size.id === 'discord-sticker'
       const { file, url } = await resizeImageToDimensions(
         sourceUrl,
@@ -177,14 +178,16 @@ function EditorContainer() {
         size.height,
         shouldPreserveAspect
       )
-      // Revoke old preview URL if it's different from original
+
       if (previewUrl && previewUrl !== sourceUrl) {
         URL.revokeObjectURL(previewUrl)
       }
+
       applyTransformedImage(file, url)
     } catch (err) {
       console.error('Resize failed:', err)
     }
+
     setScreen(SCREENS.EDITOR)
   }
 
@@ -200,13 +203,8 @@ function EditorContainer() {
       )
     }
 
-    if (mediaType === 'video'){
-      return (
-        <GifEditor
-          videoFile={selectedMedia}
-          onCancel={handleBackToUpload}
-        />
-      )
+    if (mediaType === 'video') {
+      return <GifEditor videoFile={selectedMedia} onCancel={handleBackToUpload} />
     }
 
     switch (screen) {

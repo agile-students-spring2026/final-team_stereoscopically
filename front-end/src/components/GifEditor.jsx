@@ -62,22 +62,17 @@ const GifEditor = ({ videoFile, onCancel }) => {
 
             <div className="preview-box">
                 {videoUrl ? (
-                    <video
-                        ref={videoRef}
-                        src={videoUrl}
-                        controls
-                        className="preview-video"
-                    />
-                    ) : (
-                        <p className="preview-label">Upload a video to start editing.</p>
-                        )}                    
+                    <video ref={videoRef} src={videoUrl} controls className="preview-video" />
+                ) : (
+                    <p className="preview-label">Upload a video to start editing.</p>
+                )}
             </div>
 
             <div className="card video-editor-actions">
                 <button type="button" className="btn-primary">
                     Trim
                 </button>
-                
+
                 <button type="button" className="btn-primary">
                     Reframe
                 </button>
@@ -89,16 +84,16 @@ const GifEditor = ({ videoFile, onCancel }) => {
 
             <div className="card-actions card-actions-spaced">
                 <button type="button" className="btn-secondary" onClick={() => onCancel?.()}>
-                Cancel
+                    Cancel
                 </button>
 
-                <button 
-                    type="button" 
-                    className="btn-primary" 
+                <button
+                    type="button"
+                    className="btn-primary"
                     onClick={handleConvertToGif}
                     disabled={isProcessing || !videoUrl}
-                    >
-                    {isProcessing ? 'Processing...': 'Create GIF'}
+                >
+                    {isProcessing ? 'Processing...' : 'Create GIF'}
                 </button>
             </div>
 
