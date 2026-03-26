@@ -6,8 +6,10 @@ const GifEditor = ({ videoFile, onCancel }) => {
     const [videoUrl, setVideoUrl] = useState(null)
     const [isMockLoading, setIsMockLoading] = useState(false)
     const [mockError, setMockError] = useState(null)
+    const [statusMessage, setStatusMessage] = useState(null)
     const objectUrlRef = useRef(null)
     const videoRef = useRef(null)
+    const conversionTimeoutRef = useRef(null)
 
     const resolveVideoUrl = (source) => {
         if (!source) return null
@@ -91,16 +93,23 @@ const GifEditor = ({ videoFile, onCancel }) => {
         }
     }, [videoFile])
 
-    const handleConvertToGif = async () => {
-        if (!videoUrl) return
-        setIsProcessing(true)
-        const clipLabel = videoFile instanceof File ? videoFile.name : videoUrl
-        console.log('Starting GIF Conversion for: ', clipLabel)
+    useEffect(() => () => {
+        if (conversionTimeoutRef.current) {
+            clearTimeout(conversionTimeoutRef.current)
+        }
+    }, [])
 
-        setTimeout(() => {
-            alert('GIF conversion logic has not been implemented yet...')
+    const handleConvertToGif = () => {
+        if (!videoUrl || isProcessing) return
+
+        setIsProcessing(true)
+        setStatusMessage('Converting clip to GIF…')
+
+        conversionTimeoutRef.current = setTimeout(() => {
+            setStatusMessage('GIF export is on the roadmap. You will be able to download the generated GIF in a future update.')
             setIsProcessing(false)
-        }, 2000 )
+            conversionTimeoutRef.current = null
+        }, 2000)
     }
 
     return (
@@ -152,6 +161,12 @@ const GifEditor = ({ videoFile, onCancel }) => {
                     {isProcessing ? 'Processing...': 'Create GIF'}
                 </button>
             </div>
+
+            {statusMessage && (
+                <p className="preview-label" style={{ marginTop: '0.75rem' }}>
+                    {statusMessage}
+                </p>
+            )}
         </div>
     )
 }

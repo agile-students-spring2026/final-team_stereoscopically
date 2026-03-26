@@ -18,8 +18,13 @@ const ImageEditor = ({ imageSrc, onOpenFilters, onBack, onOpenSizes, onApplyCust
   }
 
   const handleApplyCrop = () => {
+    if (!cropData) {
+      setIsReframing(false)
+      return
+    }
+
+    // TODO: integrate cropData with parent pipeline when image editing enhancements land
     setIsReframing(false)
-    console.log('Crop applied:', cropData)
   }
 
   const handleCancelCrop = () => {
