@@ -1,3 +1,5 @@
+import { normalizePixabayImageHits, normalizePixabayVideoHits } from './mediaNormalizer'
+
 const PIXABAY_IMAGE_ENDPOINT = 'https://pixabay.com/api/';
 const PIXABAY_VIDEO_ENDPOINT = 'https://pixabay.com/api/videos/';
 const DEFAULT_SEARCH_QUERY = 'editorial';
@@ -29,33 +31,6 @@ const buildSearchParams = (apiKey, params = {}) => {
   return searchParams.toString();
 };
 
-const normalizeImageHits = (hits = []) =>
-  hits.map((hit, index) => ({
-    id: hit?.id ?? `pixabay-image-${index}`,
-    type: 'image',
-    title: hit?.tags || `Image ${index + 1}`,
-    previewUrl: hit?.previewURL || hit?.webformatURL,
-    fullUrl: hit?.largeImageURL || hit?.fullHDURL || hit?.webformatURL,
-    width: hit?.imageWidth,
-    height: hit?.imageHeight,
-    author: hit?.user || 'Unknown',
-  }));
-
-const normalizeVideoHits = (hits = []) =>
-  hits.map((hit, index) => {
-    const videos = hit?.videos || {};
-
-    return {
-      id: hit?.id ?? `pixabay-video-${index}`,
-      type: 'video',
-      title: hit?.tags || `Video ${index + 1}`,
-      previewUrl: videos.tiny?.url || videos.small?.url,
-      fullUrl: videos.large?.url || videos.medium?.url || videos.small?.url,
-      duration: hit?.duration,
-      author: hit?.user || 'Unknown',
-    };
-  });
-
 const requestPixabay = async (endpoint, params, type) => {
   const apiKey = getPixabayApiKey();
 
@@ -76,7 +51,7 @@ const requestPixabay = async (endpoint, params, type) => {
     const payload = await response.json();
     const hits = Array.isArray(payload?.hits) ? payload.hits : [];
 
-    return type === 'image' ? normalizeImageHits(hits) : normalizeVideoHits(hits);
+    return type === 'image' ? normalizePixabayImageHits(hits) : normalizePixabayVideoHits(hits);
   } catch (error) {
     console.error(`[pixabayService] Unable to fetch ${type} data`, error);
     return [];
