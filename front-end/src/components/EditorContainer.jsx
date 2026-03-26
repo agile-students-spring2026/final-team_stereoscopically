@@ -7,7 +7,7 @@ import PresetSizes from './PresetSizes'
 import AddText from './AddText'
 import ColorFilters from './ColorFilters'
 import GifEditor from './GifEditor'
-import { fetchMockImages, fetchMockVideos } from '../services/mockMediaService'
+import { resolveMockMediaSelection } from '../services/mockMediaService'
 
 const getPreferredMockMediaType = () => {
   if (typeof window === 'undefined') return 'image'
@@ -124,34 +124,20 @@ function EditorContainer() {
       setMockError(null)
 
       try {
-        const isVideoMode = preferredMockMediaType === 'video'
-        const mediaItems = await (isVideoMode ? fetchMockVideos() : fetchMockImages())
+        const result = await resolveMockMediaSelection(preferredMockMediaType)
         if (isCancelled) return
 
-        const firstItem = mediaItems?.[0]
-        if (!firstItem) {
-          setMockError(`No mock ${isVideoMode ? 'video' : 'image'} media available yet.`)
+        if (result.error) {
+          setMockError(result.error)
           return
         }
 
-        const preview = firstItem.previewSrc || firstItem.previewUrl || firstItem.src || firstItem.fullUrl
-        const source = firstItem.src || firstItem.fullUrl || preview
+        setFileType(result.fileType)
+        setSelectedFile(result.selectedFile)
 
-        if (isVideoMode) {
-          setFileType('video')
-          setSelectedFile({
-            id: firstItem.id,
-            type: 'video',
-            previewUrl: preview,
-            src: source,
-            author: firstItem.author,
-            isMock: true,
-          })
-        } else {
-          setFileType('image')
-          setSelectedFile({ id: firstItem.id, type: 'image', source: 'mock' })
-          setImagePreviewUrl(preview)
-          setOriginalImageUrl(source)
+        if (result.fileType === 'image') {
+          setImagePreviewUrl(result.previewUrl || null)
+          setOriginalImageUrl(result.sourceUrl || result.previewUrl || null)
           setFilterScreen('editor')
         }
       } catch (error) {
