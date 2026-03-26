@@ -1,44 +1,16 @@
 const CreateNew = ({ onImageSelect, onVideoSelect }) => {
-  const handleImageChange = (event) => {
-    const file = event.target.files?.[0]
-    if (!file) return
-    onImageSelect?.(file)
-  }
-
-  const handleVideoChange = (event) => {
-    const file = event.target.files?.[0]
-    if (!file) return
-    onVideoSelect?.(file)
-  }
-
   return (
     <div className="card create-new">
       <h2>Create New</h2>
 
       <div className="upload-options">
-        <label htmlFor="image-upload" className="upload-button">
+        <button type="button" className="upload-button" onClick={() => onImageSelect?.()}>
           Upload Image
-        </label>
+        </button>
 
-        <input
-          id="image-upload"
-          type="file"
-          accept="image/*"
-          className="hidden-file-input"
-          onChange={handleImageChange}
-        />
-
-        <label htmlFor="video-upload" className="upload-button">
+        <button type="button" className="upload-button" onClick={() => onVideoSelect?.()}>
           Upload Video
-        </label>
-
-        <input
-          id="video-upload"
-          type="file"
-          accept="video/*"
-          className="hidden-file-input"
-          onChange={handleVideoChange}
-        />
+        </button>
       </div>
     </div>
   )

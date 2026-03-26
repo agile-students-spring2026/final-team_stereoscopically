@@ -4,7 +4,6 @@ import ImageCropper from './ImageCropper'
 const ImageEditor = ({ imageSrc, onOpenFilters, onBack, onSize }) => {
   // Track if cropper is active
   const [isReframing, setIsReframing] = useState(false)
-  // Track current crop data
   const [cropData, setCropData] = useState(null)
 
   const handleReframeClick = () => {
@@ -16,8 +15,13 @@ const ImageEditor = ({ imageSrc, onOpenFilters, onBack, onSize }) => {
   }
 
   const handleApplyCrop = () => {
+    if (!cropData) {
+      setIsReframing(false)
+      return
+    }
+
+    // TODO: integrate cropData with parent pipeline when image editing enhancements land
     setIsReframing(false)
-    console.log('Crop applied:', cropData)
   }
 
   const handleCancelCrop = () => {
