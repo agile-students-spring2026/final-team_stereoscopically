@@ -2,6 +2,7 @@ import { useState } from 'react'
 import ImageCropper from './ImageCropper'
 
 const ImageEditor = ({ imageSrc, onOpenFilters, onBack, onSize }) => {
+  // Track if cropper is active
   const [isReframing, setIsReframing] = useState(false)
   const [cropData, setCropData] = useState(null)
 
@@ -32,7 +33,7 @@ const ImageEditor = ({ imageSrc, onOpenFilters, onBack, onSize }) => {
   if (isReframing) {
     return (
       <div className="image-editor-container">
-        <h2 className="image-editor-title">Crop Image</h2>
+        <h2 className="image-editor-title">Reframe Image</h2>
         <ImageCropper imageSrc={imageSrc} onCropChange={handleCropChange} />
         <div className="card-actions">
           <button type="button" className="btn-secondary" onClick={handleCancelCrop}>

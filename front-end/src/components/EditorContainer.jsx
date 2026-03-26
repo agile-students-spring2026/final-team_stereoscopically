@@ -155,7 +155,7 @@ function EditorContainer() {
   }
 
   const handleOpenSizes = () => {
-    setScreen(SCREENS.PRESET_SIZES)
+    setFilterScreen('preset-sizes')
   }
 
   const handleSizeSelect = async (size) => {
