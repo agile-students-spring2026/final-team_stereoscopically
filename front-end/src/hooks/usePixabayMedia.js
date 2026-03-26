@@ -1,25 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { fetchPixabayImages, fetchPixabayVideos } from '../services/pixabayService'
 import { resolveMockMediaSelection } from '../services/mockMediaService'
-
-const derivePreviewUrl = (mediaItem, explicitPreview) => {
-  if (explicitPreview) return explicitPreview
-  if (!mediaItem) return null
-  return (
-    mediaItem.previewSrc ||
-    mediaItem.previewUrl ||
-    mediaItem.src ||
-    mediaItem.fullUrl ||
-    mediaItem.source ||
-    null
-  )
-}
-
-const deriveSourceUrl = (mediaItem, explicitSource, fallbackPreview) => {
-  if (explicitSource) return explicitSource
-  if (!mediaItem) return fallbackPreview || null
-  return mediaItem.src || mediaItem.fullUrl || mediaItem.source || fallbackPreview || null
-}
+import { derivePreviewUrl, deriveSourceUrl } from '../services/mediaSelection'
 
 const getFetcherByType = (type) => (type === 'video' ? fetchPixabayVideos : fetchPixabayImages)
 

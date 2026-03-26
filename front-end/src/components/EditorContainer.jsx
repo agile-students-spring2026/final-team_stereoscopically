@@ -9,6 +9,7 @@ import ColorFilters from './ColorFilters'
 import GifEditor from './GifEditor'
 import { resolveMockMediaSelection } from '../services/mockMediaService'
 import usePixabayMedia from '../hooks/usePixabayMedia'
+import { derivePreviewUrl, deriveSourceUrl } from '../services/mediaSelection'
 
 const getPreferredMockMediaType = () => {
   if (typeof window === 'undefined') return 'image'
@@ -26,24 +27,6 @@ const getPreferredMockMediaType = () => {
   return 'image'
 }
 
-const derivePreviewUrl = (mediaItem, explicitPreview) => {
-  if (explicitPreview) return explicitPreview
-  if (!mediaItem) return null
-  return (
-    mediaItem.previewSrc ||
-    mediaItem.previewUrl ||
-    mediaItem.src ||
-    mediaItem.fullUrl ||
-    mediaItem.source ||
-    null
-  )
-}
-
-const deriveSourceUrl = (mediaItem, explicitSource, fallbackPreview) => {
-  if (explicitSource) return explicitSource
-  if (!mediaItem) return fallbackPreview || null
-  return mediaItem.src || mediaItem.fullUrl || mediaItem.source || fallbackPreview || null
-}
 
 function resizeImageToDimensions(imageUrl, targetWidth, targetHeight, preserveAspect = false) {
   return new Promise((resolve, reject) => {
@@ -161,29 +144,6 @@ function EditorContainer() {
     return true
   }, [])
 
-  const fallbackToMock = useCallback(async (mediaType) => {
-    const result = await resolveMockMediaSelection(mediaType)
-
-    if (result.error) {
-      setMockError(result.error)
-      return false
-    }
-
-    const applied =
-      result.fileType === 'video'
-        ? applyVideoSelection(result.selectedFile)
-        : applyImageSelection(result.selectedFile, {
-            previewUrl: result.previewUrl,
-            sourceUrl: result.sourceUrl,
-          })
-
-    if (!applied) {
-      setMockError('Unable to prepare sample media. Please try again later.')
-    }
-
-    return applied
-  }, [applyImageSelection, applyVideoSelection])
-
   useEffect(() => {
     if (selectedFile) return
 
@@ -233,31 +193,17 @@ function EditorContainer() {
   }, [selectedFile, preferredMockMediaType, applyImageSelection, applyVideoSelection])
 
   const handleImageSelect = async () => {
-    setIsMockLoading(true)
     setMockError(null)
 
-    const applied = await imageApi.fetchAndSelect(({ item, previewUrl, sourceUrl }) =>
+    await imageApi.fetchAndSelect(({ item, previewUrl, sourceUrl }) =>
       applyImageSelection(item, { previewUrl, sourceUrl })
     )
-
-    if (!applied) {
-      await fallbackToMock('image')
-    }
-
-    setIsMockLoading(false)
   }
 
   const handleVideoSelect = async () => {
-    setIsMockLoading(true)
     setMockError(null)
 
-    const applied = await videoApi.fetchAndSelect(({ item }) => applyVideoSelection(item))
-
-    if (!applied) {
-      await fallbackToMock('video')
-    }
-
-    setIsMockLoading(false)
+    await videoApi.fetchAndSelect(({ item }) => applyVideoSelection(item))
   }
 
   const handleBackToUpload = () => {
@@ -321,8 +267,11 @@ function EditorContainer() {
   }
 
   const renderContent = () => {
+    const isSelectionLoading = isMockLoading || imageApi.isLoading || videoApi.isLoading
+    const selectionError = mockError || imageApi.error?.message || videoApi.error?.message || null
+
     if (!selectedFile) {
-      if (isMockLoading) {
+      if (isSelectionLoading) {
         return (
           <div className="card" role="status">
             <p>Loading sample media...</p>
@@ -330,7 +279,7 @@ function EditorContainer() {
         )
       }
 
-      if (mockError) {
+      if (selectionError) {
         return (
           <CreateNew
             onImageSelect={handleImageSelect}
