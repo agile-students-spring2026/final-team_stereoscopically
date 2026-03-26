@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import CreateNew from './CreateNew'
 import ImageEditor from './ImageEditor'
 import FilterMain from './FilterMain'
@@ -8,6 +8,7 @@ import AddText from './AddText'
 import ColorFilters from './ColorFilters'
 import GifEditor from './GifEditor'
 import { resolveMockMediaSelection } from '../services/mockMediaService'
+import usePixabayMedia from '../hooks/usePixabayMedia'
 
 const getPreferredMockMediaType = () => {
   if (typeof window === 'undefined') return 'image'
@@ -23,6 +24,25 @@ const getPreferredMockMediaType = () => {
   }
 
   return 'image'
+}
+
+const derivePreviewUrl = (mediaItem, explicitPreview) => {
+  if (explicitPreview) return explicitPreview
+  if (!mediaItem) return null
+  return (
+    mediaItem.previewSrc ||
+    mediaItem.previewUrl ||
+    mediaItem.src ||
+    mediaItem.fullUrl ||
+    mediaItem.source ||
+    null
+  )
+}
+
+const deriveSourceUrl = (mediaItem, explicitSource, fallbackPreview) => {
+  if (explicitSource) return explicitSource
+  if (!mediaItem) return fallbackPreview || null
+  return mediaItem.src || mediaItem.fullUrl || mediaItem.source || fallbackPreview || null
 }
 
 function resizeImageToDimensions(imageUrl, targetWidth, targetHeight, preserveAspect = false) {
@@ -113,6 +133,56 @@ function EditorContainer() {
   const [filterScreen, setFilterScreen] = useState('filters-main')
   const [isMockLoading, setIsMockLoading] = useState(false)
   const [mockError, setMockError] = useState(null)
+  const imageApi = usePixabayMedia('image', { auto: false })
+  const videoApi = usePixabayMedia('video', { auto: false })
+
+  const applyImageSelection = useCallback((mediaItem, options = {}) => {
+    if (!mediaItem) return false
+    const preview = derivePreviewUrl(mediaItem, options.previewUrl)
+    const source = deriveSourceUrl(mediaItem, options.sourceUrl, preview)
+
+    if (!preview) return false
+
+    setFileType('image')
+    setSelectedFile(mediaItem)
+    setImagePreviewUrl(preview)
+    setOriginalImageUrl(source)
+    setFilterScreen('editor')
+    return true
+  }, [])
+
+  const applyVideoSelection = useCallback((mediaItem) => {
+    if (!mediaItem) return false
+    setFileType('video')
+    setSelectedFile(mediaItem)
+    setImagePreviewUrl(null)
+    setOriginalImageUrl(null)
+    setFilterScreen('editor')
+    return true
+  }, [])
+
+  const fallbackToMock = useCallback(async (mediaType) => {
+    const result = await resolveMockMediaSelection(mediaType)
+
+    if (result.error) {
+      setMockError(result.error)
+      return false
+    }
+
+    const applied =
+      result.fileType === 'video'
+        ? applyVideoSelection(result.selectedFile)
+        : applyImageSelection(result.selectedFile, {
+            previewUrl: result.previewUrl,
+            sourceUrl: result.sourceUrl,
+          })
+
+    if (!applied) {
+      setMockError('Unable to prepare sample media. Please try again later.')
+    }
+
+    return applied
+  }, [applyImageSelection, applyVideoSelection])
 
   useEffect(() => {
     if (selectedFile) return
@@ -132,13 +202,16 @@ function EditorContainer() {
           return
         }
 
-        setFileType(result.fileType)
-        setSelectedFile(result.selectedFile)
+        const applied =
+          result.fileType === 'video'
+            ? applyVideoSelection(result.selectedFile)
+            : applyImageSelection(result.selectedFile, {
+                previewUrl: result.previewUrl,
+                sourceUrl: result.sourceUrl,
+              })
 
-        if (result.fileType === 'image') {
-          setImagePreviewUrl(result.previewUrl || null)
-          setOriginalImageUrl(result.sourceUrl || result.previewUrl || null)
-          setFilterScreen('editor')
+        if (!applied) {
+          setMockError('Unable to prepare sample media. Please try again later.')
         }
       } catch (error) {
         if (!isCancelled) {
@@ -157,21 +230,34 @@ function EditorContainer() {
     return () => {
       isCancelled = true
     }
-  }, [selectedFile, preferredMockMediaType])
+  }, [selectedFile, preferredMockMediaType, applyImageSelection, applyVideoSelection])
 
-  const handleImageSelect = (file) => {
-    setFileType('image')
-    setSelectedFile(file)
-    const preview = URL.createObjectURL(file)
-    setImagePreviewUrl(preview)
-    setOriginalImageUrl(preview)
-    setFilterScreen('editor')
-    console.log('Image stored in App:', file)
+  const handleImageSelect = async () => {
+    setIsMockLoading(true)
+    setMockError(null)
+
+    const applied = await imageApi.fetchAndSelect(({ item, previewUrl, sourceUrl }) =>
+      applyImageSelection(item, { previewUrl, sourceUrl })
+    )
+
+    if (!applied) {
+      await fallbackToMock('image')
+    }
+
+    setIsMockLoading(false)
   }
 
-  const handleVideoSelect = (file) => {
-    setFileType('video')
-    setSelectedFile(file)
+  const handleVideoSelect = async () => {
+    setIsMockLoading(true)
+    setMockError(null)
+
+    const applied = await videoApi.fetchAndSelect(({ item }) => applyVideoSelection(item))
+
+    if (!applied) {
+      await fallbackToMock('video')
+    }
+
+    setIsMockLoading(false)
   }
 
   const handleBackToUpload = () => {
