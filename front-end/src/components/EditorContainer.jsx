@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import CreateNew from './CreateNew'
 import ImageEditor from './ImageEditor'
 import FilterMain from './FilterMain'
@@ -7,7 +7,23 @@ import PresetSizes from './PresetSizes'
 import AddText from './AddText'
 import ColorFilters from './ColorFilters'
 import GifEditor from './GifEditor'
-import { fetchMockImages } from '../services/mockMediaService'
+import { fetchMockImages, fetchMockVideos } from '../services/mockMediaService'
+
+const getPreferredMockMediaType = () => {
+  if (typeof window === 'undefined') return 'image'
+  const params = new URLSearchParams(window.location.search)
+  const mediaParam = params.get('media')?.toLowerCase()
+
+  if (mediaParam === 'video' || mediaParam === 'gif') {
+    return 'video'
+  }
+
+  if (mediaParam === 'image' || mediaParam === 'photo') {
+    return 'image'
+  }
+
+  return 'image'
+}
 
 function resizeImageToDimensions(imageUrl, targetWidth, targetHeight, preserveAspect = false) {
   return new Promise((resolve, reject) => {
@@ -87,6 +103,7 @@ function resizeImageToDimensions(imageUrl, targetWidth, targetHeight, preserveAs
 }
 
 function EditorContainer() {
+  const preferredMockMediaType = useMemo(() => getPreferredMockMediaType(), [])
   const [fileType, setFileType] = useState(null)
   const [selectedFile, setSelectedFile] = useState(null)
 
@@ -102,32 +119,45 @@ function EditorContainer() {
 
     let isCancelled = false
 
-    const loadMockImage = async () => {
+    const loadMockMedia = async () => {
       setIsMockLoading(true)
       setMockError(null)
 
       try {
-        const images = await fetchMockImages()
+        const isVideoMode = preferredMockMediaType === 'video'
+        const mediaItems = await (isVideoMode ? fetchMockVideos() : fetchMockImages())
         if (isCancelled) return
 
-        const firstImage = images?.[0]
-        if (!firstImage) {
-          setMockError('No mock images available yet.')
+        const firstItem = mediaItems?.[0]
+        if (!firstItem) {
+          setMockError(`No mock ${isVideoMode ? 'video' : 'image'} media available yet.`)
           return
         }
 
-        const preview = firstImage.previewSrc || firstImage.previewUrl || firstImage.src || firstImage.fullUrl
-        const source = firstImage.src || firstImage.fullUrl || preview
+        const preview = firstItem.previewSrc || firstItem.previewUrl || firstItem.src || firstItem.fullUrl
+        const source = firstItem.src || firstItem.fullUrl || preview
 
-        setFileType('image')
-        setSelectedFile({ id: firstImage.id, source: 'mock' })
-        setImagePreviewUrl(preview)
-        setOriginalImageUrl(source)
-        setFilterScreen('editor')
+        if (isVideoMode) {
+          setFileType('video')
+          setSelectedFile({
+            id: firstItem.id,
+            type: 'video',
+            previewUrl: preview,
+            src: source,
+            author: firstItem.author,
+            isMock: true,
+          })
+        } else {
+          setFileType('image')
+          setSelectedFile({ id: firstItem.id, type: 'image', source: 'mock' })
+          setImagePreviewUrl(preview)
+          setOriginalImageUrl(source)
+          setFilterScreen('editor')
+        }
       } catch (error) {
         if (!isCancelled) {
-          console.error('[EditorContainer] Unable to load mock images', error)
-          setMockError('Failed to load sample media. Please try uploading an image instead.')
+          console.error('[EditorContainer] Unable to load mock media', error)
+          setMockError('Failed to load sample media. Please try uploading your own file instead.')
         }
       } finally {
         if (!isCancelled) {
@@ -136,12 +166,12 @@ function EditorContainer() {
       }
     }
 
-    loadMockImage()
+    loadMockMedia()
 
     return () => {
       isCancelled = true
     }
-  }, [selectedFile])
+  }, [selectedFile, preferredMockMediaType])
 
   const handleImageSelect = (file) => {
     setFileType('image')

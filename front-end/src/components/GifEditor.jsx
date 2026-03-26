@@ -1,43 +1,101 @@
 import React, { useEffect, useRef, useState } from 'react'
+import { fetchMockVideos } from '../services/mockMediaService'
 
 const GifEditor = ({ videoFile, onCancel }) => {
-    console.log('=== GifEditor MOUNTED ===')
-    console.log('videoFile prop:', videoFile)
-    console.log('videoFile type:', typeof videoFile)
-    console.log('videoFile instanceof File:', videoFile instanceof File)
-    
     const [isProcessing, setIsProcessing] = useState(false)
     const [videoUrl, setVideoUrl] = useState(null)
+    const [isMockLoading, setIsMockLoading] = useState(false)
+    const [mockError, setMockError] = useState(null)
+    const objectUrlRef = useRef(null)
     const videoRef = useRef(null)
 
+    const resolveVideoUrl = (source) => {
+        if (!source) return null
+        if (typeof source === 'string') return source
+        return source.src || source.fullUrl || source.previewSrc || source.previewUrl || null
+    }
+
     useEffect(() => {
-        console.log('GifEditor effect: videoFile =', videoFile)
-        if (!videoFile) {
-            setVideoUrl(null)
-            return
+        if (objectUrlRef.current) {
+            URL.revokeObjectURL(objectUrlRef.current)
+            objectUrlRef.current = null
         }
 
-        let url
-        try {
-            url = URL.createObjectURL(videoFile)
-            console.log('GifEditor effect: created videoUrl =', url)
-            setVideoUrl(url)
-        } catch (err) {
-            console.error('GifEditor effect: ERROR creating blob URL', err)
+        if (!videoFile) {
             setVideoUrl(null)
+            return undefined
+        }
+
+        setMockError(null)
+
+        if (videoFile instanceof File) {
+            try {
+                const url = URL.createObjectURL(videoFile)
+                objectUrlRef.current = url
+                setVideoUrl(url)
+            } catch (error) {
+                console.error('[GifEditor] Unable to create preview for uploaded video', error)
+                setVideoUrl(null)
+            }
+        } else {
+            setVideoUrl(resolveVideoUrl(videoFile))
         }
 
         return () => {
-            if (url) {
-                console.log('GifEditor effect cleanup: revoking videoUrl =', url)
-                URL.revokeObjectURL(url)
+            if (objectUrlRef.current) {
+                URL.revokeObjectURL(objectUrlRef.current)
+                objectUrlRef.current = null
             }
         }
     }, [videoFile])
 
+    useEffect(() => {
+        if (videoFile) {
+            setIsMockLoading(false)
+            return undefined
+        }
+
+        let isCancelled = false
+
+        const loadMockVideo = async () => {
+            setIsMockLoading(true)
+            setMockError(null)
+
+            try {
+                const videos = await fetchMockVideos()
+                if (isCancelled) return
+
+                const firstVideo = videos?.[0]
+                if (!firstVideo) {
+                    setMockError('No mock videos available yet.')
+                    return
+                }
+
+                setVideoUrl(resolveVideoUrl(firstVideo))
+            } catch (error) {
+                if (!isCancelled) {
+                    console.error('[GifEditor] Unable to load mock videos', error)
+                    setMockError('Failed to load sample video. Try uploading your own clip instead.')
+                }
+            } finally {
+                if (!isCancelled) {
+                    setIsMockLoading(false)
+                }
+            }
+        }
+
+        loadMockVideo()
+
+        return () => {
+            isCancelled = true
+        }
+    }, [videoFile])
+
     const handleConvertToGif = async () => {
+        if (!videoUrl) return
         setIsProcessing(true)
-        console.log('Starting GIF Conversion for: ', videoFile.name)
+        const clipLabel = videoFile instanceof File ? videoFile.name : videoUrl
+        console.log('Starting GIF Conversion for: ', clipLabel)
 
         setTimeout(() => {
             alert('GIF conversion logic has not been implemented yet...')
@@ -50,16 +108,20 @@ const GifEditor = ({ videoFile, onCancel }) => {
             <h2 className="video-editor-title">GIF Editor</h2>
 
             <div className="preview-box">
-                {videoUrl ? (
-                    <video
-                        ref={videoRef}
-                        src={videoUrl}
-                        controls
-                        className="preview-video"
-                    />
-                    ) : (
-                        <p className="preview-label">Loading video preview...</p>
-                        )}                    
+                                {videoUrl ? (
+                                        <video
+                                                ref={videoRef}
+                                                src={videoUrl}
+                                                controls
+                                                className="preview-video"
+                                        />
+                                        ) : isMockLoading ? (
+                                                <p className="preview-label">Loading sample video...</p>
+                                        ) : mockError ? (
+                                                <p className="preview-label">{mockError}</p>
+                                        ) : (
+                                                <p className="preview-label">No video available.</p>
+                                                )}                    
             </div>
 
             <div className="card video-editor-actions">
@@ -85,7 +147,7 @@ const GifEditor = ({ videoFile, onCancel }) => {
                     type="button" 
                     className="btn-primary" 
                     onClick={handleConvertToGif}
-                    disabled={isProcessing}
+                    disabled={isProcessing || !videoUrl}
                     >
                     {isProcessing ? 'Processing...': 'Create GIF'}
                 </button>
