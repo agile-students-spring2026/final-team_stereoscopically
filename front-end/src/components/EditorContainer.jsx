@@ -42,10 +42,8 @@ function resizeImageToDimensions(imageUrl, targetWidth, targetHeight, preserveAs
       canvas.width = targetWidth
       canvas.height = targetHeight
       const ctx = canvas.getContext('2d')
-      // Enable high-quality image rendering
       ctx.imageSmoothingEnabled = true
       ctx.imageSmoothingQuality = 'high'
-      // Fill background with white for letterboxing
       ctx.fillStyle = '#ffffff'
       ctx.fillRect(0, 0, targetWidth, targetHeight)
 
@@ -54,27 +52,23 @@ function resizeImageToDimensions(imageUrl, targetWidth, targetHeight, preserveAs
       let sx, sy, sWidth, sHeight, dx, dy, dWidth, dHeight
 
       if (preserveAspect) {
-        // Letterbox mode: fit entire image without cropping
         sWidth = img.width
         sHeight = img.height
         sx = 0
         sy = 0
 
         if (imgAspect > targetAspect) {
-          // Image is wider, fit to width
           dWidth = targetWidth
           dHeight = targetWidth / imgAspect
           dx = 0
           dy = (targetHeight - dHeight) / 2
         } else {
-          // Image is taller, fit to height
           dHeight = targetHeight
           dWidth = targetHeight * imgAspect
           dx = (targetWidth - dWidth) / 2
           dy = 0
         }
       } else {
-        // Crop and fit mode: fill entire canvas, may crop image
         if (imgAspect > targetAspect) {
           sHeight = img.height
           sWidth = img.height * targetAspect
@@ -92,10 +86,8 @@ function resizeImageToDimensions(imageUrl, targetWidth, targetHeight, preserveAs
         dHeight = targetHeight
       }
 
-      // Draw with high quality
       ctx.drawImage(img, sx, sy, sWidth, sHeight, dx, dy, dWidth, dHeight)
 
-      // Use PNG format for lossless quality
       canvas.toBlob(
         (blob) => {
           if (blob) {
@@ -139,6 +131,21 @@ function EditorContainer() {
     const applied = await selectVideo()
     if (applied) {
       setScreen(SCREENS.EDITOR)
+    }
+  }
+
+  const handleCameraSelect = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ video: true })
+      const track = stream.getVideoTracks()[0]
+      const imageCapture = new ImageCapture(track)
+      const blob = await imageCapture.takePhoto()
+      const file = new File([blob], 'camera.png', { type: 'image/png' })
+      track.stop()
+      await selectImage(file)
+      setScreen(SCREENS.EDITOR)
+    } catch (err) {
+      console.error('Camera error:', err)
     }
   }
 
@@ -197,6 +204,7 @@ function EditorContainer() {
         <CreateNew
           onImageSelect={handleImageSelect}
           onVideoSelect={handleVideoSelect}
+          onCameraSelect={handleCameraSelect}
           isLoading={isSelectionLoading}
           errorMessage={selectionError}
         />

@@ -1,4 +1,4 @@
-const CreateNew = ({ onImageSelect, onVideoSelect, isLoading = false, errorMessage = null }) => {
+const CreateNew = ({ onImageSelect, onVideoSelect, onCameraSelect, isLoading = false, errorMessage = null }) => {
   const statusMessage = errorMessage || (isLoading ? 'Loading media from Pixabay…' : null)
 
   return (
@@ -22,6 +22,15 @@ const CreateNew = ({ onImageSelect, onVideoSelect, isLoading = false, errorMessa
           disabled={isLoading}
         >
           Upload Video
+        </button>
+
+        <button
+          type="button"
+          className="upload-button"
+          onClick={() => onCameraSelect?.()}
+          disabled={isLoading}
+        >
+          Open Camera
         </button>
       </div>
 
