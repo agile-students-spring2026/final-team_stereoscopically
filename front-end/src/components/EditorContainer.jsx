@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import CreateNew from './CreateNew'
 import ImageEditor from './ImageEditor'
 import FilterMain from './FilterMain'
@@ -7,6 +7,32 @@ import PresetSizes from './PresetSizes'
 import AddText from './AddText'
 import ColorFilters from './ColorFilters'
 import GifEditor from './GifEditor'
+import useMediaSelection from '../hooks/useMediaSelection'
+
+const SCREENS = {
+  EDITOR: 'editor',
+  FILTERS_MAIN: 'filters-main',
+  PRESET_FILTERS: 'preset',
+  ADD_TEXT: 'text',
+  COLOR_FILTERS: 'color',
+  PRESET_SIZES: 'preset-sizes',
+}
+
+const getPreferredMockMediaType = () => {
+  if (typeof window === 'undefined') return 'image'
+  const params = new URLSearchParams(window.location.search)
+  const mediaParam = params.get('media')?.toLowerCase()
+
+  if (mediaParam === 'video' || mediaParam === 'gif') {
+    return 'video'
+  }
+
+  if (mediaParam === 'image' || mediaParam === 'photo') {
+    return 'image'
+  }
+
+  return 'image'
+}
 
 function resizeImageToDimensions(imageUrl, targetWidth, targetHeight, preserveAspect = false) {
   return new Promise((resolve, reject) => {
@@ -16,10 +42,8 @@ function resizeImageToDimensions(imageUrl, targetWidth, targetHeight, preserveAs
       canvas.width = targetWidth
       canvas.height = targetHeight
       const ctx = canvas.getContext('2d')
-      // Enable high-quality image rendering
       ctx.imageSmoothingEnabled = true
       ctx.imageSmoothingQuality = 'high'
-      // Fill background with white for letterboxing
       ctx.fillStyle = '#ffffff'
       ctx.fillRect(0, 0, targetWidth, targetHeight)
 
@@ -28,27 +52,23 @@ function resizeImageToDimensions(imageUrl, targetWidth, targetHeight, preserveAs
       let sx, sy, sWidth, sHeight, dx, dy, dWidth, dHeight
 
       if (preserveAspect) {
-        // Letterbox mode: fit entire image without cropping
         sWidth = img.width
         sHeight = img.height
         sx = 0
         sy = 0
 
         if (imgAspect > targetAspect) {
-          // Image is wider, fit to width
           dWidth = targetWidth
           dHeight = targetWidth / imgAspect
           dx = 0
           dy = (targetHeight - dHeight) / 2
         } else {
-          // Image is taller, fit to height
           dHeight = targetHeight
           dWidth = targetHeight * imgAspect
           dx = (targetWidth - dWidth) / 2
           dy = 0
         }
       } else {
-        // Crop and fit mode: fill entire canvas, may crop image
         if (imgAspect > targetAspect) {
           sHeight = img.height
           sWidth = img.height * targetAspect
@@ -66,10 +86,8 @@ function resizeImageToDimensions(imageUrl, targetWidth, targetHeight, preserveAs
         dHeight = targetHeight
       }
 
-      // Draw with high quality
       ctx.drawImage(img, sx, sy, sWidth, sHeight, dx, dy, dWidth, dHeight)
 
-      // Use PNG format for lossless quality
       canvas.toBlob(
         (blob) => {
           if (blob) {
@@ -86,168 +104,173 @@ function resizeImageToDimensions(imageUrl, targetWidth, targetHeight, preserveAs
 }
 
 function EditorContainer() {
-  const [fileType, setFileType] = useState(null)
-  const [selectedFile, setSelectedFile] = useState(null)
+  const preferredMockMediaType = useMemo(() => getPreferredMockMediaType(), [])
+  const {
+    mediaType,
+    selectedMedia,
+    previewUrl,
+    sourceUrl,
+    isLoading: isSelectionLoading,
+    error: selectionError,
+    selectImage,
+    selectVideo,
+    resetSelection,
+    applyTransformedImage,
+  } = useMediaSelection(preferredMockMediaType, { autoBootstrap: false })
 
-  const [imagePreviewUrl, setImagePreviewUrl] = useState(null)
-  // Keep original image URL to always resize from original
-  const [originalImageUrl, setOriginalImageUrl] = useState(null)
-  const [filterScreen, setFilterScreen] = useState('filters-main')
+  const [screen, setScreen] = useState(SCREENS.EDITOR)
 
-  const handleImageSelect = (file) => {
-    setFileType('image')
-    setSelectedFile(file)
-    const preview = URL.createObjectURL(file)
-    setImagePreviewUrl(preview)
-    setOriginalImageUrl(preview)
-    setFilterScreen('editor')
-    console.log('Image stored in App:', file)
+  const handleImageSelect = async () => {
+    const applied = await selectImage()
+    if (applied) {
+      setScreen(SCREENS.EDITOR)
+    }
   }
 
-  const handleVideoSelect = (file) => {
-    setFileType('video')
-    setSelectedFile(file)
+  const handleVideoSelect = async () => {
+    const applied = await selectVideo()
+    if (applied) {
+      setScreen(SCREENS.EDITOR)
+    }
+  }
+
+  const handleCameraSelect = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ video: true })
+      const track = stream.getVideoTracks()[0]
+      const imageCapture = new ImageCapture(track)
+      const blob = await imageCapture.takePhoto()
+      const file = new File([blob], 'camera.png', { type: 'image/png' })
+      track.stop()
+      await selectImage(file)
+      setScreen(SCREENS.EDITOR)
+    } catch (err) {
+      console.error('Camera error:', err)
+    }
   }
 
   const handleBackToUpload = () => {
-    setSelectedFile(null)
-    setFileType(null)
-    setImagePreviewUrl(null)
-    setOriginalImageUrl(null)
-    setFilterScreen('editor')
+    resetSelection()
+    setScreen(SCREENS.EDITOR)
   }
 
   const handleOpenFilters = () => {
-    setFilterScreen('filters-main')
+    setScreen(SCREENS.FILTERS_MAIN)
   }
 
-  const handleApplyFilters = (data) => {
-    console.log('Apply filters data:', data)
-    setFilterScreen('editor')
+  const handleApplyFilters = () => {
+    setScreen(SCREENS.EDITOR)
   }
 
   const handleOpenSizes = () => {
-    setFilterScreen('preset-sizes')
-  }
-  const handleExportImage = () => {
-    if(!imagePreviewUrl) return
-
-    const link = document.createElement('a')
-    link.href = imagePreviewUrl
-    link.download = 'sticker.png'
-    link.click()
+    setScreen(SCREENS.PRESET_SIZES)
   }
 
   const handleSizeSelect = async (size) => {
     if (!size.width || !size.height) {
-      setFilterScreen('editor')
+      setScreen(SCREENS.EDITOR)
       return
     }
-    // Always resize from the original image, not the preview
-    if (!originalImageUrl) {
-      setFilterScreen('editor')
+
+    if (!sourceUrl) {
+      setScreen(SCREENS.EDITOR)
       return
     }
+
     try {
-      // Use letterbox (preserveAspect) for Discord sticker to avoid cropping
       const shouldPreserveAspect = size.id === 'discord-sticker'
       const { file, url } = await resizeImageToDimensions(
-        originalImageUrl,
+        sourceUrl,
         size.width,
         size.height,
         shouldPreserveAspect
       )
-      // Revoke old preview URL if it's different from original
-      if (imagePreviewUrl && imagePreviewUrl !== originalImageUrl) {
-        URL.revokeObjectURL(imagePreviewUrl)
+
+      if (previewUrl && previewUrl !== sourceUrl) {
+        URL.revokeObjectURL(previewUrl)
       }
-      setSelectedFile(file)
-      setImagePreviewUrl(url)
+
+      applyTransformedImage(file, url)
     } catch (err) {
       console.error('Resize failed:', err)
     }
-    setFilterScreen('editor')
+
+    setScreen(SCREENS.EDITOR)
   }
 
   const renderContent = () => {
-    if (!selectedFile) {
+    if (!selectedMedia) {
       return (
-      <CreateNew 
-        onImageSelect={handleImageSelect} 
-        onVideoSelect={handleVideoSelect}
+        <CreateNew
+          onImageSelect={handleImageSelect}
+          onVideoSelect={handleVideoSelect}
+          onCameraSelect={handleCameraSelect}
+          isLoading={isSelectionLoading}
+          errorMessage={selectionError}
         />
       )
     }
 
-    if (fileType === 'video'){
-      return (
-        <GifEditor
-          videoFile={selectedFile}
-          onCancel={handleBackToUpload}
-        />
-      )
+    if (mediaType === 'video') {
+      return <GifEditor videoFile={selectedMedia} onCancel={handleBackToUpload} />
     }
 
-    switch (filterScreen) {
-      case 'editor':
+    switch (screen) {
+      case SCREENS.EDITOR:
         return (
           <ImageEditor
-            imageSrc={imagePreviewUrl}
+            imageSrc={previewUrl}
             onBack={handleBackToUpload}
             onOpenFilters={handleOpenFilters}
-            onOpenSizes={handleOpenSizes}
-            onApplyCustomSize={handleSizeSelect}
-            onExport={handleExportImage}
+            onSize={handleOpenSizes}
           />
         )
-      case 'filters-main':
+      case SCREENS.FILTERS_MAIN:
         return (
           <FilterMain
-            onPresetFilters={() => setFilterScreen('preset')}
-            onAddText={() => setFilterScreen('text')}
-            onColorFilters={() => setFilterScreen('color')}
+            onPresetFilters={() => setScreen(SCREENS.PRESET_FILTERS)}
+            onAddText={() => setScreen(SCREENS.ADD_TEXT)}
+            onColorFilters={() => setScreen(SCREENS.COLOR_FILTERS)}
           />
         )
-      case 'preset':
+      case SCREENS.PRESET_FILTERS:
         return (
           <PresetFilters
-            imageSrc={imagePreviewUrl}
+            imageSrc={previewUrl}
             onApply={handleApplyFilters}
-            onCancel={() => setFilterScreen('editor')}
+            onCancel={() => setScreen(SCREENS.EDITOR)}
           />
         )
-      case 'text':
+      case SCREENS.ADD_TEXT:
         return (
           <AddText
-            imageSrc={imagePreviewUrl}
+            imageSrc={previewUrl}
             onApply={handleApplyFilters}
-            onCancel={() => setFilterScreen('editor')}
+            onCancel={() => setScreen(SCREENS.EDITOR)}
           />
         )
-      case 'color':
+      case SCREENS.COLOR_FILTERS:
         return (
           <ColorFilters
-            imageSrc={imagePreviewUrl}
+            imageSrc={previewUrl}
             onApply={handleApplyFilters}
-            onCancel={() => setFilterScreen('editor')}
+            onCancel={() => setScreen(SCREENS.EDITOR)}
           />
         )
-      case 'preset-sizes':
+      case SCREENS.PRESET_SIZES:
         return (
           <PresetSizes
             onSelect={handleSizeSelect}
-            onCancel={() => setFilterScreen('editor')}
+            onCancel={() => setScreen(SCREENS.EDITOR)}
           />
         )
       default:
         return (
           <ImageEditor
-            imageSrc={imagePreviewUrl}
+            imageSrc={previewUrl}
             onBack={handleBackToUpload}
             onOpenFilters={handleOpenFilters}
-            onOpenSizes={handleOpenSizes}
-            onApplyCustomSize={handleSizeSelect}
-            onExport={handleExportImage}
+            onSize={handleOpenSizes}
           />
         )
     }
