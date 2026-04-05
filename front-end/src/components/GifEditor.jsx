@@ -21,8 +21,9 @@ const GifEditor = ({ videoFile, onCancel }) => {
         return null
     }, [videoFile])
 
-    // Loading state for video
+    // Loading and error state for video
     const [videoLoading, setVideoLoading] = useState(false)
+    const [videoError, setVideoError] = useState(false)
 
     useEffect(() => {
         if (!(videoFile instanceof File) || !videoUrl) {
@@ -66,7 +67,7 @@ const GifEditor = ({ videoFile, onCancel }) => {
                     <p className="preview-label" style={{ color: 'red' }}>Error: Only user-uploaded video files are supported.</p>
                 ) : videoUrl ? (
                     <>
-                        {videoLoading && (
+                        {videoLoading && !videoError && (
                             <div style={{
                                 position: 'absolute',
                                 top: 0, left: 0, right: 0, bottom: 0,
@@ -77,15 +78,30 @@ const GifEditor = ({ videoFile, onCancel }) => {
                                 <span style={{ marginLeft: 12 }}>Loading video…</span>
                             </div>
                         )}
-                        <video
-                            ref={videoRef}
-                            src={videoUrl}
-                            controls
-                            className="preview-video"
-                            onLoadStart={() => setVideoLoading(true)}
-                            onLoadedData={() => setVideoLoading(false)}
-                            onError={() => setVideoLoading(false)}
-                        />
+                        {!videoError ? (
+                            <video
+                                ref={videoRef}
+                                src={videoUrl}
+                                controls
+                                className="preview-video"
+                                onLoadStart={() => { setVideoLoading(true); setVideoError(false); }}
+                                onLoadedData={() => setVideoLoading(false)}
+                                onError={() => { setVideoLoading(false); setVideoError(true); }}
+                            />
+                        ) : (
+                            <div style={{
+                                position: 'absolute',
+                                top: 0, left: 0, right: 0, bottom: 0,
+                                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                background: 'rgba(255,255,255,0.9)', zIndex: 3
+                            }}>
+                                <p className="preview-label" style={{ color: 'red', textAlign: 'center' }}>
+                                    Unable to preview this video.<br />
+                                    The file may be corrupt or use an unsupported codec.<br />
+                                    Please try a different video.
+                                </p>
+                            </div>
+                        )}
                         <style>{`
                             @keyframes spin {
                                 0% { transform: rotate(0deg); }
