@@ -21,6 +21,9 @@ const GifEditor = ({ videoFile, onCancel }) => {
         return null
     }, [videoFile])
 
+    // Loading state for video
+    const [videoLoading, setVideoLoading] = useState(false)
+
     useEffect(() => {
         if (!(videoFile instanceof File) || !videoUrl) {
             return undefined
@@ -58,11 +61,38 @@ const GifEditor = ({ videoFile, onCancel }) => {
 
 
 
-            <div className="preview-box">
+            <div className="preview-box" style={{ position: 'relative', minHeight: 220 }}>
                 {videoFile && !(videoFile instanceof File) ? (
                     <p className="preview-label" style={{ color: 'red' }}>Error: Only user-uploaded video files are supported.</p>
                 ) : videoUrl ? (
-                    <video ref={videoRef} src={videoUrl} controls className="preview-video" />
+                    <>
+                        {videoLoading && (
+                            <div style={{
+                                position: 'absolute',
+                                top: 0, left: 0, right: 0, bottom: 0,
+                                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                background: 'rgba(255,255,255,0.7)', zIndex: 2
+                            }}>
+                                <div className="spinner" style={{ width: 40, height: 40, border: '4px solid #ccc', borderTop: '4px solid #333', borderRadius: '50%', animation: 'spin 1s linear infinite' }} />
+                                <span style={{ marginLeft: 12 }}>Loading video…</span>
+                            </div>
+                        )}
+                        <video
+                            ref={videoRef}
+                            src={videoUrl}
+                            controls
+                            className="preview-video"
+                            onLoadStart={() => setVideoLoading(true)}
+                            onLoadedData={() => setVideoLoading(false)}
+                            onError={() => setVideoLoading(false)}
+                        />
+                        <style>{`
+                            @keyframes spin {
+                                0% { transform: rotate(0deg); }
+                                100% { transform: rotate(360deg); }
+                            }
+                        `}</style>
+                    </>
                 ) : (
                     <p className="preview-label">Upload a video to start editing.</p>
                 )}
