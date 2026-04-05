@@ -1,17 +1,11 @@
-import { normalizePixabayImageHits, normalizePixabayVideoHits } from './mediaNormalizer'
+import { normalizePixabayImageHits } from './mediaNormalizer'
 
 const PIXABAY_IMAGE_ENDPOINT = 'https://pixabay.com/api/'
-const PIXABAY_VIDEO_ENDPOINT = 'https://pixabay.com/api/videos/'
 const DEFAULT_SEARCH_QUERY = 'editorial'
 
 const DEFAULT_IMAGE_PARAMS = {
   image_type: 'photo',
   orientation: 'horizontal',
-  per_page: 24,
-  safesearch: true,
-}
-
-const DEFAULT_VIDEO_PARAMS = {
   per_page: 24,
   safesearch: true,
 }
@@ -31,7 +25,7 @@ const buildSearchParams = (apiKey, params = {}) => {
   return searchParams.toString()
 }
 
-const requestPixabay = async (endpoint, params, type) => {
+const requestPixabay = async (endpoint, params) => {
   const apiKey = getPixabayApiKey()
 
   if (!apiKey) {
@@ -44,16 +38,16 @@ const requestPixabay = async (endpoint, params, type) => {
     const response = await fetch(url)
 
     if (!response.ok) {
-      console.error(`[pixabayService] ${type} request failed (${response.status})`)
+      console.error(`[pixabayService] image request failed (${response.status})`)
       return []
     }
 
     const payload = await response.json()
     const hits = Array.isArray(payload?.hits) ? payload.hits : []
 
-    return type === 'image' ? normalizePixabayImageHits(hits) : normalizePixabayVideoHits(hits)
+    return normalizePixabayImageHits(hits)
   } catch (error) {
-    console.error(`[pixabayService] Unable to fetch ${type} data`, error)
+    console.error('[pixabayService] Unable to fetch image data', error)
     return []
   }
 }
@@ -65,17 +59,5 @@ export const fetchPixabayImages = async (query = DEFAULT_SEARCH_QUERY, overrides
       q: query || DEFAULT_SEARCH_QUERY,
       ...DEFAULT_IMAGE_PARAMS,
       ...overrides,
-    },
-    'image'
-  )
-
-export const fetchPixabayVideos = async (query = DEFAULT_SEARCH_QUERY, overrides = {}) =>
-  requestPixabay(
-    PIXABAY_VIDEO_ENDPOINT,
-    {
-      q: query || DEFAULT_SEARCH_QUERY,
-      ...DEFAULT_VIDEO_PARAMS,
-      ...overrides,
-    },
-    'video'
+    }
   )

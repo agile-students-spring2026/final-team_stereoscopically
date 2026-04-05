@@ -1,15 +1,9 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import usePixabayMedia from './usePixabayMedia'
 import { derivePreviewUrl, deriveSourceUrl } from '../services/mediaSelection'
 
-const normalizeType = (type) => {
-  if (type === 'video' || type === 'gif') return 'video'
-  return 'image'
-}
-
-const useMediaSelection = (preferredMockMediaType = 'image', options = {}) => {
+const useMediaSelection = (options = {}) => {
   const { autoBootstrap = false } = options
-  const normalizedPreference = useMemo(() => normalizeType(preferredMockMediaType), [preferredMockMediaType])
   const [mediaType, setMediaType] = useState(null)
   const [selectedMedia, setSelectedMedia] = useState(null)
   const [previewUrl, setPreviewUrl] = useState(null)

@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useState } from 'react'
 import CreateNew from './CreateNew'
 import ImageEditor from './ImageEditor'
 import FilterMain from './FilterMain'
@@ -17,22 +17,6 @@ const SCREENS = {
   ADD_TEXT: 'text',
   COLOR_FILTERS: 'color',
   PRESET_SIZES: 'preset-sizes',
-}
-
-const getPreferredMockMediaType = () => {
-  if (typeof window === 'undefined') return 'image'
-  const params = new URLSearchParams(window.location.search)
-  const mediaParam = params.get('media')?.toLowerCase()
-
-  if (mediaParam === 'video' || mediaParam === 'gif') {
-    return 'video'
-  }
-
-  if (mediaParam === 'image' || mediaParam === 'photo') {
-    return 'image'
-  }
-
-  return 'image'
 }
 
 function resizeImageToDimensions(imageUrl, targetWidth, targetHeight, preserveAspect = false) {
@@ -105,7 +89,6 @@ function resizeImageToDimensions(imageUrl, targetWidth, targetHeight, preserveAs
 }
 
 function EditorContainer() {
-  const preferredMockMediaType = useMemo(() => getPreferredMockMediaType(), [])
   const {
     mediaType,
     selectedMedia,
@@ -117,7 +100,7 @@ function EditorContainer() {
     selectVideo,
     resetSelection,
     applyTransformedImage,
-  } = useMediaSelection(preferredMockMediaType, { autoBootstrap: false })
+  } = useMediaSelection({ autoBootstrap: false })
 
   const [screen, setScreen] = useState(SCREENS.EDITOR)
 
@@ -239,7 +222,10 @@ function EditorContainer() {
     }
 
     if (mediaType === 'video') {
-      return <GifEditor videoFile={selectedMedia} onCancel={handleBackToUpload} />
+      const videoKey = selectedMedia
+        ? `${selectedMedia.name ?? selectedMedia.id ?? 'video'}-${selectedMedia.lastModified ?? ''}-${selectedMedia.size ?? ''}`
+        : 'video'
+      return <GifEditor key={videoKey} videoFile={selectedMedia} onCancel={handleBackToUpload} />
     }
 
     switch (screen) {

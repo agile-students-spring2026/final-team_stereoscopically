@@ -26,16 +26,6 @@ const GifEditor = ({ videoFile, onCancel }) => {
     const [videoLoading, setVideoLoading] = useState(false)
     const [videoError, setVideoError] = useState(false)
 
-    // Reset error/loading state when videoFile changes
-    useEffect(() => {
-        setVideoLoading(!!videoFile);
-        setVideoError(false);
-        canPlayRef.current = false;
-        if (errorTimeoutRef.current) {
-            clearTimeout(errorTimeoutRef.current);
-            errorTimeoutRef.current = null;
-        }
-    }, [videoFile])
 
     // Only revoke blob URLs in production to avoid dev Hot Reload revoking active URLs
     useEffect(() => {
