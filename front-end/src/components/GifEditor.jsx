@@ -80,7 +80,7 @@ const GifEditor = ({ videoFile, onCancel }) => {
 
 
 
-            <div className="preview-box" style={{ position: 'relative', minHeight: 220 }}>
+            <div className="preview-box preview-box-video" style={{ position: 'relative', minHeight: 220 }}>
                 {videoFile && !(videoFile instanceof File) ? (
                     <p className="preview-label" style={{ color: 'red' }}>Error: Only user-uploaded video files are supported.</p>
                 ) : videoUrl ? (
