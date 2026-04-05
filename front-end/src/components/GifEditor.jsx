@@ -1,11 +1,12 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react'
-import { isVideoTypeSupported } from './videoSupport'
 
 const GifEditor = ({ videoFile, onCancel }) => {
     const [isProcessing, setIsProcessing] = useState(false)
     const [statusMessage, setStatusMessage] = useState(null)
     const videoRef = useRef(null)
     const conversionTimeoutRef = useRef(null)
+    const errorTimeoutRef = useRef(null)
+    const canPlayRef = useRef(false)
 
     const videoUrl = useMemo(() => {
         if (!videoFile) return null
@@ -25,19 +26,36 @@ const GifEditor = ({ videoFile, onCancel }) => {
     const [videoLoading, setVideoLoading] = useState(false)
     const [videoError, setVideoError] = useState(false)
 
+    // Reset error/loading state when videoFile changes
     useEffect(() => {
-        if (!(videoFile instanceof File) || !videoUrl) {
-            return undefined
+        setVideoLoading(!!videoFile);
+        setVideoError(false);
+        canPlayRef.current = false;
+        if (errorTimeoutRef.current) {
+            clearTimeout(errorTimeoutRef.current);
+            errorTimeoutRef.current = null;
         }
+    }, [videoFile])
 
+    // Only revoke blob URLs in production to avoid dev Hot Reload revoking active URLs
+    useEffect(() => {
+        let prevUrl = null
+        if (videoFile instanceof File && videoUrl) {
+            prevUrl = videoUrl
+        }
         return () => {
-            URL.revokeObjectURL(videoUrl)
+            if (prevUrl && !import.meta.env.DEV) {
+                URL.revokeObjectURL(prevUrl)
+            }
         }
     }, [videoFile, videoUrl])
 
     useEffect(() => () => {
         if (conversionTimeoutRef.current) {
             clearTimeout(conversionTimeoutRef.current)
+        }
+        if (errorTimeoutRef.current) {
+            clearTimeout(errorTimeoutRef.current)
         }
     }, [])
 
@@ -83,10 +101,34 @@ const GifEditor = ({ videoFile, onCancel }) => {
                                 ref={videoRef}
                                 src={videoUrl}
                                 controls
+                                preload="auto"
                                 className="preview-video"
-                                onLoadStart={() => { setVideoLoading(true); setVideoError(false); }}
-                                onLoadedData={() => setVideoLoading(false)}
-                                onError={() => { setVideoLoading(false); setVideoError(true); }}
+                                onLoadStart={() => {
+                                    setVideoLoading(true)
+                                    setVideoError(false)
+                                    canPlayRef.current = false
+                                }}
+                                onCanPlay={() => {
+                                    setVideoLoading(false)
+                                    setVideoError(false)
+                                    canPlayRef.current = true
+                                    if (errorTimeoutRef.current) {
+                                        clearTimeout(errorTimeoutRef.current)
+                                        errorTimeoutRef.current = null
+                                    }
+                                }}
+                                onError={() => {
+                                    if (errorTimeoutRef.current) {
+                                        clearTimeout(errorTimeoutRef.current)
+                                    }
+                                    // Delay error display to avoid false positives on slow loads
+                                    errorTimeoutRef.current = setTimeout(() => {
+                                        if (!canPlayRef.current) {
+                                            setVideoLoading(false)
+                                            setVideoError(true)
+                                        }
+                                    }, 3000)
+                                }}
                             />
                         ) : (
                             <div style={{
