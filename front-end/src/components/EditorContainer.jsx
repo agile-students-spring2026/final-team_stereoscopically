@@ -127,8 +127,9 @@ function EditorContainer() {
     }
   }
 
-  const handleVideoSelect = async () => {
-    const applied = await selectVideo()
+  const handleVideoSelect = async (file) => {
+    if (!file) return
+    const applied = await selectVideo(file)
     if (applied) {
       setScreen(SCREENS.EDITOR)
     }
