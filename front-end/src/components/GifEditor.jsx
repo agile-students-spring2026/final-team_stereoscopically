@@ -50,27 +50,17 @@ const GifEditor = ({ videoFile, onCancel }) => {
         }, 2000)
     }
 
-    const [videoSupported, setVideoSupported] = useState(true)
-    useEffect(() => {
-        if (videoFile instanceof File) {
-            setVideoSupported(isVideoTypeSupported(videoFile))
-        } else {
-            setVideoSupported(true)
-        }
-    }, [videoFile])
+    // No longer need to check support here; handled in EditorContainer
 
     return (
         <div className="video-editor-container">
             <h2 className="video-editor-title">GIF Editor</h2>
 
+
+
             <div className="preview-box">
                 {videoFile && !(videoFile instanceof File) ? (
                     <p className="preview-label" style={{ color: 'red' }}>Error: Only user-uploaded video files are supported.</p>
-                ) : videoFile && !videoSupported ? (
-                    <p className="preview-label" style={{ color: 'red' }}>
-                        This video format ({videoFile.type || videoFile.name.split('.').pop()}) is not supported by your browser.<br />
-                        Please upload an MP4 or WebM video.
-                    </p>
                 ) : videoUrl ? (
                     <video ref={videoRef} src={videoUrl} controls className="preview-video" />
                 ) : (
