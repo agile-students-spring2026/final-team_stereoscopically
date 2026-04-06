@@ -1,15 +1,9 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import usePixabayMedia from './usePixabayMedia'
 import { derivePreviewUrl, deriveSourceUrl } from '../services/mediaSelection'
 
-const normalizeType = (type) => {
-  if (type === 'video' || type === 'gif') return 'video'
-  return 'image'
-}
-
-const useMediaSelection = (preferredMockMediaType = 'image', options = {}) => {
+const useMediaSelection = (options = {}) => {
   const { autoBootstrap = false } = options
-  const normalizedPreference = useMemo(() => normalizeType(preferredMockMediaType), [preferredMockMediaType])
   const [mediaType, setMediaType] = useState(null)
   const [selectedMedia, setSelectedMedia] = useState(null)
   const [previewUrl, setPreviewUrl] = useState(null)
@@ -18,7 +12,6 @@ const useMediaSelection = (preferredMockMediaType = 'image', options = {}) => {
   const [isBootstrapLoading, setIsBootstrapLoading] = useState(false)
 
   const imageApi = usePixabayMedia('image', { auto: false })
-  const videoApi = usePixabayMedia('video', { auto: false })
 
   const applyImageSelection = useCallback((mediaItem, options = {}) => {
     if (!mediaItem) return false
@@ -34,10 +27,10 @@ const useMediaSelection = (preferredMockMediaType = 'image', options = {}) => {
     return true
   }, [])
 
-  const applyVideoSelection = useCallback((mediaItem) => {
-    if (!mediaItem) return false
+  const applyVideoSelection = useCallback((file) => {
+    if (!file) return false
     setMediaType('video')
-    setSelectedMedia(mediaItem)
+    setSelectedMedia(file)
     setPreviewUrl(null)
     setSourceUrl(null)
     return true
@@ -49,37 +42,28 @@ const useMediaSelection = (preferredMockMediaType = 'image', options = {}) => {
     )
   }, [applyImageSelection, imageApi])
 
-  const fetchInitialVideo = useCallback(() => {
-    return videoApi.fetchAndSelect(({ item }) => applyVideoSelection(item))
-  }, [applyVideoSelection, videoApi])
 
+
+  // Only bootstrap images from API now
   const bootstrapInitialSelection = useCallback(async () => {
     setIsBootstrapLoading(true)
     setSelectionError(null)
 
     try {
-      const attempts =
-        normalizedPreference === 'video'
-          ? [fetchInitialVideo, fetchInitialImage]
-          : [fetchInitialImage, fetchInitialVideo]
-
-      for (const attempt of attempts) {
-        const applied = await attempt()
-        if (applied) {
-          return true
-        }
+      const applied = await fetchInitialImage()
+      if (applied) {
+        return true
       }
-
-      setSelectionError('Unable to load media from Pixabay right now. Please try again later.')
+      setSelectionError('Unable to load image media from Pixabay right now. Please try again later.')
       return false
     } catch (error) {
-      console.error('[useMediaSelection] Unable to load Pixabay media', error)
-      setSelectionError('Unable to load media from Pixabay right now. Please try again later.')
+      console.error('[useMediaSelection] Unable to load Pixabay image media', error)
+      setSelectionError('Unable to load image media from Pixabay right now. Please try again later.')
       return false
     } finally {
       setIsBootstrapLoading(false)
     }
-  }, [fetchInitialImage, fetchInitialVideo, normalizedPreference])
+  }, [fetchInitialImage])
 
   useEffect(() => {
     if (!autoBootstrap) return undefined
@@ -114,16 +98,15 @@ const useMediaSelection = (preferredMockMediaType = 'image', options = {}) => {
     return applied
   }, [applyImageSelection, imageApi])
 
-  const selectVideo = useCallback(async () => {
+  // selectVideo now expects a File (user input)
+  const selectVideo = useCallback((file) => {
     setSelectionError(null)
-    const applied = await videoApi.fetchAndSelect(({ item }) => applyVideoSelection(item))
-
+    const applied = applyVideoSelection(file)
     if (!applied) {
-      setSelectionError('Unable to select video media right now. Please try again.')
+      setSelectionError('Unable to select video file. Please try again.')
     }
-
     return applied
-  }, [applyVideoSelection, videoApi])
+  }, [applyVideoSelection])
 
   const resetSelection = useCallback(() => {
     setMediaType(null)
@@ -143,8 +126,8 @@ const useMediaSelection = (preferredMockMediaType = 'image', options = {}) => {
     return true
   }, [])
 
-  const isSelectionLoading = isBootstrapLoading || imageApi.isLoading || videoApi.isLoading
-  const combinedError = selectionError || imageApi.error?.message || videoApi.error?.message || null
+  const isSelectionLoading = isBootstrapLoading || imageApi.isLoading
+  const combinedError = selectionError || imageApi.error?.message || null
 
   return {
     mediaType,

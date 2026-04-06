@@ -1,8 +1,12 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react'
+import { convertVideoToGif } from '../services/backendGifService'
 
-const GifEditor = ({ videoFile, onCancel }) => {
+const GifEditor = ({ videoFile, onCancel, onConverted }) => {
     const [isProcessing, setIsProcessing] = useState(false)
     const [statusMessage, setStatusMessage] = useState(null)
+    const [backendResult, setBackendResult] = useState(null)
+    const [validationError, setValidationError] = useState(null)
+    const [conversionError, setConversionError] = useState(null)
 
     const [duration, setDuration] = useState(0)
     const [trimStart, setTrimStart] = useState(0)
@@ -10,12 +14,14 @@ const GifEditor = ({ videoFile, onCancel }) => {
     const [showTrim, setShowTrim] = useState(false)
 
     const videoRef = useRef(null)
-    const conversionTimeoutRef = useRef(null)
 
-    const resolveVideoUrl = (source) => {
-        if (!source) return null
-        if (typeof source === 'string') return source
-        return source.src || source.fullUrl || source.previewSrc || source.previewUrl || null
+    const resolveVideoUrl = (mediaValue) => {
+        if (!mediaValue) return null
+        if (typeof mediaValue === 'string') return mediaValue
+        if (typeof mediaValue === 'object') {
+            return mediaValue.url || mediaValue.src || mediaValue.source || mediaValue.fullUrl || null
+        }
+        return null
     }
 
     const videoUrl = useMemo(() => {
@@ -29,35 +35,79 @@ const GifEditor = ({ videoFile, onCancel }) => {
             }
         }
         return resolveVideoUrl(videoFile)
+        // Not a File: do not preview, show error/placeholder
     }, [videoFile])
 
+
+    // Only revoke blob URLs in production to avoid dev Hot Reload revoking active URLs
     useEffect(() => {
-        if (!(videoFile instanceof File) || !videoUrl) {
-            return undefined
+        let prevUrl = null
+        if (videoFile instanceof File && videoUrl) {
+            prevUrl = videoUrl
         }
         return () => {
-            URL.revokeObjectURL(videoUrl)
+            if (prevUrl && !import.meta.env.DEV) {
+                URL.revokeObjectURL(prevUrl)
+            }
         }
     }, [videoFile, videoUrl])
 
-    useEffect(() => () => {
-        if (conversionTimeoutRef.current) {
-            clearTimeout(conversionTimeoutRef.current)
+    useEffect(() => {
+        if (backendResult) {
+            onConverted?.(backendResult)
         }
-    }, [])
+    }, [backendResult, onConverted])
+
+    useEffect(() => {
+        setBackendResult(null)
+        setStatusMessage(null)
+        setValidationError(null)
+        setConversionError(null)
+    }, [videoFile])
+
+    useEffect(() => {
+        if (!videoFile || !(videoFile instanceof File)) {
+            setValidationError(null)
+            return
+        }
+
+        const maxSizeBytes = 50 * 1024 * 1024
+
+        if (!videoFile.type?.startsWith('video/')) {
+            setValidationError('Please select a video file.')
+            return
+        }
+
+        if (videoFile.size > maxSizeBytes) {
+            setValidationError('File is too large (max 50 MB).')
+            return
+        }
+
+        setValidationError(null)
+    }, [videoFile])
 
     const formatTime = (s) => `${s.toFixed(1)}s`
 
-    const handleConvertToGif = () => {
-        if (!videoUrl || isProcessing) return
+    const handleConvertToGif = async () => {
+        if (!videoFile || validationError || isProcessing) return
         setIsProcessing(true)
+        setConversionError(null)
         setStatusMessage('Converting clip to GIF…')
-        conversionTimeoutRef.current = setTimeout(() => {
-            setStatusMessage('GIF export is on the roadmap. You will be able to download the generated GIF in a future update.')
+
+        try {
+            const result = await convertVideoToGif(videoFile)
+            setBackendResult(result)
+            setStatusMessage('GIF created. Download support is coming soon.')
+        } catch (error) {
+            setBackendResult(null)
+            setConversionError(error?.message || 'GIF conversion failed. Please try again.')
+            setStatusMessage(null)
+        } finally {
             setIsProcessing(false)
-            conversionTimeoutRef.current = null
-        }, 2000)
+        }
     }
+
+    // No longer need to check support here; handled in EditorContainer
 
     return (
         <div className="video-editor-container">
@@ -133,7 +183,7 @@ const GifEditor = ({ videoFile, onCancel }) => {
                     type="button"
                     className="btn-primary"
                     onClick={handleConvertToGif}
-                    disabled={isProcessing || !videoUrl}
+                    disabled={isProcessing || !videoUrl || Boolean(validationError)}
                 >
                     {isProcessing ? 'Processing...' : 'Create GIF'}
                 </button>
@@ -142,6 +192,30 @@ const GifEditor = ({ videoFile, onCancel }) => {
             {statusMessage && (
                 <p className="preview-label" style={{ marginTop: '0.75rem' }}>
                     {statusMessage}
+                </p>
+            )}
+
+            {conversionError && (
+                <p className="preview-label" style={{ marginTop: '0.75rem', color: '#ff3b30' }}>
+                    {conversionError}
+                </p>
+            )}
+
+            {backendResult?.url && (
+                <div className="card" style={{ marginTop: '1rem' }}>
+                    <h3 style={{ marginBottom: '0.5rem' }}>Your GIF is ready</h3>
+                    <p className="preview-label" style={{ margin: 0 }}>
+                        ID: {backendResult.id || 'pending'}
+                    </p>
+                    <p className="preview-label" style={{ margin: 0 }}>
+                        URL: {backendResult.url}
+                    </p>
+                </div>
+            )}
+
+            {validationError && (
+                <p className="preview-label" style={{ marginTop: '0.75rem', color: '#ff3b30' }}>
+                    {validationError}
                 </p>
             )}
         </div>

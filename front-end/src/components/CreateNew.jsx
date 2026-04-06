@@ -15,14 +15,21 @@ const CreateNew = ({ onImageSelect, onVideoSelect, onCameraSelect, isLoading = f
           Upload Image
         </button>
 
-        <button
-          type="button"
-          className="upload-button"
-          onClick={() => onVideoSelect?.()}
-          disabled={isLoading}
-        >
+        <label className="upload-button" style={{ display: 'inline-block', cursor: isLoading ? 'not-allowed' : 'pointer' }}>
           Upload Video
-        </button>
+          <input
+            type="file"
+            accept="video/*"
+            style={{ display: 'none' }}
+            disabled={isLoading}
+            onChange={e => {
+              const file = e.target.files && e.target.files[0]
+              if (file && onVideoSelect) onVideoSelect(file)
+              // Reset input so same file can be selected again if needed
+              e.target.value = ''
+            }}
+          />
+        </label>
 
         <button
           type="button"

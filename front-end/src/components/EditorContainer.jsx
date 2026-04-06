@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useState } from 'react'
 import CreateNew from './CreateNew'
 import ImageEditor from './ImageEditor'
 import FilterMain from './FilterMain'
@@ -8,6 +8,7 @@ import AddText from './AddText'
 import ColorFilters from './ColorFilters'
 import GifEditor from './GifEditor'
 import useMediaSelection from '../hooks/useMediaSelection'
+import { isVideoTypeSupported } from './videoSupport'
 
 const SCREENS = {
   EDITOR: 'editor',
@@ -16,22 +17,6 @@ const SCREENS = {
   ADD_TEXT: 'text',
   COLOR_FILTERS: 'color',
   PRESET_SIZES: 'preset-sizes',
-}
-
-const getPreferredMockMediaType = () => {
-  if (typeof window === 'undefined') return 'image'
-  const params = new URLSearchParams(window.location.search)
-  const mediaParam = params.get('media')?.toLowerCase()
-
-  if (mediaParam === 'video' || mediaParam === 'gif') {
-    return 'video'
-  }
-
-  if (mediaParam === 'image' || mediaParam === 'photo') {
-    return 'image'
-  }
-
-  return 'image'
 }
 
 function resizeImageToDimensions(imageUrl, targetWidth, targetHeight, preserveAspect = false) {
@@ -104,7 +89,6 @@ function resizeImageToDimensions(imageUrl, targetWidth, targetHeight, preserveAs
 }
 
 function EditorContainer() {
-  const preferredMockMediaType = useMemo(() => getPreferredMockMediaType(), [])
   const {
     mediaType,
     selectedMedia,
@@ -116,7 +100,7 @@ function EditorContainer() {
     selectVideo,
     resetSelection,
     applyTransformedImage,
-  } = useMediaSelection(preferredMockMediaType, { autoBootstrap: false })
+  } = useMediaSelection({ autoBootstrap: false })
 
   const [screen, setScreen] = useState(SCREENS.EDITOR)
 
@@ -127,8 +111,15 @@ function EditorContainer() {
     }
   }
 
-  const handleVideoSelect = async () => {
-    const applied = await selectVideo()
+  const [unsupportedVideo, setUnsupportedVideo] = useState(null)
+  const handleVideoSelect = async (file) => {
+    if (!file) return
+    if (!isVideoTypeSupported(file)) {
+      setUnsupportedVideo(file)
+      return
+    }
+    setUnsupportedVideo(null)
+    const applied = await selectVideo(file)
     if (applied) {
       setScreen(SCREENS.EDITOR)
     }
@@ -199,8 +190,9 @@ function EditorContainer() {
   }
 
   const renderContent = () => {
+
     if (!selectedMedia) {
-      return (
+      return <>
         <CreateNew
           onImageSelect={handleImageSelect}
           onVideoSelect={handleVideoSelect}
@@ -208,11 +200,32 @@ function EditorContainer() {
           isLoading={isSelectionLoading}
           errorMessage={selectionError}
         />
-      )
+        {unsupportedVideo && (
+          <div className="modal-overlay" style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', background: 'rgba(0,0,0,0.4)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <div className="modal-content" style={{ background: '#fff', padding: '2rem', borderRadius: '8px', boxShadow: '0 2px 16px rgba(0,0,0,0.2)', maxWidth: 360, textAlign: 'center' }}>
+              <h3 style={{ color: '#c00', marginBottom: '1rem' }}>Unsupported Video Format</h3>
+              <p style={{ marginBottom: '1.5rem' }}>
+                This video format ({unsupportedVideo.type || unsupportedVideo.name.split('.').pop()}) is not supported by your browser.<br />
+                Please upload an MP4 or WebM video.
+              </p>
+              <button
+                className="btn-primary"
+                style={{ marginBottom: '1rem' }}
+                onClick={() => setUnsupportedVideo(null)}
+              >
+                Re-upload Video
+              </button>
+            </div>
+          </div>
+        )}
+      </>
     }
 
     if (mediaType === 'video') {
-      return <GifEditor videoFile={selectedMedia} onCancel={handleBackToUpload} />
+      const videoKey = selectedMedia
+        ? `${selectedMedia.name ?? selectedMedia.id ?? 'video'}-${selectedMedia.lastModified ?? ''}-${selectedMedia.size ?? ''}`
+        : 'video'
+      return <GifEditor key={videoKey} videoFile={selectedMedia} onCancel={handleBackToUpload} />
     }
 
     switch (screen) {

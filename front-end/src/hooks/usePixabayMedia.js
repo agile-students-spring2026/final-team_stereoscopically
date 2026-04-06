@@ -1,8 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { fetchPixabayImages, fetchPixabayVideos } from '../services/pixabayService'
+import { fetchPixabayImages } from '../services/pixabayService'
 import { derivePreviewUrl, deriveSourceUrl } from '../services/mediaSelection'
-
-const getFetcherByType = (type) => (type === 'video' ? fetchPixabayVideos : fetchPixabayImages)
 
 const buildError = (message, details) => {
   const error = new Error(message)
@@ -18,22 +16,16 @@ const usePixabayMedia = (type = 'image', options = {}) => {
   const [isLoading, setIsLoading] = useState(auto)
   const [error, setError] = useState(null)
   const requestIdRef = useRef(0)
-  const fetcherRef = useRef(getFetcherByType(type))
-
-  useEffect(() => {
-    fetcherRef.current = getFetcherByType(type)
-  }, [type])
 
   const loadMedia = useCallback(
     async (overrideQuery, overrideParams = {}) => {
-      const fetcher = fetcherRef.current
       const requestId = Date.now()
       requestIdRef.current = requestId
       setIsLoading(true)
       setError(null)
 
       try {
-        const results = await fetcher(overrideQuery ?? query, {
+        const results = await fetchPixabayImages(overrideQuery ?? query, {
           ...params,
           ...overrideParams,
         })

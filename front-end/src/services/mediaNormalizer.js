@@ -29,11 +29,6 @@ const getPreviewFromImage = (hit) => hit?.previewURL || hit?.webformatURL || hit
 const getSourceFromImage = (hit, fallbackPreview) =>
   hit?.largeImageURL || hit?.fullHDURL || hit?.webformatURL || fallbackPreview
 
-const getPreviewFromVideo = (videoSources = {}) =>
-  videoSources.tiny?.url || videoSources.small?.url || videoSources.medium?.url || ''
-const getSourceFromVideo = (videoSources = {}, fallbackPreview) =>
-  videoSources.large?.url || videoSources.medium?.url || videoSources.small?.url || fallbackPreview
-
 const normalizePixabayImageHits = (hits = []) =>
   hits.map((hit, index) => {
     const previewSrc = getPreviewFromImage(hit)
@@ -52,22 +47,4 @@ const normalizePixabayImageHits = (hits = []) =>
     })
   })
 
-const normalizePixabayVideoHits = (hits = []) =>
-  hits.map((hit, index) => {
-    const videoSources = hit?.videos || {}
-    const previewSrc = getPreviewFromVideo(videoSources)
-    const src = getSourceFromVideo(videoSources, previewSrc)
-
-    return createMediaItem({
-      id: hit?.id ?? `pixabay-video-${index}`,
-      type: 'video',
-      title: hit?.tags || `Video ${index + 1}`,
-      author: hit?.user || 'Unknown',
-      previewSrc,
-      src,
-      duration: hit?.duration ?? null,
-      raw: hit ?? null,
-    })
-  })
-
-export { normalizePixabayImageHits, normalizePixabayVideoHits }
+export { normalizePixabayImageHits }
