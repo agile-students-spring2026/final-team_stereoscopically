@@ -114,6 +114,7 @@
   background-color: #ffffff;
   color: #000000;
   font-size: 0.95rem;
+  text-align: center;
   cursor: pointer;
   transition: background-color 150ms ease, color 150ms ease;
 }
@@ -163,6 +164,67 @@
 .form-group .btn-secondary {
   text-transform: capitalize;
   margin: 0.1rem;
+}
+
+.add-text-form {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  box-sizing: border-box;
+}
+
+.add-text-field--stack {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.add-text-field--grid {
+  display: grid;
+  grid-template-columns: 5.5rem 1fr;
+  align-items: center;
+  gap: 0.5rem 0.75rem;
+}
+
+.add-text-label {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #1a1a1a;
+}
+
+.add-text-input {
+  max-width: none;
+  width: 100%;
+  margin-bottom: 0;
+  border-radius: 8px;
+  box-sizing: border-box;
+}
+
+.add-text-select {
+  width: 100%;
+  max-width: 100%;
+  padding: 0.45rem 0.5rem;
+  box-sizing: border-box;
+}
+
+.add-text-button-group {
+  display: flex;
+  flex-wrap: nowrap;
+  gap: 0.45rem;
+  align-items: stretch;
+  width: 100%;
+  min-width: 0;
+}
+
+.add-text-button-group .btn-secondary {
+  margin: 0;
+  flex: 1 1 0;
+  min-width: 0;
+  text-transform: capitalize;
+  text-align: center;
+  padding-left: 0.35rem;
+  padding-right: 0.35rem;
 }
 
 /* ============================================================================
@@ -236,10 +298,58 @@
 
 .filter-main-buttons .btn-primary {
   width: 100%;
+  text-align: center;
 }
 
 .filter-main-buttons .btn-primary + .btn-primary {
   margin-top: 0.75rem;
+}
+
+.filter-main-buttons > .btn-secondary {
+  width: 100%;
+  box-sizing: border-box;
+  text-align: center;
+}
+
+.filter-main-buttons > .btn-secondary + .btn-secondary {
+  margin-top: 0.75rem;
+}
+
+.preset-sizes-screen-actions {
+  margin-top: 1.5rem;
+}
+
+.preset-sizes-screen {
+  width: 100%;
+  max-width: 400px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0.75rem;
+  box-sizing: border-box;
+}
+
+.preset-sizes-screen .screen-header-column {
+  align-items: center;
+}
+
+.preset-sizes-screen .screen-title {
+  width: 100%;
+  text-align: center;
+}
+
+.preset-sizes-screen > .card {
+  align-self: stretch;
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+}
+
+.preset-sizes-cancel {
+  margin-top: 1rem;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 /* Color Filters Sliders */
@@ -277,9 +387,42 @@ input[type='range']::-moz-range-thumb {
   margin: 0.5rem auto;
 }
 
+.color-filters-panel {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 1.35rem;
+  box-sizing: border-box;
+  align-items: center;
+}
+
+.color-filters-panel > div {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+}
+
+.color-filters-panel > div > label {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.45rem;
+  width: 100%;
+  max-width: 320px;
+  font-weight: 600;
+  font-size: 0.95rem;
+}
+
+.color-filters-panel .slider-wrapper {
+  width: 100%;
+  max-width: 220px;
+  margin: 0;
+  box-sizing: border-box;
+  display: block;
+}
+
 /* Preset Filters Buttons */
 .preset-filters-button {
-  margin: 0.25rem;
   text-transform: capitalize;
 }
 
@@ -308,7 +451,8 @@ input[type='range']::-moz-range-thumb {
 
 .image-editor-actions .btn-primary {
   width: 100%;
-  flex: 1;
+  display: block;
+  text-align: center;
 }
 
 .image-editor-actions .btn-primary + .btn-primary {
