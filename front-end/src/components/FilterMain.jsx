@@ -1,8 +1,7 @@
 function FilterMain({ onPresetFilters, onAddText, onColorFilters }) {
   return (
-    <div className="app-container">
-      <div className="screen-header">
-        <div className="app-logo">StickerCreate</div>
+    <div className="preset-sizes-screen">
+      <div className="screen-header screen-header-column">
         <h2 className="screen-title">Filters</h2>
       </div>
       <div className="card filter-main-buttons">
