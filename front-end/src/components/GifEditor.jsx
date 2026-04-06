@@ -1,8 +1,10 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react'
+import { convertVideoToGif } from '../services/backendGifService'
 
 const GifEditor = ({ videoFile, onCancel }) => {
     const [isProcessing, setIsProcessing] = useState(false)
     const [statusMessage, setStatusMessage] = useState(null)
+    const [backendResult, setBackendResult] = useState(null)
 
     const [duration, setDuration] = useState(0)
     const [trimStart, setTrimStart] = useState(0)
@@ -10,9 +12,15 @@ const GifEditor = ({ videoFile, onCancel }) => {
     const [showTrim, setShowTrim] = useState(false)
 
     const videoRef = useRef(null)
-    const conversionTimeoutRef = useRef(null)
-    const errorTimeoutRef = useRef(null)
-    const canPlayRef = useRef(false)
+
+    const resolveVideoUrl = (mediaValue) => {
+        if (!mediaValue) return null
+        if (typeof mediaValue === 'string') return mediaValue
+        if (typeof mediaValue === 'object') {
+            return mediaValue.url || mediaValue.src || mediaValue.source || mediaValue.fullUrl || null
+        }
+        return null
+    }
 
     const videoUrl = useMemo(() => {
         if (!videoFile) return null
@@ -26,12 +34,7 @@ const GifEditor = ({ videoFile, onCancel }) => {
         }
         return resolveVideoUrl(videoFile)
         // Not a File: do not preview, show error/placeholder
-        return null
     }, [videoFile])
-
-    // Loading and error state for video
-    const [videoLoading, setVideoLoading] = useState(false)
-    const [videoError, setVideoError] = useState(false)
 
 
     // Only revoke blob URLs in production to avoid dev Hot Reload revoking active URLs
@@ -47,26 +50,28 @@ const GifEditor = ({ videoFile, onCancel }) => {
         }
     }, [videoFile, videoUrl])
 
-    useEffect(() => () => {
-        if (conversionTimeoutRef.current) {
-            clearTimeout(conversionTimeoutRef.current)
+    useEffect(() => {
+        if (backendResult) {
+            // Placeholder for future UI that uses the backend result.
         }
-        if (errorTimeoutRef.current) {
-            clearTimeout(errorTimeoutRef.current)
-        }
-    }, [])
+    }, [backendResult])
 
     const formatTime = (s) => `${s.toFixed(1)}s`
 
-    const handleConvertToGif = () => {
-        if (!videoUrl || isProcessing) return
+    const handleConvertToGif = async () => {
+        if (!videoFile || isProcessing) return
         setIsProcessing(true)
         setStatusMessage('Converting clip to GIF…')
-        conversionTimeoutRef.current = setTimeout(() => {
-            setStatusMessage('GIF export is on the roadmap. You will be able to download the generated GIF in a future update.')
+
+        try {
+            const result = await convertVideoToGif(videoFile)
+            setBackendResult(result)
+            setStatusMessage('GIF created. Download support is coming soon.')
+        } catch (error) {
+            setStatusMessage(error?.message || 'GIF conversion failed. Please try again.')
+        } finally {
             setIsProcessing(false)
-            conversionTimeoutRef.current = null
-        }, 2000)
+        }
     }
 
     // No longer need to check support here; handled in EditorContainer

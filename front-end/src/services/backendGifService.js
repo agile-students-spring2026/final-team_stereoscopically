@@ -7,7 +7,7 @@ const parseErrorMessage = async (response) => {
   try {
     const payload = await response.json()
     if (payload?.error) return payload.error
-  } catch (error) {
+  } catch {
     // ignore JSON parse errors
   }
 
