@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react'
 import { convertVideoToGif } from '../services/backendGifService'
 
-const GifEditor = ({ videoFile, onCancel }) => {
+const GifEditor = ({ videoFile, onCancel, onConverted }) => {
     const [isProcessing, setIsProcessing] = useState(false)
     const [statusMessage, setStatusMessage] = useState(null)
     const [backendResult, setBackendResult] = useState(null)
@@ -52,9 +52,14 @@ const GifEditor = ({ videoFile, onCancel }) => {
 
     useEffect(() => {
         if (backendResult) {
-            // Placeholder for future UI that uses the backend result.
+            onConverted?.(backendResult)
         }
-    }, [backendResult])
+    }, [backendResult, onConverted])
+
+    useEffect(() => {
+        setBackendResult(null)
+        setStatusMessage(null)
+    }, [videoFile])
 
     const formatTime = (s) => `${s.toFixed(1)}s`
 
@@ -160,6 +165,18 @@ const GifEditor = ({ videoFile, onCancel }) => {
                 <p className="preview-label" style={{ marginTop: '0.75rem' }}>
                     {statusMessage}
                 </p>
+            )}
+
+            {backendResult?.url && (
+                <div className="card" style={{ marginTop: '1rem' }}>
+                    <h3 style={{ marginBottom: '0.5rem' }}>Your GIF is ready</h3>
+                    <p className="preview-label" style={{ margin: 0 }}>
+                        ID: {backendResult.id || 'pending'}
+                    </p>
+                    <p className="preview-label" style={{ margin: 0 }}>
+                        URL: {backendResult.url}
+                    </p>
+                </div>
             )}
         </div>
     )
