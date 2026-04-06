@@ -6,6 +6,7 @@ const GifEditor = ({ videoFile, onCancel, onConverted }) => {
     const [statusMessage, setStatusMessage] = useState(null)
     const [backendResult, setBackendResult] = useState(null)
     const [validationError, setValidationError] = useState(null)
+    const [conversionError, setConversionError] = useState(null)
 
     const [duration, setDuration] = useState(0)
     const [trimStart, setTrimStart] = useState(0)
@@ -61,6 +62,7 @@ const GifEditor = ({ videoFile, onCancel, onConverted }) => {
         setBackendResult(null)
         setStatusMessage(null)
         setValidationError(null)
+        setConversionError(null)
     }, [videoFile])
 
     useEffect(() => {
@@ -89,6 +91,7 @@ const GifEditor = ({ videoFile, onCancel, onConverted }) => {
     const handleConvertToGif = async () => {
         if (!videoFile || validationError || isProcessing) return
         setIsProcessing(true)
+        setConversionError(null)
         setStatusMessage('Converting clip to GIF…')
 
         try {
@@ -96,7 +99,8 @@ const GifEditor = ({ videoFile, onCancel, onConverted }) => {
             setBackendResult(result)
             setStatusMessage('GIF created. Download support is coming soon.')
         } catch (error) {
-            setStatusMessage(error?.message || 'GIF conversion failed. Please try again.')
+            setConversionError(error?.message || 'GIF conversion failed. Please try again.')
+            setStatusMessage(null)
         } finally {
             setIsProcessing(false)
         }
@@ -187,6 +191,12 @@ const GifEditor = ({ videoFile, onCancel, onConverted }) => {
             {statusMessage && (
                 <p className="preview-label" style={{ marginTop: '0.75rem' }}>
                     {statusMessage}
+                </p>
+            )}
+
+            {conversionError && (
+                <p className="preview-label" style={{ marginTop: '0.75rem', color: '#ff3b30' }}>
+                    {conversionError}
                 </p>
             )}
 
