@@ -5,6 +5,7 @@ const GifEditor = ({ videoFile, onCancel, onConverted }) => {
     const [isProcessing, setIsProcessing] = useState(false)
     const [statusMessage, setStatusMessage] = useState(null)
     const [backendResult, setBackendResult] = useState(null)
+    const [validationError, setValidationError] = useState(null)
 
     const [duration, setDuration] = useState(0)
     const [trimStart, setTrimStart] = useState(0)
@@ -59,12 +60,34 @@ const GifEditor = ({ videoFile, onCancel, onConverted }) => {
     useEffect(() => {
         setBackendResult(null)
         setStatusMessage(null)
+        setValidationError(null)
+    }, [videoFile])
+
+    useEffect(() => {
+        if (!videoFile || !(videoFile instanceof File)) {
+            setValidationError(null)
+            return
+        }
+
+        const maxSizeBytes = 50 * 1024 * 1024
+
+        if (!videoFile.type?.startsWith('video/')) {
+            setValidationError('Please select a video file.')
+            return
+        }
+
+        if (videoFile.size > maxSizeBytes) {
+            setValidationError('File is too large (max 50 MB).')
+            return
+        }
+
+        setValidationError(null)
     }, [videoFile])
 
     const formatTime = (s) => `${s.toFixed(1)}s`
 
     const handleConvertToGif = async () => {
-        if (!videoFile || isProcessing) return
+        if (!videoFile || validationError || isProcessing) return
         setIsProcessing(true)
         setStatusMessage('Converting clip to GIF…')
 
@@ -177,6 +200,12 @@ const GifEditor = ({ videoFile, onCancel, onConverted }) => {
                         URL: {backendResult.url}
                     </p>
                 </div>
+            )}
+
+            {validationError && (
+                <p className="preview-label" style={{ marginTop: '0.75rem', color: '#ff3b30' }}>
+                    {validationError}
+                </p>
             )}
         </div>
     )
