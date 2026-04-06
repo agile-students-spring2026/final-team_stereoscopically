@@ -96,6 +96,7 @@ function EditorContainer() {
     sourceUrl,
     backendImageResult,
     isUploading,
+    uploadError,
     isLoading: isSelectionLoading,
     error: selectionError,
     selectImage,
@@ -105,6 +106,7 @@ function EditorContainer() {
   } = useMediaSelection({ autoBootstrap: false })
 
   const [screen, setScreen] = useState(SCREENS.EDITOR)
+  const effectiveImageSrc = backendImageResult?.url || previewUrl
 
   const handleImageSelect = async (file) => {
     const applied = await selectImage(file)
@@ -236,7 +238,10 @@ function EditorContainer() {
       case SCREENS.EDITOR:
         return (
           <ImageEditor
-            imageSrc={backendImageResult?.url || previewUrl}
+            imageSrc={effectiveImageSrc}
+            isUploading={isUploading}
+            uploadError={uploadError}
+            isUsingBackendSource={Boolean(backendImageResult?.url)}
             onBack={handleBackToUpload}
             onOpenFilters={handleOpenFilters}
             onSize={handleOpenSizes}
@@ -253,7 +258,7 @@ function EditorContainer() {
       case SCREENS.PRESET_FILTERS:
         return (
           <PresetFilters
-            imageSrc={backendImageResult?.url || previewUrl}
+            imageSrc={effectiveImageSrc}
             onApply={handleApplyFilters}
             onCancel={() => setScreen(SCREENS.EDITOR)}
           />
@@ -261,7 +266,7 @@ function EditorContainer() {
       case SCREENS.ADD_TEXT:
         return (
           <AddText
-            imageSrc={backendImageResult?.url || previewUrl}
+            imageSrc={effectiveImageSrc}
             onApply={handleApplyFilters}
             onCancel={() => setScreen(SCREENS.EDITOR)}
           />
@@ -269,7 +274,7 @@ function EditorContainer() {
       case SCREENS.COLOR_FILTERS:
         return (
           <ColorFilters
-            imageSrc={backendImageResult?.url || previewUrl}
+            imageSrc={effectiveImageSrc}
             onApply={handleApplyFilters}
             onCancel={() => setScreen(SCREENS.EDITOR)}
           />
@@ -284,7 +289,10 @@ function EditorContainer() {
       default:
         return (
           <ImageEditor
-            imageSrc={backendImageResult?.url || previewUrl}
+            imageSrc={effectiveImageSrc}
+            isUploading={isUploading}
+            uploadError={uploadError}
+            isUsingBackendSource={Boolean(backendImageResult?.url)}
             onBack={handleBackToUpload}
             onOpenFilters={handleOpenFilters}
             onSize={handleOpenSizes}

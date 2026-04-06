@@ -1,7 +1,15 @@
 import { useState } from 'react'
 import ImageCropper from './ImageCropper'
 
-const ImageEditor = ({ imageSrc, onOpenFilters, onBack, onSize }) => {
+const ImageEditor = ({
+  imageSrc,
+  onOpenFilters,
+  onBack,
+  onSize,
+  isUploading = false,
+  uploadError = null,
+  isUsingBackendSource = false,
+}) => {
   // Track if cropper is active
   const [isReframing, setIsReframing] = useState(false)
   // Track current crop data
@@ -46,6 +54,25 @@ const ImageEditor = ({ imageSrc, onOpenFilters, onBack, onSize }) => {
   return (
     <div className="image-editor-container">
       <h2 className="image-editor-title">Image Editor</h2>
+
+      {isUploading && (
+        <p role="status" className="upload-status" style={{ marginTop: '0.5rem' }}>
+          Uploading image to backend…
+        </p>
+      )}
+
+      {!isUploading && isUsingBackendSource && (
+        <p role="status" className="upload-status" style={{ marginTop: '0.5rem' }}>
+          Using backend media source.
+        </p>
+      )}
+
+      {uploadError && (
+        <p role="alert" className="upload-status" style={{ marginTop: '0.5rem', color: '#ff3b30' }}>
+          {uploadError}
+        </p>
+      )}
+
       <div className="preview-box">
         <img src={imageSrc} alt="Preview" className="preview-image" />
       </div>
