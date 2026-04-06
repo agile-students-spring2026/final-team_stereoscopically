@@ -97,8 +97,9 @@ function EditorContainer() {
     backendImageResult,
     isUploading,
     uploadError,
+  validationError,
+  selectionError,
     isLoading: isSelectionLoading,
-    error: selectionError,
     selectImage,
     selectVideo,
     resetSelection,
@@ -204,7 +205,9 @@ function EditorContainer() {
           onVideoSelect={handleVideoSelect}
           onCameraSelect={handleCameraSelect}
           isLoading={isSelectionLoading || isUploading}
-          errorMessage={selectionError}
+          selectionError={selectionError}
+          validationError={validationError}
+          uploadError={uploadError}
         />
         {unsupportedVideo && (
           <div className="modal-overlay" style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', background: 'rgba(0,0,0,0.4)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>

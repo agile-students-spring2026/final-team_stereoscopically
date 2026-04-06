@@ -1,5 +1,13 @@
-const CreateNew = ({ onImageSelect, onVideoSelect, onCameraSelect, isLoading = false, errorMessage = null }) => {
-  const statusMessage = errorMessage || (isLoading ? 'Loading media from Pixabay…' : null)
+const CreateNew = ({
+  onImageSelect,
+  onVideoSelect,
+  onCameraSelect,
+  isLoading = false,
+  selectionError = null,
+  validationError = null,
+  uploadError = null,
+}) => {
+  const statusMessage = selectionError || (isLoading ? 'Preparing upload…' : null)
 
   return (
     <div className="card create-new">
@@ -50,6 +58,18 @@ const CreateNew = ({ onImageSelect, onVideoSelect, onCameraSelect, isLoading = f
       {statusMessage && (
         <p role="status" className="upload-status">
           {statusMessage}
+        </p>
+      )}
+
+      {validationError && (
+        <p role="alert" className="upload-status" style={{ color: '#ff3b30' }}>
+          {validationError}
+        </p>
+      )}
+
+      {uploadError && (
+        <p role="alert" className="upload-status" style={{ color: '#ff3b30' }}>
+          {uploadError}
         </p>
       )}
     </div>
