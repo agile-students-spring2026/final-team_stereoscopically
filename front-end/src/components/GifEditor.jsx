@@ -99,6 +99,7 @@ const GifEditor = ({ videoFile, onCancel, onConverted }) => {
             setBackendResult(result)
             setStatusMessage('GIF created. Download support is coming soon.')
         } catch (error) {
+            setBackendResult(null)
             setConversionError(error?.message || 'GIF conversion failed. Please try again.')
             setStatusMessage(null)
         } finally {
@@ -182,7 +183,7 @@ const GifEditor = ({ videoFile, onCancel, onConverted }) => {
                     type="button"
                     className="btn-primary"
                     onClick={handleConvertToGif}
-                    disabled={isProcessing || !videoUrl}
+                    disabled={isProcessing || !videoUrl || Boolean(validationError)}
                 >
                     {isProcessing ? 'Processing...' : 'Create GIF'}
                 </button>
