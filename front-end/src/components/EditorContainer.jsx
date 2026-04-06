@@ -19,6 +19,9 @@ const SCREENS = {
   PRESET_SIZES: 'preset-sizes',
 }
 
+const MAX_UPLOAD_SIZE_BYTES = 50 * 1024 * 1024
+const FILE_TOO_LARGE_MESSAGE = 'File is too large (max 50 MB).'
+
 function resizeImageToDimensions(imageUrl, targetWidth, targetHeight, preserveAspect = false) {
   return new Promise((resolve, reject) => {
     const img = new Image()
@@ -108,8 +111,16 @@ function EditorContainer() {
 
   const [screen, setScreen] = useState(SCREENS.EDITOR)
   const effectiveImageSrc = backendImageResult?.url || previewUrl
+  const [fileTooLargeMessage, setFileTooLargeMessage] = useState(null)
 
   const handleImageSelect = async (file) => {
+    if (!file) return
+    if (file.size > MAX_UPLOAD_SIZE_BYTES) {
+      setFileTooLargeMessage(FILE_TOO_LARGE_MESSAGE)
+      return
+    }
+
+    setFileTooLargeMessage(null)
     const applied = await selectImage(file)
     if (applied) {
       setScreen(SCREENS.EDITOR)
@@ -119,10 +130,16 @@ function EditorContainer() {
   const [unsupportedVideo, setUnsupportedVideo] = useState(null)
   const handleVideoSelect = async (file) => {
     if (!file) return
+    if (file.size > MAX_UPLOAD_SIZE_BYTES) {
+      setFileTooLargeMessage(FILE_TOO_LARGE_MESSAGE)
+      return
+    }
+
     if (!isVideoTypeSupported(file)) {
       setUnsupportedVideo(file)
       return
     }
+    setFileTooLargeMessage(null)
     setUnsupportedVideo(null)
     const applied = await selectVideo(file)
     if (applied) {
@@ -138,6 +155,13 @@ function EditorContainer() {
       const blob = await imageCapture.takePhoto()
       const file = new File([blob], 'camera.png', { type: 'image/png' })
       track.stop()
+
+      if (file.size > MAX_UPLOAD_SIZE_BYTES) {
+        setFileTooLargeMessage(FILE_TOO_LARGE_MESSAGE)
+        return
+      }
+
+      setFileTooLargeMessage(null)
       const applied = await selectImage(file)
       if (applied) {
         setScreen(SCREENS.EDITOR)
@@ -204,6 +228,7 @@ function EditorContainer() {
           onImageSelect={handleImageSelect}
           onVideoSelect={handleVideoSelect}
           onCameraSelect={handleCameraSelect}
+          isCameraDisabled
           isLoading={isSelectionLoading || isUploading}
           selectionError={selectionError}
           validationError={validationError}
@@ -227,6 +252,22 @@ function EditorContainer() {
             </div>
           </div>
         )}
+
+        {fileTooLargeMessage && (
+          <div className="modal-overlay" style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', background: 'rgba(0,0,0,0.4)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <div className="modal-content" style={{ background: '#fff', padding: '2rem', borderRadius: '8px', boxShadow: '0 2px 16px rgba(0,0,0,0.2)', maxWidth: 360, textAlign: 'center' }}>
+              <h3 style={{ color: '#c00', marginBottom: '1rem' }}>Upload Error</h3>
+              <p style={{ marginBottom: '1.5rem' }}>{fileTooLargeMessage}</p>
+              <button
+                className="btn-primary"
+                style={{ marginBottom: '1rem' }}
+                onClick={() => setFileTooLargeMessage(null)}
+              >
+                Re-upload
+              </button>
+            </div>
+          </div>
+        )}
       </>
     }
 
@@ -244,7 +285,6 @@ function EditorContainer() {
             imageSrc={effectiveImageSrc}
             isUploading={isUploading}
             uploadError={uploadError}
-            isUsingBackendSource={Boolean(backendImageResult?.url)}
             onBack={handleBackToUpload}
             onOpenFilters={handleOpenFilters}
             onSize={handleOpenSizes}
@@ -295,7 +335,6 @@ function EditorContainer() {
             imageSrc={effectiveImageSrc}
             isUploading={isUploading}
             uploadError={uploadError}
-            isUsingBackendSource={Boolean(backendImageResult?.url)}
             onBack={handleBackToUpload}
             onOpenFilters={handleOpenFilters}
             onSize={handleOpenSizes}

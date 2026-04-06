@@ -38,9 +38,9 @@ const useMediaSelection = (options = {}) => {
       return false
     }
 
-    const maxImageSizeBytes = 10 * 1024 * 1024
+    const maxImageSizeBytes = 50 * 1024 * 1024
     if (file.size > maxImageSizeBytes) {
-      setValidationError('Image file is too large (max 10 MB).')
+      setValidationError('File is too large (max 50 MB).')
       return false
     }
 

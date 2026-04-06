@@ -29,10 +29,15 @@ export const postMultipart = async ({
 
   const endpoint = `${getBackendBaseUrl()}${path}`
 
-  const response = await fetch(endpoint, {
-    method: 'POST',
-    body: formData,
-  })
+  let response
+  try {
+    response = await fetch(endpoint, {
+      method: 'POST',
+      body: formData,
+    })
+  } catch {
+    throw new Error('Unable to reach backend. Please make sure the backend server is running.')
+  }
 
   if (!response.ok) {
     const message = await parseErrorMessage(response, fallbackErrorMessage)

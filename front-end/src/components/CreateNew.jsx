@@ -2,6 +2,7 @@ const CreateNew = ({
   onImageSelect,
   onVideoSelect,
   onCameraSelect,
+  isCameraDisabled = false,
   isLoading = false,
   selectionError = null,
   validationError = null,
@@ -48,10 +49,12 @@ const CreateNew = ({
         <button
           type="button"
           className="upload-button"
-          onClick={() => onCameraSelect?.()}
-          disabled={isLoading}
+          onClick={() => {
+            if (!isCameraDisabled) onCameraSelect?.()
+          }}
+          disabled={isLoading || isCameraDisabled}
         >
-          Open Camera
+          Open Camera (temporarily disabled)
         </button>
       </div>
 

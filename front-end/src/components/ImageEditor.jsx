@@ -8,7 +8,6 @@ const ImageEditor = ({
   onSize,
   isUploading = false,
   uploadError = null,
-  isUsingBackendSource = false,
 }) => {
   // Track if cropper is active
   const [isReframing, setIsReframing] = useState(false)
@@ -58,12 +57,6 @@ const ImageEditor = ({
       {isUploading && (
         <p role="status" className="upload-status" style={{ marginTop: '0.5rem' }}>
           Uploading image to backend…
-        </p>
-      )}
-
-      {!isUploading && isUsingBackendSource && (
-        <p role="status" className="upload-status" style={{ marginTop: '0.5rem' }}>
-          Using backend media source.
         </p>
       )}
 
