@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import usePixabayMedia from './usePixabayMedia'
 import { derivePreviewUrl, deriveSourceUrl } from '../services/mediaSelection'
+import { uploadImageToBackend } from '../services/backendImageService'
 
 const useMediaSelection = (options = {}) => {
   const { autoBootstrap = false } = options
@@ -10,6 +11,10 @@ const useMediaSelection = (options = {}) => {
   const [sourceUrl, setSourceUrl] = useState(null)
   const [selectionError, setSelectionError] = useState(null)
   const [isBootstrapLoading, setIsBootstrapLoading] = useState(false)
+  const [backendImageResult, setBackendImageResult] = useState(null)
+  const [isUploading, setIsUploading] = useState(false)
+  const [uploadError, setUploadError] = useState(null)
+  const [validationError, setValidationError] = useState(null)
 
   const imageApi = usePixabayMedia('image', { auto: false })
 
@@ -85,18 +90,47 @@ const useMediaSelection = (options = {}) => {
     }
   }, [autoBootstrap, bootstrapInitialSelection, selectedMedia])
 
-  const selectImage = useCallback(async () => {
+  const selectImage = useCallback(async (file) => {
     setSelectionError(null)
-    const applied = await imageApi.fetchAndSelect(({ item, previewUrl, sourceUrl }) =>
-      applyImageSelection(item, { previewUrl, sourceUrl })
-    )
 
-    if (!applied) {
-      setSelectionError('Unable to select image media right now. Please try again.')
+    if (!file) {
+      setValidationError('Please select an image file.')
+      return false
     }
 
-    return applied
-  }, [applyImageSelection, imageApi])
+    if (!file.type?.startsWith('image/')) {
+      setValidationError('Please select an image file.')
+      return false
+    }
+
+    const maxImageSizeBytes = 10 * 1024 * 1024
+    if (file.size > maxImageSizeBytes) {
+      setValidationError('Image file is too large (max 10 MB).')
+      return false
+    }
+
+    setValidationError(null)
+    setUploadError(null)
+
+    const localPreviewUrl = URL.createObjectURL(file)
+    setMediaType('image')
+    setSelectedMedia(file)
+    setPreviewUrl(localPreviewUrl)
+    setSourceUrl(localPreviewUrl)
+
+    setIsUploading(true)
+    try {
+      const uploadedMedia = await uploadImageToBackend(file)
+      setBackendImageResult(uploadedMedia)
+      return true
+    } catch (error) {
+      console.error('[useMediaSelection] Unable to upload image to backend', error)
+      setUploadError(error?.message || 'Image upload failed. Please try again.')
+      return true
+    } finally {
+      setIsUploading(false)
+    }
+  }, [])
 
   // selectVideo now expects a File (user input)
   const selectVideo = useCallback((file) => {
@@ -114,6 +148,10 @@ const useMediaSelection = (options = {}) => {
     setPreviewUrl(null)
     setSourceUrl(null)
     setSelectionError(null)
+    setBackendImageResult(null)
+    setIsUploading(false)
+    setUploadError(null)
+    setValidationError(null)
   }, [])
 
   const applyTransformedImage = useCallback((file, nextPreviewUrl) => {
@@ -127,13 +165,17 @@ const useMediaSelection = (options = {}) => {
   }, [])
 
   const isSelectionLoading = isBootstrapLoading || imageApi.isLoading
-  const combinedError = selectionError || imageApi.error?.message || null
+  const combinedError = validationError || uploadError || selectionError || imageApi.error?.message || null
 
   return {
     mediaType,
     selectedMedia,
     previewUrl,
     sourceUrl,
+  backendImageResult,
+  isUploading,
+  uploadError,
+  validationError,
     isLoading: isSelectionLoading,
     error: combinedError,
     selectImage,

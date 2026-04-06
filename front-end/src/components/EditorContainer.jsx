@@ -94,6 +94,8 @@ function EditorContainer() {
     selectedMedia,
     previewUrl,
     sourceUrl,
+    backendImageResult,
+    isUploading,
     isLoading: isSelectionLoading,
     error: selectionError,
     selectImage,
@@ -104,8 +106,8 @@ function EditorContainer() {
 
   const [screen, setScreen] = useState(SCREENS.EDITOR)
 
-  const handleImageSelect = async () => {
-    const applied = await selectImage()
+  const handleImageSelect = async (file) => {
+    const applied = await selectImage(file)
     if (applied) {
       setScreen(SCREENS.EDITOR)
     }
@@ -133,8 +135,10 @@ function EditorContainer() {
       const blob = await imageCapture.takePhoto()
       const file = new File([blob], 'camera.png', { type: 'image/png' })
       track.stop()
-      await selectImage(file)
-      setScreen(SCREENS.EDITOR)
+      const applied = await selectImage(file)
+      if (applied) {
+        setScreen(SCREENS.EDITOR)
+      }
     } catch (err) {
       console.error('Camera error:', err)
     }
@@ -197,7 +201,7 @@ function EditorContainer() {
           onImageSelect={handleImageSelect}
           onVideoSelect={handleVideoSelect}
           onCameraSelect={handleCameraSelect}
-          isLoading={isSelectionLoading}
+          isLoading={isSelectionLoading || isUploading}
           errorMessage={selectionError}
         />
         {unsupportedVideo && (
@@ -232,7 +236,7 @@ function EditorContainer() {
       case SCREENS.EDITOR:
         return (
           <ImageEditor
-            imageSrc={previewUrl}
+            imageSrc={backendImageResult?.url || previewUrl}
             onBack={handleBackToUpload}
             onOpenFilters={handleOpenFilters}
             onSize={handleOpenSizes}
@@ -249,7 +253,7 @@ function EditorContainer() {
       case SCREENS.PRESET_FILTERS:
         return (
           <PresetFilters
-            imageSrc={previewUrl}
+            imageSrc={backendImageResult?.url || previewUrl}
             onApply={handleApplyFilters}
             onCancel={() => setScreen(SCREENS.EDITOR)}
           />
@@ -257,7 +261,7 @@ function EditorContainer() {
       case SCREENS.ADD_TEXT:
         return (
           <AddText
-            imageSrc={previewUrl}
+            imageSrc={backendImageResult?.url || previewUrl}
             onApply={handleApplyFilters}
             onCancel={() => setScreen(SCREENS.EDITOR)}
           />
@@ -265,7 +269,7 @@ function EditorContainer() {
       case SCREENS.COLOR_FILTERS:
         return (
           <ColorFilters
-            imageSrc={previewUrl}
+            imageSrc={backendImageResult?.url || previewUrl}
             onApply={handleApplyFilters}
             onCancel={() => setScreen(SCREENS.EDITOR)}
           />
@@ -280,7 +284,7 @@ function EditorContainer() {
       default:
         return (
           <ImageEditor
-            imageSrc={previewUrl}
+            imageSrc={backendImageResult?.url || previewUrl}
             onBack={handleBackToUpload}
             onOpenFilters={handleOpenFilters}
             onSize={handleOpenSizes}
