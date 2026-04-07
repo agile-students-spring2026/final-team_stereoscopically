@@ -10,6 +10,7 @@ import GifEditor from './GifEditor'
 import useMediaSelection from '../hooks/useMediaSelection'
 import { isVideoTypeSupported } from './videoSupport'
 import CameraCapture from './CameraCapture'
+import PhotoPreview from './PhotoPreview'
 
 const SCREENS = {
   EDITOR: 'editor',
@@ -19,6 +20,7 @@ const SCREENS = {
   COLOR_FILTERS: 'color',
   PRESET_SIZES: 'preset-sizes',
   CAMERA: 'camera',
+  CAMERA_PREVIEW: 'camera-preview'
 }
 
 const MAX_UPLOAD_SIZE_BYTES = 50 * 1024 * 1024
@@ -130,6 +132,7 @@ function EditorContainer() {
   const [fileTooLargeMessage, setFileTooLargeMessage] = useState(null)
   const [unsupportedImageMessage, setUnsupportedImageMessage] = useState(null)
   const [lastRejectedUploadType, setLastRejectedUploadType] = useState(null)
+  const [tempCapturedFile, setTempCapturedFile] = useState(null)
   const imageFileInputRef = useRef(null)
   const videoFileInputRef = useRef(null)
 
@@ -240,16 +243,35 @@ function EditorContainer() {
       if (screen === SCREENS.CAMERA) {
         return (
           <CameraCapture
-            onCapture={async (file) => {
-              setScreen(SCREENS.EDITOR)
+            onCapture={(file) => {
+              setTempCapturedFile(file)
+              setScreen(SCREENS.CAMERA_PREVIEW)
+            }}
+            onCancel={handleBackToUpload}
+          />
+        )
+      }
+
+      if (screen === SCREENS.CAMERA_PREVIEW){
+        return (
+          <PhotoPreview
+            file={tempCapturedFile}
+            onRetake={() =>{
+              setTempCapturedFile(null)
+              setScreen(SCREENS.CAMERA)
+            }}
+            onConfirm={ async () => {
+              const file = tempCapturedFile
+              setTempCapturedFile(null)
 
               if (file.type.startsWith('video/')) {
                 await handleVideoSelect(file)
               } else {
                 await handleImageSelect(file)
               }
-            }}
-            onCancel={handleBackToUpload}
+            }
+          }
+          onBack={handleBackToUpload}
           />
         )
       }
