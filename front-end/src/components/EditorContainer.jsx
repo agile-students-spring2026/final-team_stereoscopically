@@ -415,19 +415,6 @@ function EditorContainer() {
             onCancel={() => setScreen(SCREENS.EDITOR)}
           />
         )
-        case SCREENS.CAMERA:
-  return (
-    <CameraCapture
-      onCapture={async (file) => {
-        if (file.type.startsWith('video/')) {
-          await handleVideoSelect(file)
-        } else {
-          await handleImageSelect(file)
-        }
-      }}
-      onCancel={handleBackToUpload}
-    />
-  )
       default:
         return (
           <ImageEditor
