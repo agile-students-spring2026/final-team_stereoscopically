@@ -67,6 +67,8 @@ function EditorContainer() {
   const [tempCapturedFile, setTempCapturedFile] = useState(null)
   const [selectedPreset, setSelectedPreset] = useState(null)
   const [latestExportResult, setLatestExportResult] = useState(null)
+  const [lastExportLetterbox, setLastExportLetterbox] = useState(null)
+  const [letterboxColor, setLetterboxColor] = useState('transparent')
   const [isExporting, setIsExporting] = useState(false)
   const [exportError, setExportError] = useState(null)
   const imageFileInputRef = useRef(null)
@@ -99,6 +101,8 @@ function EditorContainer() {
     setFileTooLargeMessage(null)
     setSelectedPreset(null)
     setLatestExportResult(null)
+    setLastExportLetterbox(null)
+    setLetterboxColor('transparent')
     setExportError(null)
     const applied = await selectImage(file)
     if (applied) {
@@ -137,6 +141,8 @@ function EditorContainer() {
     resetSelection()
     setSelectedPreset(null)
     setLatestExportResult(null)
+    setLastExportLetterbox(null)
+    setLetterboxColor('transparent')
     setExportError(null)
     setScreen(SCREENS.EDITOR)
   }
@@ -168,6 +174,7 @@ function EditorContainer() {
         mediaId: backendImageResult.id,
         width: size.width,
         height: size.height,
+        letterboxColor,
       })
 
       const response = await fetch(exported.url)
@@ -187,6 +194,7 @@ function EditorContainer() {
       applyTransformedImage(file, objectUrl)
       setSelectedPreset(size)
       setLatestExportResult(exported)
+      setLastExportLetterbox(letterboxColor)
     } catch (err) {
       console.error('Preset export failed:', err)
       setExportError(err?.message || 'Failed to export image at the selected size.')
@@ -211,17 +219,24 @@ function EditorContainer() {
     try {
       setIsExporting(true)
       setExportError(null)
+      const dimsMatch =
+        latestExportResult &&
+        latestExportResult.width === selectedPreset.width &&
+        latestExportResult.height === selectedPreset.height
+      const letterboxMatch = lastExportLetterbox === letterboxColor
+
       const exported =
-        latestExportResult?.width === selectedPreset.width &&
-        latestExportResult?.height === selectedPreset.height
+        dimsMatch && letterboxMatch
           ? latestExportResult
           : await exportImageFromBackend({
               mediaId: backendImageResult?.id,
               width: selectedPreset.width,
               height: selectedPreset.height,
+              letterboxColor,
             })
 
       setLatestExportResult(exported)
+      setLastExportLetterbox(letterboxColor)
       const link = document.createElement('a')
       link.href = exported.downloadUrl || exported.url
       link.download = exported.fileName || 'sticker.png'
@@ -436,6 +451,8 @@ function EditorContainer() {
       case SCREENS.PRESET_SIZES:
         return (
           <PresetSizes
+            letterboxColor={letterboxColor}
+            onLetterboxColorChange={setLetterboxColor}
             onSelect={handleSizeSelect}
             onCancel={() => setScreen(SCREENS.EDITOR)}
           />

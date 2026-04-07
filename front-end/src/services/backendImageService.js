@@ -23,10 +23,10 @@ export const uploadImageToBackend = async (imageFile) => {
   }
 }
 
-export const exportImageFromBackend = async ({ mediaId, width, height }) => {
+export const exportImageFromBackend = async ({ mediaId, width, height, letterboxColor = 'transparent' }) => {
   const payload = await postJson({
     path: '/api/export/image',
-    payload: { mediaId, width, height },
+    payload: { mediaId, width, height, letterboxColor },
     fallbackErrorMessage: 'Image export failed',
   })
 

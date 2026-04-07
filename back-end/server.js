@@ -10,6 +10,24 @@ const MAX_EXPORT_DIMENSION = 4096
 const MEDIA_TTL_MS = 10 * 60 * 1000
 const inMemoryMediaStore = new Map()
 
+const parseLetterboxBackground = (raw) => {
+	if (raw == null || raw === '' || raw === 'transparent') {
+		return { r: 0, g: 0, b: 0, alpha: 0 }
+	}
+	if (typeof raw !== 'string') {
+		return null
+	}
+	const hex = raw.trim()
+	if (!/^#[0-9A-Fa-f]{6}$/.test(hex)) {
+		return null
+	}
+	const r = Number.parseInt(hex.slice(1, 3), 16)
+	const g = Number.parseInt(hex.slice(3, 5), 16)
+	const b = Number.parseInt(hex.slice(5, 7), 16)
+	// Sharp expects alpha in 0–1 for resize background
+	return { r, g, b, alpha: 1 }
+}
+
 const upload = multer({
 	storage: multer.memoryStorage(),
 	limits: { fileSize: MAX_IMAGE_SIZE_BYTES },
@@ -66,9 +84,16 @@ app.post('/api/upload/image', upload.single('file'), (req, res) => {
 })
 
 app.post('/api/export/image', async (req, res) => {
-	const { mediaId, width, height } = req.body ?? {}
+	const { mediaId, width, height, letterboxColor } = req.body ?? {}
 	const targetWidth = Number(width)
 	const targetHeight = Number(height)
+	const background = parseLetterboxBackground(letterboxColor)
+	if (background === null) {
+		return res.status(400).json({
+			error: 'Invalid letterbox color. Use "transparent" or a #RRGGBB hex value.',
+			code: 'INVALID_LETTERBOX_COLOR',
+		})
+	}
 
 	if (!mediaId) {
 		return res.status(400).json({
@@ -108,11 +133,31 @@ app.post('/api/export/image', async (req, res) => {
 	}
 
 	try {
-		const exportedBuffer = await sharp(media.buffer)
+		// Scale to fit inside the preset (no crop), then composite onto a full-size canvas so letterbox color is always applied.
+		const resizedBuf = await sharp(media.buffer)
+			.rotate()
 			.resize(targetWidth, targetHeight, {
-				fit: 'cover',
-				position: 'centre',
+				fit: 'inside',
+				withoutEnlargement: false,
 			})
+			.png()
+			.toBuffer()
+
+		const { width: resizedW, height: resizedH } = await sharp(resizedBuf).metadata()
+		const rw = resizedW ?? targetWidth
+		const rh = resizedH ?? targetHeight
+		const left = Math.max(0, Math.round((targetWidth - rw) / 2))
+		const top = Math.max(0, Math.round((targetHeight - rh) / 2))
+
+		const exportedBuffer = await sharp({
+			create: {
+				width: targetWidth,
+				height: targetHeight,
+				channels: 4,
+				background,
+			},
+		})
+			.composite([{ input: resizedBuf, left, top }])
 			.png()
 			.toBuffer()
 

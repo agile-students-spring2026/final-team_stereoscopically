@@ -1,15 +1,46 @@
 const PRESET_SIZES = [
-  { id: 'emoji-square', label: 'Emoji (Square)', width: 128, height: 128 },
-  { id: 'sticker-square', label: 'Sticker (Square)', width: 512, height: 512 },
-  { id: 'wide-sticker', label: 'Wide Sticker', width: 320, height: 128 },
-  { id: 'instagram-story', label: 'Instagram Story', width: 1080, height: 1920 },
-];
+  { id: 'discord-emoji', label: 'Discord Emoji', width: 128, height: 128 },
+  { id: 'discord-sticker', label: 'Discord Sticker', width: 320, height: 320 },
+  { id: 'whatsapp', label: 'WhatsApp Sticker', width: 512, height: 512 },
+  { id: 'imessage', label: 'iMessage Sticker', width: 408, height: 408 },
+]
 
-function PresetSizes({ onSelect, onCancel }) {
+const LETTERBOX_SWATCHES = [
+  { id: 'transparent', label: 'Transparent', value: 'transparent' },
+  { id: 'white', label: 'White', value: '#ffffff' },
+  { id: 'black', label: 'Black', value: '#000000' },
+]
+
+function PresetSizes({ letterboxColor, onLetterboxColorChange, onSelect, onCancel }) {
   return (
     <div className="preset-sizes-screen">
       <div className="screen-header screen-header-column">
-        <h2 className="screen-title">Preset Sizes</h2>
+        <h2 className="screen-title">Platform output (pixels)</h2>
+      </div>
+      <div className="preset-letterbox card">
+        <p className="preset-letterbox-label">Letterbox / margins</p>
+        <div className="preset-letterbox-row">
+          {LETTERBOX_SWATCHES.map(({ id, label, value }) => (
+            <button
+              key={id}
+              type="button"
+              className={letterboxColor === value ? 'btn-primary' : 'btn-secondary'}
+              onClick={() => onLetterboxColorChange(value)}
+            >
+              {label}
+            </button>
+          ))}
+          <label className="preset-letterbox-custom">
+            <span className="preset-letterbox-custom-label">Custom</span>
+            <input
+              type="color"
+              className="preset-letterbox-color-input"
+              value={letterboxColor === 'transparent' ? '#ffffff' : letterboxColor}
+              onChange={(e) => onLetterboxColorChange(e.target.value.toLowerCase())}
+              aria-label="Custom letterbox color"
+            />
+          </label>
+        </div>
       </div>
       <div className="card filter-main-buttons">
         {PRESET_SIZES.map(({ id, label, width, height }) => (
@@ -19,7 +50,7 @@ function PresetSizes({ onSelect, onCancel }) {
             className="btn-primary"
             onClick={() => onSelect({ id, label, width, height })}
           >
-            {label} ({width} × {height})
+            {label} ({width} × {height} px)
           </button>
         ))}
         <button type="button" className="btn-secondary preset-sizes-cancel" onClick={onCancel}>
@@ -27,7 +58,7 @@ function PresetSizes({ onSelect, onCancel }) {
         </button>
       </div>
     </div>
-  );
+  )
 }
 
-export default PresetSizes;
+export default PresetSizes
