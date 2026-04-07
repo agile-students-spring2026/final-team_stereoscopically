@@ -1,8 +1,8 @@
 const PRESET_SIZES = [
-  { id: 'discord-emoji', label: 'Discord Emoji', width: 128, height: 128 },
-  { id: 'discord-sticker', label: 'Discord Sticker', width: 320, height: 320 },
-  { id: 'whatsapp', label: 'WhatsApp Sticker', width: 512, height: 512 },
-  { id: 'imessage', label: 'iMessage Sticker', width: 300, height: 300 },
+  { id: 'emoji-square', label: 'Emoji (Square)', width: 128, height: 128 },
+  { id: 'sticker-square', label: 'Sticker (Square)', width: 512, height: 512 },
+  { id: 'wide-sticker', label: 'Wide Sticker', width: 320, height: 128 },
+  { id: 'instagram-story', label: 'Instagram Story', width: 1080, height: 1920 },
 ];
 
 function PresetSizes({ onSelect, onCancel }) {
