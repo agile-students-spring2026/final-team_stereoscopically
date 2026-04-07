@@ -1,8 +1,7 @@
 import { useCallback, useState } from 'react'
 import { uploadImageToBackend } from '../services/backendImageService'
 
-const useMediaSelection = (options = {}) => {
-  const { autoBootstrap: _autoBootstrap = false } = options
+const useMediaSelection = () => {
   const [mediaType, setMediaType] = useState(null)
   const [selectedMedia, setSelectedMedia] = useState(null)
   const [previewUrl, setPreviewUrl] = useState(null)
@@ -108,7 +107,7 @@ const useMediaSelection = (options = {}) => {
     uploadError,
     validationError,
     selectionError,
-  isLoading: false,
+    isLoading: false,
     error: combinedError,
     selectImage,
     selectVideo,

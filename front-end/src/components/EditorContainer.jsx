@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import CreateNew from './CreateNew'
 import ImageEditor from './ImageEditor'
 import FilterMain from './FilterMain'
@@ -114,22 +114,35 @@ function EditorContainer() {
     backendImageResult,
     isUploading,
     uploadError,
-  validationError,
-  selectionError,
+    validationError,
+    selectionError,
     isLoading: isSelectionLoading,
     selectImage,
     selectVideo,
     resetSelection,
     applyTransformedImage,
-  } = useMediaSelection({ autoBootstrap: false })
+  } = useMediaSelection()
 
   const [screen, setScreen] = useState(SCREENS.EDITOR)
   const effectiveImageSrc = backendImageResult?.url || previewUrl
   const [fileTooLargeMessage, setFileTooLargeMessage] = useState(null)
   const [unsupportedImageMessage, setUnsupportedImageMessage] = useState(null)
+  const [lastRejectedUploadType, setLastRejectedUploadType] = useState(null)
+  const imageFileInputRef = useRef(null)
+  const videoFileInputRef = useRef(null)
+
+  const openImagePicker = () => {
+    imageFileInputRef.current?.click()
+  }
+
+  const openVideoPicker = () => {
+    videoFileInputRef.current?.click()
+  }
 
   const handleImageSelect = async (file) => {
     if (!file) return
+
+    setLastRejectedUploadType('image')
 
     if (isHeicFile(file)) {
       setUnsupportedImageMessage(HEIC_UNSUPPORTED_MESSAGE)
@@ -152,6 +165,9 @@ function EditorContainer() {
   const [unsupportedVideo, setUnsupportedVideo] = useState(null)
   const handleVideoSelect = async (file) => {
     if (!file) return
+
+    setLastRejectedUploadType('video')
+
     if (file.size > MAX_UPLOAD_SIZE_BYTES) {
       setFileTooLargeMessage(FILE_TOO_LARGE_MESSAGE)
       return
@@ -247,6 +263,32 @@ function EditorContainer() {
 
     if (!selectedMedia) {
       return <>
+        <input
+          ref={imageFileInputRef}
+          type="file"
+          accept="image/*"
+          style={{ display: 'none' }}
+          onChange={(event) => {
+            const file = event.target.files?.[0]
+            if (file) {
+              handleImageSelect(file)
+            }
+            event.target.value = ''
+          }}
+        />
+        <input
+          ref={videoFileInputRef}
+          type="file"
+          accept="video/*"
+          style={{ display: 'none' }}
+          onChange={(event) => {
+            const file = event.target.files?.[0]
+            if (file) {
+              handleVideoSelect(file)
+            }
+            event.target.value = ''
+          }}
+        />
         <CreateNew
           onImageSelect={handleImageSelect}
           onVideoSelect={handleVideoSelect}
@@ -255,7 +297,6 @@ function EditorContainer() {
           isLoading={isSelectionLoading || isUploading}
           selectionError={selectionError}
           validationError={validationError}
-          uploadError={uploadError}
         />
         {unsupportedVideo && (
           <div className="modal-overlay" style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', background: 'rgba(0,0,0,0.4)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -268,7 +309,10 @@ function EditorContainer() {
               <button
                 className="btn-primary"
                 style={{ marginBottom: '1rem' }}
-                onClick={() => setUnsupportedVideo(null)}
+                onClick={() => {
+                  setUnsupportedVideo(null)
+                  openVideoPicker()
+                }}
               >
                 Re-upload Video
               </button>
@@ -284,7 +328,16 @@ function EditorContainer() {
               <button
                 className="btn-primary"
                 style={{ marginBottom: '1rem' }}
-                onClick={() => setFileTooLargeMessage(null)}
+                onClick={() => {
+                  setFileTooLargeMessage(null)
+                  if (lastRejectedUploadType === 'video') {
+                    openVideoPicker()
+                    return
+                  }
+                  if (lastRejectedUploadType === 'image') {
+                    openImagePicker()
+                  }
+                }}
               >
                 Re-upload
               </button>
@@ -300,7 +353,10 @@ function EditorContainer() {
               <button
                 className="btn-primary"
                 style={{ marginBottom: '1rem' }}
-                onClick={() => setUnsupportedImageMessage(null)}
+                onClick={() => {
+                  setUnsupportedImageMessage(null)
+                  openImagePicker()
+                }}
               >
                 Re-upload
               </button>

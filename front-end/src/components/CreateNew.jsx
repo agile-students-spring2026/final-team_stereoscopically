@@ -6,7 +6,6 @@ const CreateNew = ({
   isLoading = false,
   selectionError = null,
   validationError = null,
-  uploadError = null,
 }) => {
   const statusMessage = selectionError
 
@@ -70,11 +69,6 @@ const CreateNew = ({
         </p>
       )}
 
-      {uploadError && (
-        <p role="alert" className="upload-status" style={{ color: '#ff3b30' }}>
-          {uploadError}
-        </p>
-      )}
     </div>
   )
 }
