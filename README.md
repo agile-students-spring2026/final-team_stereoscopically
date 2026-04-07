@@ -46,5 +46,6 @@ Ensure you have Node.js and npm installed
 - Install dependencies: `npm install`
  
 - Start the development server: `npm run dev`
+- Also start the back-end server in `back-end` (`npm install` then `npm run dev`) so API requests work at `http://localhost:4000`.
 
 - Open the app in your browser by navigating to: `http://localhost:5173/`
