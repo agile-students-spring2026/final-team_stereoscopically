@@ -9,6 +9,7 @@ import ColorFilters from './ColorFilters'
 import GifEditor from './GifEditor'
 import useMediaSelection from '../hooks/useMediaSelection'
 import { isVideoTypeSupported } from './videoSupport'
+import CameraCapture from './CameraCapture'
 
 const SCREENS = {
   EDITOR: 'editor',
@@ -17,6 +18,7 @@ const SCREENS = {
   ADD_TEXT: 'text',
   COLOR_FILTERS: 'color',
   PRESET_SIZES: 'preset-sizes',
+  CAMERA: 'camera',
 }
 
 const MAX_UPLOAD_SIZE_BYTES = 50 * 1024 * 1024
@@ -185,29 +187,8 @@ function EditorContainer() {
     }
   }
 
-  const handleCameraSelect = async () => {
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ video: true })
-      const track = stream.getVideoTracks()[0]
-      const imageCapture = new ImageCapture(track)
-      const blob = await imageCapture.takePhoto()
-      const file = new File([blob], 'camera.png', { type: 'image/png' })
-      track.stop()
-
-      if (file.size > MAX_UPLOAD_SIZE_BYTES) {
-        setFileTooLargeMessage(FILE_TOO_LARGE_MESSAGE)
-        return
-      }
-
-      setUnsupportedImageMessage(null)
-      setFileTooLargeMessage(null)
-      const applied = await selectImage(file)
-      if (applied) {
-        setScreen(SCREENS.EDITOR)
-      }
-    } catch (err) {
-      console.error('Camera error:', err)
-    }
+  const handleCameraSelect = () => {
+    setScreen(SCREENS.CAMERA)
   }
 
   const handleBackToUpload = () => {
@@ -255,110 +236,127 @@ function EditorContainer() {
   }
 
   const renderContent = () => {
-
     if (!selectedMedia) {
-      return <>
-        <input
-          ref={imageFileInputRef}
-          type="file"
-          accept="image/*"
-          style={{ display: 'none' }}
-          onChange={(event) => {
-            const file = event.target.files?.[0]
-            if (file) {
-              handleImageSelect(file)
-            }
-            event.target.value = ''
-          }}
-        />
-        <input
-          ref={videoFileInputRef}
-          type="file"
-          accept="video/*"
-          style={{ display: 'none' }}
-          onChange={(event) => {
-            const file = event.target.files?.[0]
-            if (file) {
-              handleVideoSelect(file)
-            }
-            event.target.value = ''
-          }}
-        />
-        <CreateNew
-          onImageSelect={handleImageSelect}
-          onVideoSelect={handleVideoSelect}
-          onCameraSelect={handleCameraSelect}
-          isCameraDisabled
-          isLoading={isSelectionLoading || isUploading}
-          selectionError={selectionError}
-          validationError={validationError}
-        />
-        {unsupportedVideo && (
-          <div className="modal-overlay" style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', background: 'rgba(0,0,0,0.4)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <div className="modal-content" style={{ background: '#fff', padding: '2rem', borderRadius: '8px', boxShadow: '0 2px 16px rgba(0,0,0,0.2)', maxWidth: 360, textAlign: 'center' }}>
-              <h3 style={{ color: '#c00', marginBottom: '1rem' }}>Unsupported Video Format</h3>
-              <p style={{ marginBottom: '1.5rem' }}>
-                This video format ({unsupportedVideo.type || unsupportedVideo.name.split('.').pop()}) is not supported by your browser.<br />
-                Please upload an MP4 or WebM video.
-              </p>
-              <button
-                className="btn-primary"
-                style={{ marginBottom: '1rem' }}
-                onClick={() => {
-                  setUnsupportedVideo(null)
-                  openVideoPicker()
-                }}
-              >
-                Re-upload Video
-              </button>
-            </div>
-          </div>
-        )}
+      if (screen === SCREENS.CAMERA) {
+        return (
+          <CameraCapture
+            onCapture={async (file) => {
+              setScreen(SCREENS.EDITOR)
 
-        {fileTooLargeMessage && (
-          <div className="modal-overlay" style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', background: 'rgba(0,0,0,0.4)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <div className="modal-content" style={{ background: '#fff', padding: '2rem', borderRadius: '8px', boxShadow: '0 2px 16px rgba(0,0,0,0.2)', maxWidth: 360, textAlign: 'center' }}>
-              <h3 style={{ color: '#c00', marginBottom: '1rem' }}>Upload Error</h3>
-              <p style={{ marginBottom: '1.5rem' }}>{fileTooLargeMessage}</p>
-              <button
-                className="btn-primary"
-                style={{ marginBottom: '1rem' }}
-                onClick={() => {
-                  setFileTooLargeMessage(null)
-                  if (lastRejectedUploadType === 'video') {
+              if (file.type.startsWith('video/')) {
+                await handleVideoSelect(file)
+              } else {
+                await handleImageSelect(file)
+              }
+            }}
+            onCancel={handleBackToUpload}
+          />
+        )
+      }
+
+      return (
+        <>
+          <input
+            ref={imageFileInputRef}
+            type="file"
+            accept="image/*"
+            style={{ display: 'none' }}
+            onChange={(event) => {
+              const file = event.target.files?.[0]
+              if (file) {
+                handleImageSelect(file)
+              }
+              event.target.value = ''
+            }}
+          />
+          <input
+            ref={videoFileInputRef}
+            type="file"
+            accept="video/*"
+            style={{ display: 'none' }}
+            onChange={(event) => {
+              const file = event.target.files?.[0]
+              if (file) {
+                handleVideoSelect(file)
+              }
+              event.target.value = ''
+            }}
+          />
+          <CreateNew
+            onImageSelect={handleImageSelect}
+            onVideoSelect={handleVideoSelect}
+            onCameraSelect={handleCameraSelect}
+            isLoading={isSelectionLoading || isUploading}
+            selectionError={selectionError}
+            validationError={validationError}
+          />
+          {unsupportedVideo && (
+            <div className="modal-overlay" style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', background: 'rgba(0,0,0,0.4)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <div className="modal-content" style={{ background: '#fff', padding: '2rem', borderRadius: '8px', boxShadow: '0 2px 16px rgba(0,0,0,0.2)', maxWidth: 360, textAlign: 'center' }}>
+                <h3 style={{ color: '#c00', marginBottom: '1rem' }}>Unsupported Video Format</h3>
+                <p style={{ marginBottom: '1.5rem' }}>
+                  This video format ({unsupportedVideo.type || unsupportedVideo.name.split('.').pop()}) is not supported by your browser.<br />
+                  Please upload an MP4 or WebM video.
+                </p>
+                <button
+                  className="btn-primary"
+                  style={{ marginBottom: '1rem' }}
+                  onClick={() => {
+                    setUnsupportedVideo(null)
                     openVideoPicker()
-                    return
-                  }
-                  if (lastRejectedUploadType === 'image') {
-                    openImagePicker()
-                  }
-                }}
-              >
-                Re-upload
-              </button>
+                  }}
+                >
+                  Re-upload Video
+                </button>
+              </div>
             </div>
-          </div>
-        )}
+          )}
 
-        {unsupportedImageMessage && (
-          <div className="modal-overlay" style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', background: 'rgba(0,0,0,0.4)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <div className="modal-content" style={{ background: '#fff', padding: '2rem', borderRadius: '8px', boxShadow: '0 2px 16px rgba(0,0,0,0.2)', maxWidth: 360, textAlign: 'center' }}>
-              <h3 style={{ color: '#c00', marginBottom: '1rem' }}>Unsupported Image Format</h3>
-              <p style={{ marginBottom: '1.5rem' }}>{unsupportedImageMessage}</p>
-              <button
-                className="btn-primary"
-                style={{ marginBottom: '1rem' }}
-                onClick={() => {
-                  setUnsupportedImageMessage(null)
-                  openImagePicker()
-                }}
-              >
-                Re-upload
-              </button>
+          {fileTooLargeMessage && (
+            <div className="modal-overlay" style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', background: 'rgba(0,0,0,0.4)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <div className="modal-content" style={{ background: '#fff', padding: '2rem', borderRadius: '8px', boxShadow: '0 2px 16px rgba(0,0,0,0.2)', maxWidth: 360, textAlign: 'center' }}>
+                <h3 style={{ color: '#c00', marginBottom: '1rem' }}>Upload Error</h3>
+                <p style={{ marginBottom: '1.5rem' }}>{fileTooLargeMessage}</p>
+                <button
+                  className="btn-primary"
+                  style={{ marginBottom: '1rem' }}
+                  onClick={() => {
+                    setFileTooLargeMessage(null)
+                    if (lastRejectedUploadType === 'video') {
+                      openVideoPicker()
+                      return
+                    }
+                    if (lastRejectedUploadType === 'image') {
+                      openImagePicker()
+                    }
+                  }}
+                >
+                  Re-upload
+                </button>
+              </div>
             </div>
-          </div>
-        )}
-      </>
+          )}
+
+          {unsupportedImageMessage && (
+            <div className="modal-overlay" style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', background: 'rgba(0,0,0,0.4)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <div className="modal-content" style={{ background: '#fff', padding: '2rem', borderRadius: '8px', boxShadow: '0 2px 16px rgba(0,0,0,0.2)', maxWidth: 360, textAlign: 'center' }}>
+                <h3 style={{ color: '#c00', marginBottom: '1rem' }}>Unsupported Image Format</h3>
+                <p style={{ marginBottom: '1.5rem' }}>{unsupportedImageMessage}</p>
+                <button
+                  className="btn-primary"
+                  style={{ marginBottom: '1rem' }}
+                  onClick={() => {
+                    setUnsupportedImageMessage(null)
+                    openImagePicker()
+                  }}
+                >
+                  Re-upload
+                </button>
+              </div>
+            </div>
+          )}
+        </>
+      )
     }
 
     if (mediaType === 'video') {
