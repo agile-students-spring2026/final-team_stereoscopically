@@ -4,7 +4,9 @@ import multer from 'multer'
 
 const app = express()
 const port = process.env.PORT || 4000
-const MAX_IMAGE_SIZE_BYTES = 10 * 1024 * 1024
+const MAX_IMAGE_SIZE_BYTES = 50 * 1024 * 1024
+const MEDIA_TTL_MS = 10 * 60 * 1000
+const inMemoryMediaStore = new Map()
 
 const upload = multer({
 	storage: multer.memoryStorage(),
@@ -13,6 +15,17 @@ const upload = multer({
 
 app.use(cors())
 app.use(express.json())
+
+const purgeExpiredMedia = () => {
+	const now = Date.now()
+	for (const [id, media] of inMemoryMediaStore.entries()) {
+		if (media.expiresAt <= now) {
+			inMemoryMediaStore.delete(id)
+		}
+	}
+}
+
+setInterval(purgeExpiredMedia, 60 * 1000).unref()
 
 app.get('/health', (_req, res) => {
 	res.json({ status: 'ok' })
@@ -33,19 +46,50 @@ app.post('/api/upload/image', upload.single('file'), (req, res) => {
 		})
 	}
 
+	const mediaId = `img_${Date.now()}_${Math.round(Math.random() * 1e9)}`
+	inMemoryMediaStore.set(mediaId, {
+		buffer: req.file.buffer,
+		mimeType: req.file.mimetype,
+		size: req.file.size,
+		expiresAt: Date.now() + MEDIA_TTL_MS,
+	})
+
 	return res.status(200).json({
-		id: `img_${Date.now()}`,
+		id: mediaId,
 		type: 'image',
-		url: `data:${req.file.mimetype};base64,${req.file.buffer.toString('base64')}`,
+		url: `${req.protocol}://${req.get('host')}/api/media/${mediaId}`,
 		mimeType: req.file.mimetype,
 		size: req.file.size,
 	})
 })
 
+app.get('/api/media/:id', (req, res) => {
+	const media = inMemoryMediaStore.get(req.params.id)
+
+	if (!media) {
+		return res.status(404).json({
+			error: 'Media not found or expired.',
+			code: 'MEDIA_NOT_FOUND',
+		})
+	}
+
+	if (media.expiresAt <= Date.now()) {
+		inMemoryMediaStore.delete(req.params.id)
+		return res.status(404).json({
+			error: 'Media not found or expired.',
+			code: 'MEDIA_NOT_FOUND',
+		})
+	}
+
+	res.setHeader('Content-Type', media.mimeType)
+	res.setHeader('Cache-Control', 'no-store')
+	return res.status(200).send(media.buffer)
+})
+
 app.use((error, _req, res, next) => {
 	if (error instanceof multer.MulterError && error.code === 'LIMIT_FILE_SIZE') {
 		return res.status(400).json({
-			error: 'File is too large (max 10 MB).',
+			error: 'File is too large (max 50 MB).',
 			code: 'MAX_SIZE_EXCEEDED',
 		})
 	}

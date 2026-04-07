@@ -8,7 +8,7 @@ const CreateNew = ({
   validationError = null,
   uploadError = null,
 }) => {
-  const statusMessage = selectionError || (isLoading ? 'Preparing upload…' : null)
+  const statusMessage = selectionError
 
   return (
     <div className="card create-new">

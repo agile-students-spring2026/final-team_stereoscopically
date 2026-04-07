@@ -13,6 +13,7 @@ const ImageEditor = ({
   const [isReframing, setIsReframing] = useState(false)
   // Track current crop data
   const [cropData, setCropData] = useState(null)
+  const [imageLoadError, setImageLoadError] = useState(false)
 
   const handleReframeClick = () => {
     setIsReframing(true)
@@ -30,6 +31,10 @@ const ImageEditor = ({
   const handleCancelCrop = () => {
     setIsReframing(false)
     setCropData(null)
+  }
+
+  const handleImageError = () => {
+    setImageLoadError(true)
   }
 
   // Show cropper if reframing, otherwise show preview
@@ -54,20 +59,28 @@ const ImageEditor = ({
     <div className="image-editor-container">
       <h2 className="image-editor-title">Image Editor</h2>
 
-      {isUploading && (
-        <p role="status" className="upload-status" style={{ marginTop: '0.5rem' }}>
-          Uploading image to backend…
-        </p>
-      )}
-
       {uploadError && (
         <p role="alert" className="upload-status" style={{ marginTop: '0.5rem', color: '#ff3b30' }}>
           {uploadError}
         </p>
       )}
 
-      <div className="preview-box">
-        <img src={imageSrc} alt="Preview" className="preview-image" />
+      {imageLoadError && (
+        <p role="alert" className="upload-status" style={{ marginTop: '0.5rem', color: '#ff3b30' }}>
+          This image format cannot be displayed in your browser. Please upload JPG or PNG.
+        </p>
+      )}
+
+      <div className="preview-box" style={{ opacity: isUploading ? 0.75 : 1, transition: 'opacity 150ms ease' }}>
+        {!imageLoadError && (
+          <img
+            src={imageSrc}
+            alt="Preview"
+            className="preview-image"
+            onLoad={() => setImageLoadError(false)}
+            onError={handleImageError}
+          />
+        )}
       </div>
       <div className="card image-editor-actions">
         <button type="button" className="btn-primary" onClick={onSize || (() => {})}>
