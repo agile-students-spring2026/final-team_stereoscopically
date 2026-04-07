@@ -55,7 +55,6 @@ function CameraCapture({ onCapture, onCancel }) {
             const blob = new Blob(chunksRef.current, { type: 'video/webm' })
             const file = new File([blob], 'camera.webm', { type: 'video/webm' })
             streamRef.current?.getTracks().forEach(track => track.stop())
-            // videoSupport 로 타입 확인 후 전달
             if (isVideoTypeSupported(file)) {
                 onCapture(file)
             } else {
