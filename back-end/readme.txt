@@ -65,3 +65,63 @@ The front-end will:
 - Treat any non-2xx status as a failure.
 - Prefer using the `error` string for user-facing messages.
 - Optionally use the `code` field to map specific cases to custom UI (e.g., a special message for `MAX_SIZE_EXCEEDED`).
+
+## Image Upload API Contract
+
+This project also exposes an endpoint for uploading a user-selected image so the back-end can return a stable media reference for editing.
+
+### Endpoint
+
+- **Method**: `POST`
+- **Path**: `/api/upload/image`
+
+### Request
+
+- **Content-Type**: `multipart/form-data`
+- **Fields**:
+	- `file`: required; the uploaded image file.
+
+> The field name for image uploads is **`file`** and should be used consistently by both front-end and back-end.
+
+Back-end responsibilities:
+
+- Validate that an image file was provided.
+- Validate supported MIME type and size constraints.
+- Return media data that the front-end can directly use for editing.
+
+### Successful Response (HTTP 200)
+
+The back-end returns JSON representing the uploaded image media reference.
+
+```json
+{
+	"id": "string",           // Unique identifier for uploaded media
+	"type": "image",          // Media type; always "image" for this endpoint
+	"url": "string",          // URL or usable reference for the image
+	"mimeType": "string",     // Optional: image MIME type
+	"width": 0,                // Optional: pixel width
+	"height": 0,               // Optional: pixel height
+	"size": 0                  // Optional: file size in bytes
+}
+```
+
+Optional metadata fields may be omitted when unavailable.
+
+### Error Responses
+
+For all error cases, the back-end returns a non-200 status code and JSON with at least an `error` message.
+
+```json
+{
+	"error": "string",        // Human-readable error message
+	"code": "string"          // Optional machine-readable code (e.g., "INVALID_TYPE")
+}
+```
+
+Examples:
+
+- **400 Bad Request** – validation failures
+	- No file provided
+	- Unsupported MIME type (not an image)
+	- File too large
+- **500 Internal Server Error** – unexpected upload/processing failures

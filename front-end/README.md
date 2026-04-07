@@ -33,3 +33,25 @@ Expected behavior:
 
 - Invalid files do **not** call the backend.
 - Backend errors surface as conversion errors without clearing the selected video.
+
+## Image upload flow (manual test)
+
+These steps verify the backend-connected image upload and editor integration.
+
+1. Start the backend server that implements `POST /api/upload/image`.
+2. Start the Vite dev server for the front-end.
+3. Open the app and click **Upload Image**.
+4. Select a valid JPG or PNG.
+5. Confirm:
+	- The image appears in the editor preview immediately.
+	- The backend upload succeeds and editor continues using the returned media reference.
+6. Try a file over 50 MB and confirm the upload-size popup appears.
+7. Try a HEIC/HEIF file and confirm the unsupported-format popup appears.
+8. Use each popup’s **Re-upload** action and verify it reopens the correct picker.
+
+Expected behavior:
+
+- Upload happens in `useMediaSelection` via `uploadImageToBackend`.
+- Backend call transport/error parsing is centralized in `backendMediaClient`.
+- Backend result is stored as `backendImageResult`.
+- Validation errors and upload errors are shown through separate UI paths.

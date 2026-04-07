@@ -1,19 +1,33 @@
-const CreateNew = ({ onImageSelect, onVideoSelect, onCameraSelect, isLoading = false, errorMessage = null }) => {
-  const statusMessage = errorMessage || (isLoading ? 'Loading media from Pixabay…' : null)
+const CreateNew = ({
+  onImageSelect,
+  onVideoSelect,
+  onCameraSelect,
+  isCameraDisabled = false,
+  isLoading = false,
+  selectionError = null,
+  validationError = null,
+}) => {
+  const statusMessage = selectionError
 
   return (
     <div className="card create-new">
       <h2>Create New</h2>
 
       <div className="upload-options">
-        <button
-          type="button"
-          className="upload-button"
-          onClick={() => onImageSelect?.()}
-          disabled={isLoading}
-        >
+        <label className="upload-button" style={{ display: 'inline-block', cursor: isLoading ? 'not-allowed' : 'pointer' }}>
           Upload Image
-        </button>
+          <input
+            type="file"
+            accept="image/*"
+            style={{ display: 'none' }}
+            disabled={isLoading}
+            onChange={e => {
+              const file = e.target.files && e.target.files[0]
+              if (file && onImageSelect) onImageSelect(file)
+              e.target.value = ''
+            }}
+          />
+        </label>
 
         <label className="upload-button" style={{ display: 'inline-block', cursor: isLoading ? 'not-allowed' : 'pointer' }}>
           Upload Video
@@ -34,10 +48,12 @@ const CreateNew = ({ onImageSelect, onVideoSelect, onCameraSelect, isLoading = f
         <button
           type="button"
           className="upload-button"
-          onClick={() => onCameraSelect?.()}
-          disabled={isLoading}
+          onClick={() => {
+            if (!isCameraDisabled) onCameraSelect?.()
+          }}
+          disabled={isLoading || isCameraDisabled}
         >
-          Open Camera
+          Open Camera (temporarily disabled)
         </button>
       </div>
 
@@ -46,6 +62,13 @@ const CreateNew = ({ onImageSelect, onVideoSelect, onCameraSelect, isLoading = f
           {statusMessage}
         </p>
       )}
+
+      {validationError && (
+        <p role="alert" className="upload-status" style={{ color: '#ff3b30' }}>
+          {validationError}
+        </p>
+      )}
+
     </div>
   )
 }

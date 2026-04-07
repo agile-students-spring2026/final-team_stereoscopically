@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import CreateNew from './CreateNew'
 import ImageEditor from './ImageEditor'
 import FilterMain from './FilterMain'
@@ -17,6 +17,23 @@ const SCREENS = {
   ADD_TEXT: 'text',
   COLOR_FILTERS: 'color',
   PRESET_SIZES: 'preset-sizes',
+}
+
+const MAX_UPLOAD_SIZE_BYTES = 50 * 1024 * 1024
+const FILE_TOO_LARGE_MESSAGE = 'File is too large (max 50 MB).'
+const HEIC_UNSUPPORTED_MESSAGE = 'HEIC/HEIF files are not supported in this browser yet. Please upload JPG or PNG.'
+
+const isHeicFile = (file) => {
+  if (!file) return false
+  const lowerName = file.name?.toLowerCase() || ''
+  const lowerType = file.type?.toLowerCase() || ''
+
+  return (
+    lowerName.endsWith('.heic') ||
+    lowerName.endsWith('.heif') ||
+    lowerType === 'image/heic' ||
+    lowerType === 'image/heif'
+  )
 }
 
 function resizeImageToDimensions(imageUrl, targetWidth, targetHeight, preserveAspect = false) {
@@ -94,18 +111,52 @@ function EditorContainer() {
     selectedMedia,
     previewUrl,
     sourceUrl,
+    backendImageResult,
+    isUploading,
+    uploadError,
+    validationError,
+    selectionError,
     isLoading: isSelectionLoading,
-    error: selectionError,
     selectImage,
     selectVideo,
     resetSelection,
     applyTransformedImage,
-  } = useMediaSelection({ autoBootstrap: false })
+  } = useMediaSelection()
 
   const [screen, setScreen] = useState(SCREENS.EDITOR)
+  const effectiveImageSrc = backendImageResult?.url || previewUrl
+  const [fileTooLargeMessage, setFileTooLargeMessage] = useState(null)
+  const [unsupportedImageMessage, setUnsupportedImageMessage] = useState(null)
+  const [lastRejectedUploadType, setLastRejectedUploadType] = useState(null)
+  const imageFileInputRef = useRef(null)
+  const videoFileInputRef = useRef(null)
 
-  const handleImageSelect = async () => {
-    const applied = await selectImage()
+  const openImagePicker = () => {
+    imageFileInputRef.current?.click()
+  }
+
+  const openVideoPicker = () => {
+    videoFileInputRef.current?.click()
+  }
+
+  const handleImageSelect = async (file) => {
+    if (!file) return
+
+    setLastRejectedUploadType('image')
+
+    if (isHeicFile(file)) {
+      setUnsupportedImageMessage(HEIC_UNSUPPORTED_MESSAGE)
+      return
+    }
+
+    if (file.size > MAX_UPLOAD_SIZE_BYTES) {
+      setFileTooLargeMessage(FILE_TOO_LARGE_MESSAGE)
+      return
+    }
+
+    setUnsupportedImageMessage(null)
+    setFileTooLargeMessage(null)
+    const applied = await selectImage(file)
     if (applied) {
       setScreen(SCREENS.EDITOR)
     }
@@ -114,10 +165,19 @@ function EditorContainer() {
   const [unsupportedVideo, setUnsupportedVideo] = useState(null)
   const handleVideoSelect = async (file) => {
     if (!file) return
+
+    setLastRejectedUploadType('video')
+
+    if (file.size > MAX_UPLOAD_SIZE_BYTES) {
+      setFileTooLargeMessage(FILE_TOO_LARGE_MESSAGE)
+      return
+    }
+
     if (!isVideoTypeSupported(file)) {
       setUnsupportedVideo(file)
       return
     }
+    setFileTooLargeMessage(null)
     setUnsupportedVideo(null)
     const applied = await selectVideo(file)
     if (applied) {
@@ -133,8 +193,18 @@ function EditorContainer() {
       const blob = await imageCapture.takePhoto()
       const file = new File([blob], 'camera.png', { type: 'image/png' })
       track.stop()
-      await selectImage(file)
-      setScreen(SCREENS.EDITOR)
+
+      if (file.size > MAX_UPLOAD_SIZE_BYTES) {
+        setFileTooLargeMessage(FILE_TOO_LARGE_MESSAGE)
+        return
+      }
+
+      setUnsupportedImageMessage(null)
+      setFileTooLargeMessage(null)
+      const applied = await selectImage(file)
+      if (applied) {
+        setScreen(SCREENS.EDITOR)
+      }
     } catch (err) {
       console.error('Camera error:', err)
     }
@@ -188,12 +258,40 @@ function EditorContainer() {
 
     if (!selectedMedia) {
       return <>
+        <input
+          ref={imageFileInputRef}
+          type="file"
+          accept="image/*"
+          style={{ display: 'none' }}
+          onChange={(event) => {
+            const file = event.target.files?.[0]
+            if (file) {
+              handleImageSelect(file)
+            }
+            event.target.value = ''
+          }}
+        />
+        <input
+          ref={videoFileInputRef}
+          type="file"
+          accept="video/*"
+          style={{ display: 'none' }}
+          onChange={(event) => {
+            const file = event.target.files?.[0]
+            if (file) {
+              handleVideoSelect(file)
+            }
+            event.target.value = ''
+          }}
+        />
         <CreateNew
           onImageSelect={handleImageSelect}
           onVideoSelect={handleVideoSelect}
           onCameraSelect={handleCameraSelect}
-          isLoading={isSelectionLoading}
-          errorMessage={selectionError}
+          isCameraDisabled
+          isLoading={isSelectionLoading || isUploading}
+          selectionError={selectionError}
+          validationError={validationError}
         />
         {unsupportedVideo && (
           <div className="modal-overlay" style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', background: 'rgba(0,0,0,0.4)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -206,9 +304,56 @@ function EditorContainer() {
               <button
                 className="btn-primary"
                 style={{ marginBottom: '1rem' }}
-                onClick={() => setUnsupportedVideo(null)}
+                onClick={() => {
+                  setUnsupportedVideo(null)
+                  openVideoPicker()
+                }}
               >
                 Re-upload Video
+              </button>
+            </div>
+          </div>
+        )}
+
+        {fileTooLargeMessage && (
+          <div className="modal-overlay" style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', background: 'rgba(0,0,0,0.4)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <div className="modal-content" style={{ background: '#fff', padding: '2rem', borderRadius: '8px', boxShadow: '0 2px 16px rgba(0,0,0,0.2)', maxWidth: 360, textAlign: 'center' }}>
+              <h3 style={{ color: '#c00', marginBottom: '1rem' }}>Upload Error</h3>
+              <p style={{ marginBottom: '1.5rem' }}>{fileTooLargeMessage}</p>
+              <button
+                className="btn-primary"
+                style={{ marginBottom: '1rem' }}
+                onClick={() => {
+                  setFileTooLargeMessage(null)
+                  if (lastRejectedUploadType === 'video') {
+                    openVideoPicker()
+                    return
+                  }
+                  if (lastRejectedUploadType === 'image') {
+                    openImagePicker()
+                  }
+                }}
+              >
+                Re-upload
+              </button>
+            </div>
+          </div>
+        )}
+
+        {unsupportedImageMessage && (
+          <div className="modal-overlay" style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', background: 'rgba(0,0,0,0.4)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <div className="modal-content" style={{ background: '#fff', padding: '2rem', borderRadius: '8px', boxShadow: '0 2px 16px rgba(0,0,0,0.2)', maxWidth: 360, textAlign: 'center' }}>
+              <h3 style={{ color: '#c00', marginBottom: '1rem' }}>Unsupported Image Format</h3>
+              <p style={{ marginBottom: '1.5rem' }}>{unsupportedImageMessage}</p>
+              <button
+                className="btn-primary"
+                style={{ marginBottom: '1rem' }}
+                onClick={() => {
+                  setUnsupportedImageMessage(null)
+                  openImagePicker()
+                }}
+              >
+                Re-upload
               </button>
             </div>
           </div>
@@ -227,7 +372,9 @@ function EditorContainer() {
       case SCREENS.EDITOR:
         return (
           <ImageEditor
-            imageSrc={previewUrl}
+            imageSrc={effectiveImageSrc}
+            isUploading={isUploading}
+            uploadError={uploadError}
             onBack={handleBackToUpload}
             onOpenFilters={handleOpenFilters}
             onSize={handleOpenSizes}
@@ -244,7 +391,7 @@ function EditorContainer() {
       case SCREENS.PRESET_FILTERS:
         return (
           <PresetFilters
-            imageSrc={previewUrl}
+            imageSrc={effectiveImageSrc}
             onApply={handleApplyFilters}
             onCancel={() => setScreen(SCREENS.EDITOR)}
           />
@@ -252,7 +399,7 @@ function EditorContainer() {
       case SCREENS.ADD_TEXT:
         return (
           <AddText
-            imageSrc={previewUrl}
+            imageSrc={effectiveImageSrc}
             onApply={handleApplyFilters}
             onCancel={() => setScreen(SCREENS.EDITOR)}
           />
@@ -260,7 +407,7 @@ function EditorContainer() {
       case SCREENS.COLOR_FILTERS:
         return (
           <ColorFilters
-            imageSrc={previewUrl}
+            imageSrc={effectiveImageSrc}
             onApply={handleApplyFilters}
             onCancel={() => setScreen(SCREENS.EDITOR)}
           />
@@ -275,7 +422,9 @@ function EditorContainer() {
       default:
         return (
           <ImageEditor
-            imageSrc={previewUrl}
+            imageSrc={effectiveImageSrc}
+            isUploading={isUploading}
+            uploadError={uploadError}
             onBack={handleBackToUpload}
             onOpenFilters={handleOpenFilters}
             onSize={handleOpenSizes}
