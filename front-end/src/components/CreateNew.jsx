@@ -53,7 +53,7 @@ const CreateNew = ({
           }}
           disabled={isLoading || isCameraDisabled}
         >
-          Open Camera (temporarily disabled)
+          Open Camera 
         </button>
       </div>
 

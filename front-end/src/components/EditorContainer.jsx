@@ -9,6 +9,8 @@ import ColorFilters from './ColorFilters'
 import GifEditor from './GifEditor'
 import useMediaSelection from '../hooks/useMediaSelection'
 import { isVideoTypeSupported } from './videoSupport'
+import CameraCapture from './CameraCapture'
+
 
 const SCREENS = {
   EDITOR: 'editor',
@@ -17,6 +19,7 @@ const SCREENS = {
   ADD_TEXT: 'text',
   COLOR_FILTERS: 'color',
   PRESET_SIZES: 'preset-sizes',
+  CAMERA: 'camera',
 }
 
 const MAX_UPLOAD_SIZE_BYTES = 50 * 1024 * 1024
@@ -185,29 +188,8 @@ function EditorContainer() {
     }
   }
 
-  const handleCameraSelect = async () => {
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ video: true })
-      const track = stream.getVideoTracks()[0]
-      const imageCapture = new ImageCapture(track)
-      const blob = await imageCapture.takePhoto()
-      const file = new File([blob], 'camera.png', { type: 'image/png' })
-      track.stop()
-
-      if (file.size > MAX_UPLOAD_SIZE_BYTES) {
-        setFileTooLargeMessage(FILE_TOO_LARGE_MESSAGE)
-        return
-      }
-
-      setUnsupportedImageMessage(null)
-      setFileTooLargeMessage(null)
-      const applied = await selectImage(file)
-      if (applied) {
-        setScreen(SCREENS.EDITOR)
-      }
-    } catch (err) {
-      console.error('Camera error:', err)
-    }
+  const handleCameraSelect = () => {
+    setScreen(SCREENS.CAMERA)
   }
 
   const handleBackToUpload = () => {
@@ -257,6 +239,21 @@ function EditorContainer() {
   const renderContent = () => {
 
     if (!selectedMedia) {
+      if (screen === SCREENS.CAMERA) {
+        return (
+          <CameraCapture
+            onCapture={async (file) => {
+              if (file.type.startsWith('video/')) {
+                await handleVideoSelect(file)
+              } else {
+                await handleImageSelect(file)
+              }
+            }}
+            onCancel={handleBackToUpload}
+          />
+        )
+      }
+      
       return <>
         <input
           ref={imageFileInputRef}
@@ -288,7 +285,6 @@ function EditorContainer() {
           onImageSelect={handleImageSelect}
           onVideoSelect={handleVideoSelect}
           onCameraSelect={handleCameraSelect}
-          isCameraDisabled
           isLoading={isSelectionLoading || isUploading}
           selectionError={selectionError}
           validationError={validationError}
@@ -419,6 +415,19 @@ function EditorContainer() {
             onCancel={() => setScreen(SCREENS.EDITOR)}
           />
         )
+        case SCREENS.CAMERA:
+  return (
+    <CameraCapture
+      onCapture={async (file) => {
+        if (file.type.startsWith('video/')) {
+          await handleVideoSelect(file)
+        } else {
+          await handleImageSelect(file)
+        }
+      }}
+      onCancel={handleBackToUpload}
+    />
+  )
       default:
         return (
           <ImageEditor
