@@ -1,4 +1,4 @@
-import { postMultipart } from './backendMediaClient'
+import { postJson, postMultipart } from './backendMediaClient'
 
 export const uploadImageToBackend = async (imageFile) => {
   if (!imageFile) {
@@ -20,5 +20,25 @@ export const uploadImageToBackend = async (imageFile) => {
     width: payload?.width ?? null,
     height: payload?.height ?? null,
     size: payload?.size ?? null,
+  }
+}
+
+export const exportImageFromBackend = async ({ mediaId, width, height }) => {
+  const payload = await postJson({
+    path: '/api/export/image',
+    payload: { mediaId, width, height },
+    fallbackErrorMessage: 'Image export failed',
+  })
+
+  return {
+    id: payload?.id ?? null,
+    type: payload?.type ?? 'image',
+    url: payload?.url ?? null,
+    downloadUrl: payload?.downloadUrl ?? null,
+    mimeType: payload?.mimeType ?? 'image/png',
+    width: payload?.width ?? null,
+    height: payload?.height ?? null,
+    size: payload?.size ?? null,
+    fileName: payload?.fileName ?? 'sticker.png',
   }
 }

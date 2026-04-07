@@ -11,6 +11,7 @@ import useMediaSelection from '../hooks/useMediaSelection'
 import { isVideoTypeSupported } from './videoSupport'
 import CameraCapture from './CameraCapture'
 import PhotoPreview from './PhotoPreview'
+import { exportImageFromBackend } from '../services/backendImageService'
 
 const SCREENS = {
   EDITOR: 'editor',
@@ -40,75 +41,6 @@ const isHeicFile = (file) => {
   )
 }
 
-function resizeImageToDimensions(imageUrl, targetWidth, targetHeight, preserveAspect = false) {
-  return new Promise((resolve, reject) => {
-    const img = new Image()
-    img.onload = () => {
-      const canvas = document.createElement('canvas')
-      canvas.width = targetWidth
-      canvas.height = targetHeight
-      const ctx = canvas.getContext('2d')
-      ctx.imageSmoothingEnabled = true
-      ctx.imageSmoothingQuality = 'high'
-      ctx.fillStyle = '#ffffff'
-      ctx.fillRect(0, 0, targetWidth, targetHeight)
-
-      const imgAspect = img.width / img.height
-      const targetAspect = targetWidth / targetHeight
-      let sx, sy, sWidth, sHeight, dx, dy, dWidth, dHeight
-
-      if (preserveAspect) {
-        sWidth = img.width
-        sHeight = img.height
-        sx = 0
-        sy = 0
-
-        if (imgAspect > targetAspect) {
-          dWidth = targetWidth
-          dHeight = targetWidth / imgAspect
-          dx = 0
-          dy = (targetHeight - dHeight) / 2
-        } else {
-          dHeight = targetHeight
-          dWidth = targetHeight * imgAspect
-          dx = (targetWidth - dWidth) / 2
-          dy = 0
-        }
-      } else {
-        if (imgAspect > targetAspect) {
-          sHeight = img.height
-          sWidth = img.height * targetAspect
-          sx = (img.width - sWidth) / 2
-          sy = 0
-        } else {
-          sWidth = img.width
-          sHeight = img.width / targetAspect
-          sx = 0
-          sy = (img.height - sHeight) / 2
-        }
-        dx = 0
-        dy = 0
-        dWidth = targetWidth
-        dHeight = targetHeight
-      }
-
-      ctx.drawImage(img, sx, sy, sWidth, sHeight, dx, dy, dWidth, dHeight)
-
-      canvas.toBlob(
-        (blob) => {
-          if (blob) {
-            const file = new File([blob], 'sticker.png', { type: 'image/png' })
-            resolve({ file, url: URL.createObjectURL(blob) })
-          } else reject(new Error('Failed to create blob'))
-        },
-        'image/png'
-      )
-    }
-    img.onerror = () => reject(new Error('Failed to load image'))
-    img.src = imageUrl
-  })
-}
-
 function EditorContainer() {
   const {
     mediaType,
@@ -128,11 +60,15 @@ function EditorContainer() {
   } = useMediaSelection()
 
   const [screen, setScreen] = useState(SCREENS.EDITOR)
-  const effectiveImageSrc = backendImageResult?.url || previewUrl
+  const effectiveImageSrc = previewUrl || backendImageResult?.url
   const [fileTooLargeMessage, setFileTooLargeMessage] = useState(null)
   const [unsupportedImageMessage, setUnsupportedImageMessage] = useState(null)
   const [lastRejectedUploadType, setLastRejectedUploadType] = useState(null)
   const [tempCapturedFile, setTempCapturedFile] = useState(null)
+  const [selectedPreset, setSelectedPreset] = useState(null)
+  const [latestExportResult, setLatestExportResult] = useState(null)
+  const [isExporting, setIsExporting] = useState(false)
+  const [exportError, setExportError] = useState(null)
   const imageFileInputRef = useRef(null)
   const videoFileInputRef = useRef(null)
 
@@ -161,6 +97,9 @@ function EditorContainer() {
 
     setUnsupportedImageMessage(null)
     setFileTooLargeMessage(null)
+    setSelectedPreset(null)
+    setLatestExportResult(null)
+    setExportError(null)
     const applied = await selectImage(file)
     if (applied) {
       setScreen(SCREENS.EDITOR)
@@ -196,6 +135,9 @@ function EditorContainer() {
 
   const handleBackToUpload = () => {
     resetSelection()
+    setSelectedPreset(null)
+    setLatestExportResult(null)
+    setExportError(null)
     setScreen(SCREENS.EDITOR)
   }
 
@@ -212,30 +154,86 @@ function EditorContainer() {
   }
 
   const handleSizeSelect = async (size) => {
-    const imageUrl = sourceUrl || previewUrl
-    if (!imageUrl) {
+    if (!backendImageResult?.id) {
+      setExportError('Image is not ready for backend export yet. Please re-upload and try again.')
       setScreen(SCREENS.EDITOR)
       return
     }
 
     try {
-      const { file, url } = await resizeImageToDimensions(
-        imageUrl,
-        size.width,
-        size.height,
-        false
-      )
+      setIsExporting(true)
+      setExportError(null)
+
+      const exported = await exportImageFromBackend({
+        mediaId: backendImageResult.id,
+        width: size.width,
+        height: size.height,
+      })
+
+      const response = await fetch(exported.url)
+      if (!response.ok) {
+        throw new Error('Failed to load exported image preview.')
+      }
+      const blob = await response.blob()
+      const file = new File([blob], exported.fileName || 'sticker.png', {
+        type: exported.mimeType || 'image/png',
+      })
+      const objectUrl = URL.createObjectURL(blob)
 
       if (previewUrl && previewUrl !== sourceUrl) {
         URL.revokeObjectURL(previewUrl)
       }
 
-      applyTransformedImage(file, url)
+      applyTransformedImage(file, objectUrl)
+      setSelectedPreset(size)
+      setLatestExportResult(exported)
     } catch (err) {
-      console.error('Resize failed:', err)
+      console.error('Preset export failed:', err)
+      setExportError(err?.message || 'Failed to export image at the selected size.')
+    } finally {
+      setIsExporting(false)
     }
 
     setScreen(SCREENS.EDITOR)
+  }
+
+  const handleExport = async () => {
+    if (mediaType !== 'image') return
+    if (!selectedPreset) {
+      setExportError('Please choose a preset size before exporting.')
+      return
+    }
+    if (!backendImageResult?.id) {
+      setExportError('Image is not ready for backend export yet. Please re-upload and try again.')
+      return
+    }
+
+    try {
+      setIsExporting(true)
+      setExportError(null)
+      const exported =
+        latestExportResult?.width === selectedPreset.width &&
+        latestExportResult?.height === selectedPreset.height
+          ? latestExportResult
+          : await exportImageFromBackend({
+              mediaId: backendImageResult?.id,
+              width: selectedPreset.width,
+              height: selectedPreset.height,
+            })
+
+      setLatestExportResult(exported)
+      const link = document.createElement('a')
+      link.href = exported.downloadUrl || exported.url
+      link.download = exported.fileName || 'sticker.png'
+      document.body.appendChild(link)
+      link.click()
+      link.remove()
+    } catch (err) {
+      console.error('Download export failed:', err)
+      setExportError(err?.message || 'Failed to download exported image.')
+    } finally {
+      setIsExporting(false)
+    }
   }
 
   const renderContent = () => {
@@ -394,10 +392,13 @@ function EditorContainer() {
           <ImageEditor
             imageSrc={effectiveImageSrc}
             isUploading={isUploading}
+            isExporting={isExporting}
             uploadError={uploadError}
+            exportError={exportError}
             onBack={handleBackToUpload}
             onOpenFilters={handleOpenFilters}
             onSize={handleOpenSizes}
+            onExport={handleExport}
           />
         )
       case SCREENS.FILTERS_MAIN:
@@ -444,10 +445,13 @@ function EditorContainer() {
           <ImageEditor
             imageSrc={effectiveImageSrc}
             isUploading={isUploading}
+            isExporting={isExporting}
             uploadError={uploadError}
+            exportError={exportError}
             onBack={handleBackToUpload}
             onOpenFilters={handleOpenFilters}
             onSize={handleOpenSizes}
+            onExport={handleExport}
           />
         )
     }

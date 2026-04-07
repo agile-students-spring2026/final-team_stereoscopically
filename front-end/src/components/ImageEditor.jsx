@@ -6,8 +6,11 @@ const ImageEditor = ({
   onOpenFilters,
   onBack,
   onSize,
+  onExport,
   isUploading = false,
   uploadError = null,
+  isExporting = false,
+  exportError = null,
 }) => {
   // Track if cropper is active
   const [isReframing, setIsReframing] = useState(false)
@@ -64,6 +67,11 @@ const ImageEditor = ({
           {uploadError}
         </p>
       )}
+      {exportError && (
+        <p role="alert" className="upload-status" style={{ marginTop: '0.5rem', color: '#ff3b30' }}>
+          {exportError}
+        </p>
+      )}
 
       {imageLoadError && (
         <p role="alert" className="upload-status" style={{ marginTop: '0.5rem', color: '#ff3b30' }}>
@@ -97,8 +105,8 @@ const ImageEditor = ({
         <button type="button" className="btn-secondary" onClick={onBack}>
           Cancel
         </button>
-        <button type="button" className="btn-primary">
-          Export
+        <button type="button" className="btn-primary" onClick={onExport || (() => {})} disabled={isExporting}>
+          {isExporting ? 'Exporting...' : 'Export'}
         </button>
       </div>
     </div>
