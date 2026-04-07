@@ -243,6 +243,8 @@ function EditorContainer() {
         return (
           <CameraCapture
             onCapture={async (file) => {
+              setScreen(SCREENS.EDITOR)
+
               if (file.type.startsWith('video/')) {
                 await handleVideoSelect(file)
               } else {

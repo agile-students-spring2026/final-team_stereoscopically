@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { isVideoTypeSupported } from './videoSupport'
 
 function CameraCapture({ onCapture, onCancel }) {
@@ -10,10 +10,49 @@ function CameraCapture({ onCapture, onCancel }) {
     const [isRecording, setIsRecording] = useState(false)
     const [error, setError] = useState(null)
 
+    const stopStream = useCallback(() => {
+        const streams = []
+
+        if (streamRef.current) {
+            streams.push(streamRef.current)
+        }
+
+        const elementStream = videoRef.current?.srcObject
+        if (elementStream instanceof MediaStream && elementStream !== streamRef.current) {
+            streams.push(elementStream)
+        }
+
+        streams.forEach((stream) => {
+            stream.getTracks().forEach((track) => {
+                track.enabled = false
+                track.stop()
+            })
+        })
+
+        if (videoRef.current) {
+            videoRef.current.pause()
+            videoRef.current.srcObject = null
+        }
+
+        streamRef.current = null
+    }, [])
+
     useEffect(() => {
+        let isDisposed = false
+
         const startCamera = async () => {
             try {
-                const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true })
+                stopStream()
+                const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false })
+
+                if (isDisposed) {
+                    stream.getTracks().forEach((track) => {
+                        track.enabled = false
+                        track.stop()
+                    })
+                    return
+                }
+
                 streamRef.current = stream
                 if (videoRef.current) {
                     videoRef.current.srcObject = stream
@@ -26,23 +65,46 @@ function CameraCapture({ onCapture, onCancel }) {
         startCamera()
 
         return () => {
-            streamRef.current?.getTracks().forEach(track => track.stop())
+            isDisposed = true
+            stopStream()
         }
-    }, [])
+    }, [stopStream])
 
     const handleTakePhoto = () => {
+        if (!videoRef.current || !streamRef.current) {
+            setError('Camera is not ready yet. Please try again.')
+            return
+        }
+
         const canvas = document.createElement('canvas')
         canvas.width = videoRef.current.videoWidth
         canvas.height = videoRef.current.videoHeight
+        if (!canvas.width || !canvas.height) {
+            setError('Camera is not ready yet. Please try again.')
+            return
+        }
+
         canvas.getContext('2d').drawImage(videoRef.current, 0, 0)
+        // Turn off camera immediately after frame capture instead of waiting
+        // for async blob encoding callback.
+        stopStream()
         canvas.toBlob((blob) => {
+            if (!blob) {
+                setError('Failed to capture photo. Please try again.')
+                return
+            }
+
             const file = new File([blob], 'camera.png', { type: 'image/png' })
-            streamRef.current?.getTracks().forEach(track => track.stop())
             onCapture(file)
         }, 'image/png')
     }
 
     const handleStartRecording = () => {
+        if (!streamRef.current) {
+            setError('Camera is not ready yet. Please try again.')
+            return
+        }
+
         chunksRef.current = []
         const recorder = new MediaRecorder(streamRef.current)
         mediaRecorderRef.current = recorder
@@ -54,7 +116,9 @@ function CameraCapture({ onCapture, onCancel }) {
         recorder.onstop = () => {
             const blob = new Blob(chunksRef.current, { type: 'video/webm' })
             const file = new File([blob], 'camera.webm', { type: 'video/webm' })
-            streamRef.current?.getTracks().forEach(track => track.stop())
+            stopStream()
+            setIsRecording(false)
+            mediaRecorderRef.current = null
             if (isVideoTypeSupported(file)) {
                 onCapture(file)
             } else {
@@ -67,12 +131,28 @@ function CameraCapture({ onCapture, onCancel }) {
     }
 
     const handleStopRecording = () => {
-        mediaRecorderRef.current?.stop()
-        setIsRecording(false)
+        const recorder = mediaRecorderRef.current
+        if (!recorder) return
+
+        if (recorder.state !== 'inactive') {
+            recorder.stop()
+            // Turn off camera/mic right away; recorder finalization still
+            // continues and onstop will deliver the file.
+            stopStream()
+            setIsRecording(false)
+        }
     }
 
     const handleCancel = () => {
-        streamRef.current?.getTracks().forEach(track => track.stop())
+        const recorder = mediaRecorderRef.current
+        if (recorder && recorder.state !== 'inactive') {
+            recorder.onstop = null
+            recorder.stop()
+        }
+
+        setIsRecording(false)
+        mediaRecorderRef.current = null
+        stopStream()
         onCancel()
     }
 
