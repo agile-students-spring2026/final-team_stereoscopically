@@ -6,8 +6,11 @@ const ImageEditor = ({
   onOpenFilters,
   onBack,
   onSize,
+  onExport,
   isUploading = false,
   uploadError = null,
+  isExporting = false,
+  exportError = null,
 }) => {
   // Track if cropper is active
   const [isReframing, setIsReframing] = useState(false)
@@ -64,6 +67,11 @@ const ImageEditor = ({
           {uploadError}
         </p>
       )}
+      {exportError && (
+        <p role="alert" className="upload-status" style={{ marginTop: '0.5rem', color: '#ff3b30' }}>
+          {exportError}
+        </p>
+      )}
 
       {imageLoadError && (
         <p role="alert" className="upload-status" style={{ marginTop: '0.5rem', color: '#ff3b30' }}>
@@ -71,7 +79,10 @@ const ImageEditor = ({
         </p>
       )}
 
-      <div className="preview-box" style={{ opacity: isUploading ? 0.75 : 1, transition: 'opacity 150ms ease' }}>
+      <div
+        className="preview-box preview-box-checkered"
+        style={{ opacity: isUploading ? 0.75 : 1, transition: 'opacity 150ms ease' }}
+      >
         {!imageLoadError && (
           <img
             src={imageSrc}
@@ -84,7 +95,7 @@ const ImageEditor = ({
       </div>
       <div className="card image-editor-actions">
         <button type="button" className="btn-primary" onClick={onSize || (() => {})}>
-          Size
+          Resize
         </button>
         <button type="button" className="btn-primary" onClick={handleReframeClick}>
           Reframe
@@ -97,8 +108,8 @@ const ImageEditor = ({
         <button type="button" className="btn-secondary" onClick={onBack}>
           Cancel
         </button>
-        <button type="button" className="btn-primary">
-          Export
+        <button type="button" className="btn-primary" onClick={onExport || (() => {})} disabled={isExporting}>
+          {isExporting ? 'Exporting...' : 'Export'}
         </button>
       </div>
     </div>

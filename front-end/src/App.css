@@ -276,6 +276,13 @@
   box-sizing: border-box;
 }
 
+/* Lets letterbox / transparent margins read clearly (not “lost” on a solid white frame) */
+.preview-box-checkered {
+  background-color: #d9d9d9;
+  background-image: repeating-conic-gradient(#ededed 0% 25%, #d9d9d9 0% 50%);
+  background-size: 20px 20px;
+}
+
 .preview-box.preview-box-video {
   height: 320px;
 }
@@ -349,6 +356,56 @@
 .preset-sizes-cancel {
   margin-top: 1rem;
   width: 100%;
+  box-sizing: border-box;
+}
+
+.preset-letterbox {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 0.75rem 1rem;
+}
+
+.preset-letterbox-label {
+  margin: 0;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #1a1a1a;
+}
+
+.preset-letterbox-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.preset-letterbox-row .btn-primary,
+.preset-letterbox-row .btn-secondary {
+  flex: 1 1 auto;
+  min-width: 5rem;
+}
+
+.preset-letterbox-custom {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  flex: 1 1 100%;
+  margin-top: 0.25rem;
+}
+
+.preset-letterbox-custom-label {
+  font-size: 0.8rem;
+  color: #444;
+}
+
+.preset-letterbox-color-input {
+  width: 2.5rem;
+  height: 2rem;
+  padding: 0;
+  border: 1px solid #1a1a1a;
+  border-radius: 6px;
+  cursor: pointer;
   box-sizing: border-box;
 }
 

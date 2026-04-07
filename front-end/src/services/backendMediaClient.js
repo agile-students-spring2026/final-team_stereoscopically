@@ -48,3 +48,27 @@ export const postMultipart = async ({
 
   return response.json()
 }
+
+export const postJson = async ({ path, payload, fallbackErrorMessage = 'Request failed' }) => {
+  const endpoint = `${getBackendBaseUrl()}${path}`
+
+  let response
+  try {
+    response = await fetch(endpoint, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload ?? {}),
+    })
+  } catch {
+    throw new Error('Unable to reach backend. Please make sure the backend server is running.')
+  }
+
+  if (!response.ok) {
+    const message = await parseErrorMessage(response, fallbackErrorMessage)
+    const error = new Error(message)
+    error.status = response.status
+    throw error
+  }
+
+  return response.json()
+}
