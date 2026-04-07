@@ -158,23 +158,18 @@ function EditorContainer() {
   }
 
   const handleSizeSelect = async (size) => {
-    if (!size.width || !size.height) {
-      setScreen(SCREENS.EDITOR)
-      return
-    }
-
-    if (!sourceUrl) {
+    const imageUrl = sourceUrl || previewUrl
+    if (!imageUrl) {
       setScreen(SCREENS.EDITOR)
       return
     }
 
     try {
-      const shouldPreserveAspect = size.id === 'discord-sticker'
       const { file, url } = await resizeImageToDimensions(
-        sourceUrl,
+        imageUrl,
         size.width,
         size.height,
-        shouldPreserveAspect
+        false
       )
 
       if (previewUrl && previewUrl !== sourceUrl) {
