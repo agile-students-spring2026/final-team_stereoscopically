@@ -55,5 +55,7 @@ export const cropImageFromBackend = async ({ mediaId, x, y, width, height, scale
     url: payload?.url ?? null,
     mimeType: payload?.mimeType ?? 'image/png',
     size: payload?.size ?? null,
+    width: payload?.width ?? null,
+    height: payload?.height ?? null,
   }
 }

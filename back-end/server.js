@@ -82,25 +82,11 @@ app.post('/api/upload/image', upload.single('file'), (req, res) => {
 		size: req.file.size,
 	})
 })
-
 app.post('/api/crop/image', async (req, res) => {
-  const { mediaId, x, y, width, height } = req.body ?? {}
+  const { mediaId, x, y, width, height, scaleX = 1, scaleY = 1 } = req.body ?? {}
 
   if (!mediaId) {
     return res.status(400).json({ error: 'Missing mediaId.', code: 'MISSING_MEDIA_ID' })
-  }
-
-  const cropX = Number(x)
-  const cropY = Number(y)
-  const cropW = Number(width)
-  const cropH = Number(height)
-
-  if (
-    !Number.isFinite(cropX) || !Number.isFinite(cropY) ||
-    !Number.isFinite(cropW) || !Number.isFinite(cropH) ||
-    cropW <= 0 || cropH <= 0
-  ) {
-    return res.status(400).json({ error: 'Invalid crop dimensions.', code: 'INVALID_DIMENSIONS' })
   }
 
   const media = inMemoryMediaStore.get(mediaId)
@@ -110,29 +96,33 @@ app.post('/api/crop/image', async (req, res) => {
   }
 
   try {
-    const sourceMeta = await sharp(media.buffer).metadata()
-    const naturalW = sourceMeta.width
-    const naturalH = sourceMeta.height
+    const pipeline = sharp(media.buffer).rotate()
+    const metadata = await pipeline.metadata()
+    
+    const naturalW = metadata.width
+    const naturalH = metadata.height
 
-    // cropData is in rendered pixels — caller must send scaleX/scaleY
-    // so we work in natural image coordinates
-    const scaleX = Number(req.body.scaleX ?? 1)
-    const scaleY = Number(req.body.scaleY ?? 1)
+    // Calculate Natural Coordinates
+    let left = Math.floor(Number(x) * Number(scaleX))
+    let top  = Math.floor(Number(y) * Number(scaleY))
+    let cw   = Math.round(Number(width) * Number(scaleX))
+    let ch   = Math.round(Number(height) * Number(scaleY))
 
-    const left   = Math.round(cropX * scaleX)
-    const top    = Math.round(cropY * scaleY)
-    const cw     = Math.round(cropW * scaleX)
-    const ch     = Math.round(cropH * scaleY)
-
-    // Clamp to image bounds 
+    // Ensure we don't start outside the image
     const safeLeft = Math.max(0, Math.min(left, naturalW - 1))
     const safeTop  = Math.max(0, Math.min(top,  naturalH - 1))
-    const safeW    = Math.max(1, Math.min(cw, naturalW - safeLeft))
-    const safeH    = Math.max(1, Math.min(ch, naturalH - safeTop))
+    
+    // Ensure the width/height don't overshoot the remaining pixels
+    const safeW = Math.max(1, Math.min(cw, naturalW - safeLeft))
+    const safeH = Math.max(1, Math.min(ch, naturalH - safeTop))
 
-    const croppedBuffer = await sharp(media.buffer)
-      .rotate()
-      .extract({ left: safeLeft, top: safeTop, width: safeW, height: safeH })
+    const croppedBuffer = await pipeline
+      .extract({ 
+        left: safeLeft, 
+        top: safeTop, 
+        width: safeW, 
+        height: safeH 
+      })
       .png()
       .toBuffer()
 
@@ -151,10 +141,16 @@ app.post('/api/crop/image', async (req, res) => {
       url: `${req.protocol}://${req.get('host')}/api/media/${cropId}`,
       mimeType: 'image/png',
       size: croppedBuffer.length,
+      width: safeW,
+      height: safeH
     })
+
   } catch (err) {
-    console.error('Crop failed:', err)
-    return res.status(500).json({ error: 'Failed to crop image.', code: 'CROP_FAILED' })
+    console.error('Sharp Crop Error:', err)
+    return res.status(500).json({ 
+      error: 'Failed to process image crop.', 
+      code: 'CROP_FAILED' 
+    })
   }
 })
 

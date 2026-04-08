@@ -558,23 +558,22 @@ input[type='range']::-moz-range-thumb {
 
 .cropper-container {
   position: relative;
-  width: 100%;
-  max-width: 300px;
-  height: 300px;
-  border: 2px dashed #1a1a1a;
-  border-radius: 8px;
+  width: fit-content; 
+  height: auto;
+  max-width: 100%;
+  border: 1px solid #ccc;
+  border-radius: 4px;
   overflow: visible;
-  background-color: #f9f9f9;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  background-color: transparent;
+  line-height: 0;
 }
 
 .cropper-image {
   display: block;
   max-width: 100%;
-  max-height: 100%;
-  object-fit: contain;
+  height: auto;
+  user-select: none;
+  -webkit-user-drag: none;
 }
 
 .crop-overlay {

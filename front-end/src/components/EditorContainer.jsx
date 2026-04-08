@@ -206,11 +206,19 @@ function EditorContainer() {
   }
 
   const handleCropApply = async (result) => {
-    const response = await fetch(result.url)
-    const blob = await response.blob()
-    const file = new File([blob], 'cropped.png', { type: 'image/png' })
-    const objectUrl = URL.createObjectURL(blob)
-    applyTransformedImage(file, objectUrl, result)
+    try {
+      const response = await fetch(result.url)
+      if (!response.ok) throw new Error("Failed to fetch cropped image")
+      
+      const blob = await response.blob()
+      const file = new File([blob], 'cropped.png', { type: 'image/png' })
+      const objectUrl = URL.createObjectURL(blob)
+
+      applyTransformedImage(file, objectUrl, result)
+    } catch (err) {
+      console.error("Error applying crop in container:", err)
+      setExportError("Could not process the cropped image.")
+    }
   }
 
 

@@ -31,84 +31,63 @@ function ImageCropper({ imageSrc, onCropChange }) {
 
   // Handle mouse down on crop box or handles
   const handleMouseDown = (e) => {
+    const rect = containerRef.current.getBoundingClientRect();
     if (e.target.classList.contains('crop-handle')) {
-      // Start resizing if clicking a corner handle
-      const handle = e.target.dataset.handle
-      setIsResizing(handle)
-      setDragStart({ x: e.clientX, y: e.clientY })
+      setIsResizing(e.target.dataset.handle);
+      setDragStart({ 
+        x: e.clientX, 
+        y: e.clientY,
+        initialCrop: { ...cropData } 
+      });
     } else if (e.target.classList.contains('crop-box')) {
-      // Start dragging if clicking the crop box
-      setIsDragging(true)
+      setIsDragging(true);
       setDragStart({
         x: e.clientX - cropData.x,
         y: e.clientY - cropData.y,
-      })
+      });
     }
-  }
+  };
 
-  // Handle mouse movement for dragging and resizing
   const handleMouseMove = (e) => {
-    if (!isDragging && !isResizing) return
+    if (!isDragging && !isResizing) return;
 
-    // Handle dragging the entire crop box
     if (isDragging) {
-      const newX = e.clientX - dragStart.x
-      const newY = e.clientY - dragStart.y
-
-      // Keep crop box within container boundaries
-      const boundedX = Math.max(
-        0,
-        Math.min(newX, containerSize.width - cropData.width)
-      )
-      const boundedY = Math.max(
-        0,
-        Math.min(newY, containerSize.height - cropData.height)
-      )
-
-      const newCropData = { ...cropData, x: boundedX, y: boundedY }
-      setCropData(newCropData)
-      if (onCropChange) onCropChange(newCropData)
+      const newX = Math.max(0, Math.min(e.clientX - dragStart.x, containerSize.width - cropData.width));
+      const newY = Math.max(0, Math.min(e.clientY - dragStart.y, containerSize.height - cropData.height));
+      
+      const updated = { ...cropData, x: newX, y: newY };
+      setCropData(updated);
+      onCropChange?.(updated);
     }
 
-    // Handle resizing from corner handles
     if (isResizing) {
-      const deltaX = e.clientX - dragStart.x
-      const deltaY = e.clientY - dragStart.y
-      let newCrop = { ...cropData }
+      const dx = e.clientX - dragStart.x;
+      const dy = e.clientY - dragStart.y;
+      const { initialCrop } = dragStart;
+      let nextCrop = { ...initialCrop };
 
-      // Different logic for each corner handle
-      switch (isResizing) {
-        case 'se':
-          // Southeast: expand width and height
-          newCrop.width = Math.max(50, cropData.width + deltaX)
-          newCrop.height = Math.max(50, cropData.height + deltaY)
-          break
-        case 'sw':
-          // Southwest: move left, shrink width, expand height
-          newCrop.x = cropData.x + deltaX
-          newCrop.width = Math.max(50, cropData.width - deltaX)
-          newCrop.height = Math.max(50, cropData.height + deltaY)
-          break
-        case 'ne':
-          // Northeast: move up, expand width, shrink height
-          newCrop.y = cropData.y + deltaY
-          newCrop.width = Math.max(50, cropData.width + deltaX)
-          newCrop.height = Math.max(50, cropData.height - deltaY)
-          break
-        case 'nw':
-          // Northwest: move up and left, shrink both dimensions
-          newCrop.x = cropData.x + deltaX
-          newCrop.y = cropData.y + deltaY
-          newCrop.width = Math.max(50, cropData.width - deltaX)
-          newCrop.height = Math.max(50, cropData.height - deltaY)
-          break
-        default:
-          break
+      // Calculate new dimensions based on the initial snapshot + total mouse movement
+      if (isResizing.includes('e')) nextCrop.width = Math.max(20, initialCrop.width + dx);
+      if (isResizing.includes('s')) nextCrop.height = Math.max(20, initialCrop.height + dy);
+      
+      if (isResizing.includes('w')) {
+        const maxWidth = initialCrop.x + initialCrop.width;
+        nextCrop.x = Math.max(0, Math.min(initialCrop.x + dx, maxWidth - 20));
+        nextCrop.width = maxWidth - nextCrop.x;
+      }
+      
+      if (isResizing.includes('n')) {
+        const maxHeight = initialCrop.y + initialCrop.height;
+        nextCrop.y = Math.max(0, Math.min(initialCrop.y + dy, maxHeight - 20));
+        nextCrop.height = maxHeight - nextCrop.y;
       }
 
-      setCropData(newCrop)
-      if (onCropChange) onCropChange(newCrop)
-      setDragStart({ x: e.clientX, y: e.clientY })
+      // Boundary Enforcement
+      if (nextCrop.x + nextCrop.width > containerSize.width) nextCrop.width = containerSize.width - nextCrop.x;
+      if (nextCrop.y + nextCrop.height > containerSize.height) nextCrop.height = containerSize.height - nextCrop.y;
+
+      setCropData(nextCrop);
+      onCropChange?.(nextCrop);
     }
   }
 

@@ -30,34 +30,29 @@ const ImageEditor = ({
   const handleCropChange = (data) => {
     setCropData(data)
   }
-
   const handleApplyCrop = async () => {
-    if (!cropData){
-      setIsReframing(false)
-      console.log('Crop applied:', cropData)
-    }
+    if (!cropData) return;
 
-    const container = cropContainerRef.current
-    const scaleX = container ? (naturalSize.width / container.offsetWidth) : 1
-    const scaleY = container ? (naturalSize.height / container.offsetHeight) : 1
+    // Use the actual image element to find display dimensions
+    const imgElement = cropContainerRef.current.querySelector('.cropper-image');
+    const { width: displayedW, height: displayedH } = imgElement.getBoundingClientRect();
+
+    const scaleX = naturalSize.width / displayedW;
+    const scaleY = naturalSize.height / displayedH;
 
     try {
       const result = await cropImageFromBackend({
         mediaId: backendMediaId,
-        x: cropData.x,
-        y: cropData.y,
-        width: cropData.width,
-        height: cropData.height,
-        scaleX,
-        scaleY,
-      })
-      onCropApply(result)   // pass full result up, not just a URL
-      setIsReframing(false)
-    } 
-    catch (err) {
-      console.error('Crop failed:', err)
+        x: cropData.x * scaleX,
+        y: cropData.y * scaleY,
+        width: cropData.width * scaleX,
+        height: cropData.height * scaleY,
+      });
+      onCropApply(result);
+      setIsReframing(false);
+    } catch (err) {
+      console.error('Crop failed:', err);
     }
-
   }
 
   const handleCancelCrop = () => {
