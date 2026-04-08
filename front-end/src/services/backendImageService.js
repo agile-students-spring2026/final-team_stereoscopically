@@ -42,3 +42,18 @@ export const exportImageFromBackend = async ({ mediaId, width, height, letterbox
     fileName: payload?.fileName ?? 'sticker.png',
   }
 }
+
+export const cropImageFromBackend = async ({ mediaId, x, y, width, height, scaleX, scaleY }) => {
+  const payload = await postJson({
+    path: '/api/crop/image',
+    payload: { mediaId, x, y, width, height, scaleX, scaleY },
+    fallbackErrorMessage: 'Image crop failed',
+  })
+  return {
+    id: payload?.id ?? null,
+    type: payload?.type ?? 'image',
+    url: payload?.url ?? null,
+    mimeType: payload?.mimeType ?? 'image/png',
+    size: payload?.size ?? null,
+  }
+}

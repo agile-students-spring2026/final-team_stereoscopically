@@ -1,8 +1,10 @@
 import { useState, useRef } from 'react'
 import ImageCropper from './ImageCropper'
+import { cropImageFromBackend } from '../services/backendImageService'
 
 const ImageEditor = ({
   imageSrc,
+  backendMediaId, 
   onCropApply,
   onOpenFilters,
   onBack,
@@ -19,6 +21,7 @@ const ImageEditor = ({
   const [cropData, setCropData] = useState(null)
   const [imageLoadError, setImageLoadError] = useState(false)
   const cropContainerRef = useRef(null)
+  const [naturalSize, setNaturalSize] = useState({ width: 1, height: 1 })
 
   const handleReframeClick = () => {
     setIsReframing(true)
@@ -28,42 +31,31 @@ const ImageEditor = ({
     setCropData(data)
   }
 
-  const handleApplyCrop = () => {
+  const handleApplyCrop = async () => {
     if (!cropData){
       setIsReframing(false)
       console.log('Crop applied:', cropData)
     }
 
-    const img = new Image()
-    img.src = imageSrc
-    img.onload = () => {
+    const container = cropContainerRef.current
+    const scaleX = container ? (naturalSize.width / container.offsetWidth) : 1
+    const scaleY = container ? (naturalSize.height / container.offsetHeight) : 1
 
-      const container = cropContainerRef.current
-      const renderedWidth = container.offsetWidth
-      const renderedHeight = container.offsetHeight
-      const scaleX = img.naturalWidth / renderedWidth
-      const scaleY = img.naturalHeight / renderedHeight
-
-      const canvas = document.createElement('canvas')
-      canvas.width = cropData.width * scaleX
-      canvas.height = cropData.height * scaleY
-
-      const ctx = canvas.getContext('2d')
-      ctx.drawImage(
-        img,
-        cropData.x * scaleX,       
-        cropData.y * scaleY,
-        cropData.width * scaleX,
-        cropData.height * scaleY,
-        0, 0,           
-        canvas.width,
-        canvas.height 
-      )
-      
-      const croppedUrl = canvas.toDataURL('image/png')
-      onCropApply(croppedUrl)   // lift the new image URL up to the parent
+    try {
+      const result = await cropImageFromBackend({
+        mediaId: backendMediaId,
+        x: cropData.x,
+        y: cropData.y,
+        width: cropData.width,
+        height: cropData.height,
+        scaleX,
+        scaleY,
+      })
+      onCropApply(result)   // pass full result up, not just a URL
       setIsReframing(false)
-
+    } 
+    catch (err) {
+      console.error('Crop failed:', err)
     }
 
   }
@@ -127,7 +119,7 @@ const ImageEditor = ({
             src={imageSrc}
             alt="Preview"
             className="preview-image"
-            onLoad={() => setImageLoadError(false)}
+            onLoad={(e) => setNaturalSize({ width: e.target.naturalWidth, height: e.target.naturalHeight })}
             onError={handleImageError}
           />
         )}

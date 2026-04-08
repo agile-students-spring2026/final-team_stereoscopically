@@ -83,6 +83,81 @@ app.post('/api/upload/image', upload.single('file'), (req, res) => {
 	})
 })
 
+app.post('/api/crop/image', async (req, res) => {
+  const { mediaId, x, y, width, height } = req.body ?? {}
+
+  if (!mediaId) {
+    return res.status(400).json({ error: 'Missing mediaId.', code: 'MISSING_MEDIA_ID' })
+  }
+
+  const cropX = Number(x)
+  const cropY = Number(y)
+  const cropW = Number(width)
+  const cropH = Number(height)
+
+  if (
+    !Number.isFinite(cropX) || !Number.isFinite(cropY) ||
+    !Number.isFinite(cropW) || !Number.isFinite(cropH) ||
+    cropW <= 0 || cropH <= 0
+  ) {
+    return res.status(400).json({ error: 'Invalid crop dimensions.', code: 'INVALID_DIMENSIONS' })
+  }
+
+  const media = inMemoryMediaStore.get(mediaId)
+  if (!media || media.expiresAt <= Date.now()) {
+    if (media) inMemoryMediaStore.delete(mediaId)
+    return res.status(404).json({ error: 'Media not found or expired.', code: 'MEDIA_NOT_FOUND' })
+  }
+
+  try {
+    const sourceMeta = await sharp(media.buffer).metadata()
+    const naturalW = sourceMeta.width
+    const naturalH = sourceMeta.height
+
+    // cropData is in rendered pixels — caller must send scaleX/scaleY
+    // so we work in natural image coordinates
+    const scaleX = Number(req.body.scaleX ?? 1)
+    const scaleY = Number(req.body.scaleY ?? 1)
+
+    const left   = Math.round(cropX * scaleX)
+    const top    = Math.round(cropY * scaleY)
+    const cw     = Math.round(cropW * scaleX)
+    const ch     = Math.round(cropH * scaleY)
+
+    // Clamp to image bounds 
+    const safeLeft = Math.max(0, Math.min(left, naturalW - 1))
+    const safeTop  = Math.max(0, Math.min(top,  naturalH - 1))
+    const safeW    = Math.max(1, Math.min(cw, naturalW - safeLeft))
+    const safeH    = Math.max(1, Math.min(ch, naturalH - safeTop))
+
+    const croppedBuffer = await sharp(media.buffer)
+      .rotate()
+      .extract({ left: safeLeft, top: safeTop, width: safeW, height: safeH })
+      .png()
+      .toBuffer()
+
+    const cropId = `img_${Date.now()}_${Math.round(Math.random() * 1e9)}`
+    inMemoryMediaStore.set(cropId, {
+      buffer: croppedBuffer,
+      mimeType: 'image/png',
+      size: croppedBuffer.length,
+      expiresAt: Date.now() + MEDIA_TTL_MS,
+      fileName: 'cropped.png',
+    })
+
+    return res.status(200).json({
+      id: cropId,
+      type: 'image',
+      url: `${req.protocol}://${req.get('host')}/api/media/${cropId}`,
+      mimeType: 'image/png',
+      size: croppedBuffer.length,
+    })
+  } catch (err) {
+    console.error('Crop failed:', err)
+    return res.status(500).json({ error: 'Failed to crop image.', code: 'CROP_FAILED' })
+  }
+})
+
 app.post('/api/export/image', async (req, res) => {
 	const { mediaId, width, height, letterboxColor } = req.body ?? {}
 	const targetWidth = Number(width)

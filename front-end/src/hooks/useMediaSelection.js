@@ -11,6 +11,7 @@ const useMediaSelection = () => {
   const [isUploading, setIsUploading] = useState(false)
   const [uploadError, setUploadError] = useState(null)
   const [validationError, setValidationError] = useState(null)
+  
 
   const applyVideoSelection = useCallback((file) => {
     if (!file) return false
@@ -85,12 +86,13 @@ const useMediaSelection = () => {
     setValidationError(null)
   }, [])
 
-  const applyTransformedImage = useCallback((file, nextPreviewUrl) => {
+  const applyTransformedImage = useCallback((file, nextPreviewUrl, nextBackendResult) => {
     if (!file || !nextPreviewUrl) return false
 
     setMediaType('image')
     setSelectedMedia(file)
     setPreviewUrl(nextPreviewUrl)
+    if (nextBackendResult) setBackendImageResult(nextBackendResult)
     // Leave sourceUrl untouched so resizes continue to use the original source
     return true
   }, [])
