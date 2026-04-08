@@ -563,7 +563,7 @@ input[type='range']::-moz-range-thumb {
   height: 300px;
   border: 2px dashed #1a1a1a;
   border-radius: 8px;
-  overflow: hidden;
+  overflow: visible;
   background-color: #f9f9f9;
   display: flex;
   align-items: center;

@@ -205,6 +205,17 @@ function EditorContainer() {
     setScreen(SCREENS.EDITOR)
   }
 
+const handleCropApply = (croppedUrl) => {
+  fetch(croppedUrl)
+    .then(r => r.blob())
+    .then(blob => {
+      const file = new File([blob], 'cropped.png', { type: 'image/png' })
+      const objectUrl = URL.createObjectURL(blob)
+      applyTransformedImage(file, objectUrl)
+    })
+}
+
+
   const handleExport = async () => {
     if (mediaType !== 'image') return
     if (!selectedPreset) {
@@ -406,6 +417,7 @@ function EditorContainer() {
         return (
           <ImageEditor
             imageSrc={effectiveImageSrc}
+            onCropApply={handleCropApply}
             isUploading={isUploading}
             isExporting={isExporting}
             uploadError={uploadError}
@@ -461,6 +473,7 @@ function EditorContainer() {
         return (
           <ImageEditor
             imageSrc={effectiveImageSrc}
+            onCropApply={handleCropApply}
             isUploading={isUploading}
             isExporting={isExporting}
             uploadError={uploadError}

@@ -1,8 +1,9 @@
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import ImageCropper from './ImageCropper'
 
 const ImageEditor = ({
   imageSrc,
+  onCropApply,
   onOpenFilters,
   onBack,
   onSize,
@@ -17,6 +18,7 @@ const ImageEditor = ({
   // Track current crop data
   const [cropData, setCropData] = useState(null)
   const [imageLoadError, setImageLoadError] = useState(false)
+  const cropContainerRef = useRef(null)
 
   const handleReframeClick = () => {
     setIsReframing(true)
@@ -27,8 +29,43 @@ const ImageEditor = ({
   }
 
   const handleApplyCrop = () => {
-    setIsReframing(false)
-    console.log('Crop applied:', cropData)
+    if (!cropData){
+      setIsReframing(false)
+      console.log('Crop applied:', cropData)
+    }
+
+    const img = new Image()
+    img.src = imageSrc
+    img.onload = () => {
+
+      const container = cropContainerRef.current
+      const renderedWidth = container.offsetWidth
+      const renderedHeight = container.offsetHeight
+      const scaleX = img.naturalWidth / renderedWidth
+      const scaleY = img.naturalHeight / renderedHeight
+
+      const canvas = document.createElement('canvas')
+      canvas.width = cropData.width * scaleX
+      canvas.height = cropData.height * scaleY
+
+      const ctx = canvas.getContext('2d')
+      ctx.drawImage(
+        img,
+        cropData.x * scaleX,       
+        cropData.y * scaleY,
+        cropData.width * scaleX,
+        cropData.height * scaleY,
+        0, 0,           
+        canvas.width,
+        canvas.height 
+      )
+      
+      const croppedUrl = canvas.toDataURL('image/png')
+      onCropApply(croppedUrl)   // lift the new image URL up to the parent
+      setIsReframing(false)
+
+    }
+
   }
 
   const handleCancelCrop = () => {
@@ -45,7 +82,9 @@ const ImageEditor = ({
     return (
       <div className="image-editor-container">
         <h2 className="image-editor-title">Reframe Image</h2>
-        <ImageCropper imageSrc={imageSrc} onCropChange={handleCropChange} />
+        <div ref={cropContainerRef}>
+          <ImageCropper imageSrc={imageSrc} onCropChange={handleCropChange} />
+        </div>
         <div className="card-actions">
           <button type="button" className="btn-secondary" onClick={handleCancelCrop}>
             Cancel
