@@ -171,8 +171,8 @@ Default server URL: `http://localhost:4000`
   "x": 0.5,
   "y": 0.5,
   "fontFamily": "Arial",
-  "fontSize": 36,
-  "color": "#FFFFFF"
+  "fontSize": 960,
+  "color": "#111111"
 }
 ```
 
@@ -181,6 +181,7 @@ Notes:
 - `text` supports multiline values using `\n` line breaks.
 - Supported font families are `Arial`, `Helvetica`, and `Georgia`.
 - Unsupported `fontFamily` values fall back to `Arial`.
+- `fontSize` must be between `8` and `2000`.
 - If `text` is empty or whitespace-only, the endpoint returns a successful no-op response with the same media ID.
 
 **Success response (200)**
@@ -204,7 +205,7 @@ Notes:
 - `400 { "error": "Invalid text payload.", "code": "INVALID_TEXT_PAYLOAD" }`
 - `400 { "error": "Text is too long. Maximum allowed length is 300 characters.", "code": "INVALID_TEXT_PAYLOAD" }`
 - `400 { "error": "Invalid text position.", "code": "INVALID_POSITION" }`
-- `400 { "error": "Invalid font size. Must be between 8 and 160.", "code": "INVALID_FONT_SIZE" }`
+- `400 { "error": "Invalid font size. Must be between 8 and 2000.", "code": "INVALID_FONT_SIZE" }`
 - `400 { "error": "Only image text overlay is supported.", "code": "UNSUPPORTED_MEDIA_TYPE" }`
 - `404 { "error": "Media not found or expired.", "code": "MEDIA_NOT_FOUND" }`
 - `500 { "error": "Failed to render text overlay.", "code": "TEXT_RENDER_FAILED" }`

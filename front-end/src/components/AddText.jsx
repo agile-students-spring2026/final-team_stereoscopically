@@ -154,6 +154,12 @@ function AddText({ imageSrc, onApply, onCancel, applyError = null }) {
           </p>
         ) : null}
 
+        <p className="add-text-placement-hint add-text-placement-hint--top">
+          Placement
+          <br />
+          Click or drag on the preview above to place your text.
+        </p>
+
         <div className="add-text-field add-text-field--stack">
           <label htmlFor="add-text-input" className="add-text-label">
             Text
@@ -208,10 +214,6 @@ function AddText({ imageSrc, onApply, onCancel, applyError = null }) {
           </div>
         </div>
 
-        <div className="add-text-field add-text-field--stack">
-          <span className="add-text-label">Placement</span>
-          <p className="add-text-placement-hint">Click or drag on the preview above to place your text.</p>
-        </div>
       </div>
     </FilterScreen>
   )

@@ -236,6 +236,10 @@
   color: #666;
 }
 
+.add-text-placement-hint--top {
+  line-height: 1.35;
+}
+
 .add-text-placement-marker {
   position: absolute;
   transform: translate(-50%, -50%);

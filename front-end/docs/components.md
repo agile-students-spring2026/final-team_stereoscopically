@@ -286,6 +286,7 @@ Shared layout wrapper for filter sub-screens.
 - title and header display
 - preview region layout
 - shared apply and cancel action layout
+- optional interactive preview wiring and overlay passthrough used by filter-specific UIs
 
 **Not responsible for**
 - filter-specific state or transformation logic
@@ -334,11 +335,15 @@ UI for adding text overlays to media.
 
 **Responsible for**
 - text input controls
-- font, size, and position controls
+- font and numeric size controls
+- interactive placement selection on the shared preview surface
+- constraining placement interaction to the rendered image bounds inside the preview container
+- showing a local overlay preview so users can position text before apply
 - emitting the text-edit payload
 
 **Not responsible for**
 - rendering final media output
+- final text-validation authority
 - broader editor orchestration
 
 ---

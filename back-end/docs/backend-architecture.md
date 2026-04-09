@@ -216,6 +216,7 @@ Text-overlay validation, normalization, and rendering utilities.
 
 Responsible for:
 - add-text request payload validation and normalization
+- add-text size and placement bounds validation
 - supported font fallback and style defaults
 - SVG text overlay generation for multiline rendering
 - Sharp compositing helpers used by add-text workflow
