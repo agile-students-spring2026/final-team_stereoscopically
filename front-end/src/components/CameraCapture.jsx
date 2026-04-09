@@ -1,5 +1,4 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { isVideoTypeSupported } from './videoSupport'
 
 function CameraCapture({ onCapture, onCancel }) {
     const videoRef = useRef(null)
@@ -119,11 +118,7 @@ function CameraCapture({ onCapture, onCancel }) {
             stopStream()
             setIsRecording(false)
             mediaRecorderRef.current = null
-            if (isVideoTypeSupported(file)) {
-                onCapture(file)
-            } else {
-                setError('Recorded video format is not supported by your browser.')
-            }
+            onCapture(file)
         }
 
         recorder.start()

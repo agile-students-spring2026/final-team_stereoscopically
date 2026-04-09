@@ -3,6 +3,9 @@ import ImageCropper from './ImageCropper'
 
 const ImageEditor = ({
   imageSrc,
+  cropSourceImageSrc = null,
+  initialCropPx = null,
+  onCropApply,
   onOpenFilters,
   onBack,
   onSize,
@@ -13,39 +16,61 @@ const ImageEditor = ({
   exportError = null,
 }) => {
   // Track if cropper is active
-  const [isReframing, setIsReframing] = useState(false)
+  const [isCropping, setIsCropping] = useState(false)
   // Track current crop data
   const [cropData, setCropData] = useState(null)
   const [imageLoadError, setImageLoadError] = useState(false)
+  const [cropError, setCropError] = useState(null)
 
-  const handleReframeClick = () => {
-    setIsReframing(true)
+  const handleCropClick = () => {
+    setCropError(null)
+    setIsCropping(true)
   }
 
   const handleCropChange = (data) => {
     setCropData(data)
   }
 
-  const handleApplyCrop = () => {
-    setIsReframing(false)
-    console.log('Crop applied:', cropData)
+  const handleApplyCrop = async () => {
+    if (!cropData?.ratio) {
+      setCropError('Crop preview is not ready yet. Please try again.')
+      return
+    }
+
+    try {
+      setCropError(null)
+      await onCropApply?.(cropData)
+      setIsCropping(false)
+    } catch (err) {
+      setCropError('Could not apply crop. Please try again.')
+      console.error('Crop failed:', err)
+    }
   }
 
   const handleCancelCrop = () => {
-    setIsReframing(false)
-    setCropData(null)
+    setIsCropping(false)
+    setCropError(null)
   }
 
   const handleImageError = () => {
     setImageLoadError(true)
   }
 
-  // Show cropper if reframing, otherwise show preview
-  if (isReframing) {
+  // Show cropper if cropping, otherwise show preview
+  if (isCropping) {
     return (
       <div className="image-editor-container">
-        <h2 className="image-editor-title">Reframe Image</h2>
-        <ImageCropper imageSrc={imageSrc} onCropChange={handleCropChange} />
+        <h2 className="image-editor-title">Crop Image</h2>
+        {cropError && (
+          <p role="alert" className="upload-status" style={{ marginTop: '0.5rem', color: '#ff3b30' }}>
+            {cropError}
+          </p>
+        )}
+        <ImageCropper
+          imageSrc={cropSourceImageSrc || imageSrc}
+          initialCropPx={initialCropPx}
+          onCropChange={handleCropChange}
+        />
         <div className="card-actions">
           <button type="button" className="btn-secondary" onClick={handleCancelCrop}>
             Cancel
@@ -88,7 +113,6 @@ const ImageEditor = ({
             src={imageSrc}
             alt="Preview"
             className="preview-image"
-            onLoad={() => setImageLoadError(false)}
             onError={handleImageError}
           />
         )}
@@ -97,8 +121,8 @@ const ImageEditor = ({
         <button type="button" className="btn-primary" onClick={onSize || (() => {})}>
           Resize
         </button>
-        <button type="button" className="btn-primary" onClick={handleReframeClick}>
-          Reframe
+        <button type="button" className="btn-primary" onClick={handleCropClick}>
+          Crop
         </button>
         <button type="button" className="btn-primary" onClick={onOpenFilters}>
           Filters

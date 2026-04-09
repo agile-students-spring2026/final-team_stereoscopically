@@ -1,11 +1,9 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react'
-import { convertVideoToGif } from '../services/backendGifService'
 
-const GifEditor = ({ videoFile, onCancel, onConverted }) => {
+const GifEditor = ({ videoFile, onCancel, onConverted, onCreateGif }) => {
     const [isProcessing, setIsProcessing] = useState(false)
     const [statusMessage, setStatusMessage] = useState(null)
     const [backendResult, setBackendResult] = useState(null)
-    const [validationError, setValidationError] = useState(null)
     const [conversionError, setConversionError] = useState(null)
 
     const [duration, setDuration] = useState(0)
@@ -61,41 +59,27 @@ const GifEditor = ({ videoFile, onCancel, onConverted }) => {
     useEffect(() => {
         setBackendResult(null)
         setStatusMessage(null)
-        setValidationError(null)
         setConversionError(null)
-    }, [videoFile])
-
-    useEffect(() => {
-        if (!videoFile || !(videoFile instanceof File)) {
-            setValidationError(null)
-            return
-        }
-
-        const maxSizeBytes = 50 * 1024 * 1024
-
-        if (!videoFile.type?.startsWith('video/')) {
-            setValidationError('Please select a video file.')
-            return
-        }
-
-        if (videoFile.size > maxSizeBytes) {
-            setValidationError('File is too large (max 50 MB).')
-            return
-        }
-
-        setValidationError(null)
     }, [videoFile])
 
     const formatTime = (s) => `${s.toFixed(1)}s`
 
     const handleConvertToGif = async () => {
-        if (!videoFile || validationError || isProcessing) return
+        if (isProcessing) return
+        if (!videoFile || !videoUrl) {
+            setStatusMessage(null)
+            setConversionError('Video is not ready for conversion. Please re-upload and try again.')
+            return
+        }
         setIsProcessing(true)
         setConversionError(null)
         setStatusMessage('Converting clip to GIF…')
 
         try {
-            const result = await convertVideoToGif(videoFile)
+            if (!onCreateGif) {
+                throw new Error('GIF conversion is not available right now. Please try again.')
+            }
+            const result = await onCreateGif(videoFile)
             setBackendResult(result)
             setStatusMessage('GIF created. Download support is coming soon.')
         } catch (error) {
@@ -183,7 +167,7 @@ const GifEditor = ({ videoFile, onCancel, onConverted }) => {
                     type="button"
                     className="btn-primary"
                     onClick={handleConvertToGif}
-                    disabled={isProcessing || !videoUrl || Boolean(validationError)}
+                    disabled={isProcessing || !videoUrl}
                 >
                     {isProcessing ? 'Processing...' : 'Create GIF'}
                 </button>
@@ -213,11 +197,6 @@ const GifEditor = ({ videoFile, onCancel, onConverted }) => {
                 </div>
             )}
 
-            {validationError && (
-                <p className="preview-label" style={{ marginTop: '0.75rem', color: '#ff3b30' }}>
-                    {validationError}
-                </p>
-            )}
         </div>
     )
 }

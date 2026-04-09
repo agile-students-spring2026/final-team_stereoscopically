@@ -558,23 +558,23 @@ input[type='range']::-moz-range-thumb {
 
 .cropper-container {
   position: relative;
-  width: 100%;
-  max-width: 300px;
-  height: 300px;
-  border: 2px dashed #1a1a1a;
-  border-radius: 8px;
-  overflow: hidden;
-  background-color: #f9f9f9;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  width: fit-content; 
+  height: auto;
+  max-width: 100%;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  overflow: visible;
+  background-color: transparent;
+  line-height: 0;
+  touch-action: none;
 }
 
 .cropper-image {
   display: block;
   max-width: 100%;
-  max-height: 100%;
-  object-fit: contain;
+  height: auto;
+  user-select: none;
+  -webkit-user-drag: none;
 }
 
 .crop-overlay {
@@ -592,6 +592,7 @@ input[type='range']::-moz-range-thumb {
   background-color: rgba(100, 108, 255, 0.1);
   cursor: move;
   pointer-events: auto;
+  touch-action: none;
 }
 
 .crop-handle {
@@ -602,6 +603,7 @@ input[type='range']::-moz-range-thumb {
   border: 2px solid white;
   border-radius: 50%;
   pointer-events: auto;
+  touch-action: none;
 }
 
 .crop-handle[data-handle='nw'] {

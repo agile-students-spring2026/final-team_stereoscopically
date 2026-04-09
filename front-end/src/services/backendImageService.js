@@ -42,3 +42,52 @@ export const exportImageFromBackend = async ({ mediaId, width, height, letterbox
     fileName: payload?.fileName ?? 'sticker.png',
   }
 }
+
+export const cropImageFromBackend = async ({ mediaId, x, y, width, height, unit = 'ratio' }) => {
+  const payload = await postJson({
+    path: '/api/crop/image',
+    payload: { mediaId, x, y, width, height, unit },
+    fallbackErrorMessage: 'Image crop failed',
+  })
+  return {
+    id: payload?.id ?? null,
+    type: payload?.type ?? 'image',
+    url: payload?.url ?? null,
+    mimeType: payload?.mimeType ?? 'image/png',
+    size: payload?.size ?? null,
+    width: payload?.width ?? null,
+    height: payload?.height ?? null,
+  }
+}
+
+export const convertBackendImageResultToLocalMedia = async (
+  result,
+  {
+    fallbackFileName = 'sticker.png',
+    fallbackMimeType = 'image/png',
+    fetchErrorMessage = 'Failed to load exported image preview.',
+  } = {}
+) => {
+  const sourceUrl = result?.url
+  if (!sourceUrl) {
+    throw new Error(fetchErrorMessage)
+  }
+
+  const response = await fetch(sourceUrl)
+  if (!response.ok) {
+    throw new Error(fetchErrorMessage)
+  }
+
+  const blob = await response.blob()
+  const fileName = result?.fileName || fallbackFileName
+  const mimeType = result?.mimeType || blob.type || fallbackMimeType
+  const file = new File([blob], fileName, { type: mimeType })
+  const objectUrl = URL.createObjectURL(blob)
+
+  return {
+    file,
+    objectUrl,
+    fileName,
+    mimeType,
+  }
+}

@@ -26,8 +26,8 @@ Main welcome page with options to log-in or create an account.
 
 ---
 
-### Create New
-<img src="ux-design/wireframe-createnew.png" alt="Create New wireframe" width="200">
+### Media Entry
+<img src="ux-design/wireframe-createnew.png" alt="Media Entry wireframe" width="200">
 
 Start a new creation by selecting an input method (camera/upload) and choosing what to create (image or GIF).
 

@@ -1,121 +1,189 @@
-import { useState, useRef, useEffect } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 
-function ImageCropper({ imageSrc, onCropChange }) {
+const MIN_CROP_SIZE = 20
+const DEFAULT_CROP = {
+  x: 50,
+  y: 50,
+  width: 200,
+  height: 200,
+}
+
+const clamp = (value, min, max) => Math.max(min, Math.min(value, max))
+
+const clampCropToContainer = (crop, container) => {
+  const maxWidth = Math.max(MIN_CROP_SIZE, container.width)
+  const maxHeight = Math.max(MIN_CROP_SIZE, container.height)
+
+  const width = clamp(crop.width, MIN_CROP_SIZE, maxWidth)
+  const height = clamp(crop.height, MIN_CROP_SIZE, maxHeight)
+  const x = clamp(crop.x, 0, Math.max(0, container.width - width))
+  const y = clamp(crop.y, 0, Math.max(0, container.height - height))
+
+  return { x, y, width, height }
+}
+
+const isSameCrop = (a, b) => (
+  a.x === b.x &&
+  a.y === b.y &&
+  a.width === b.width &&
+  a.height === b.height
+)
+
+const toCropPayload = (crop, container) => {
+  if (!container.width || !container.height) {
+    return { pixels: crop, ratio: null, unit: 'ratio' }
+  }
+
+  return {
+    pixels: crop,
+    ratio: {
+      x: crop.x / container.width,
+      y: crop.y / container.height,
+      width: crop.width / container.width,
+      height: crop.height / container.height,
+    },
+    unit: 'ratio',
+  }
+}
+
+function ImageCropper({ imageSrc, onCropChange, initialCropPx = null }) {
   // Tracks crop box position and size
-  const [cropData, setCropData] = useState({
-    x: 50,
-    y: 50,
-    width: 200,
-    height: 200,
-  })
-  // Tracks if user is currently dragging the crop box
-  const [isDragging, setIsDragging] = useState(false)
-  // Stores initial mouse position when drag starts
-  const [dragStart, setDragStart] = useState({ x: 0, y: 0 })
-  // Tracks which corner handle is being resized (nw, ne, sw, se)
-  const [isResizing, setIsResizing] = useState(null)
+  const [cropData, setCropData] = useState(initialCropPx || DEFAULT_CROP)
   // Reference to container element for measuring size
   const containerRef = useRef(null)
+  const interactionRef = useRef(null)
+  const activePointerIdRef = useRef(null)
   // Stores container width and height for boundary calculations
   const [containerSize, setContainerSize] = useState({ width: 0, height: 0 })
 
-  // Measure container size when image loads
+  const emitCropChange = useCallback((crop, container) => {
+    onCropChange?.(toCropPayload(crop, container))
+  }, [onCropChange])
+
+  const syncCropToContainer = useCallback((nextContainer) => {
+    if (!nextContainer.width || !nextContainer.height) return
+
+    setCropData((prev) => {
+      const next = clampCropToContainer(prev, nextContainer)
+      return isSameCrop(next, prev) ? prev : next
+    })
+  }, [])
+
+  const measureContainer = useCallback(() => {
+    if (!containerRef.current) return
+    const next = {
+      width: containerRef.current.offsetWidth,
+      height: containerRef.current.offsetHeight,
+    }
+
+    setContainerSize((prev) => (
+      prev.width === next.width && prev.height === next.height ? prev : next
+    ))
+    syncCropToContainer(next)
+  }, [syncCropToContainer])
+
+  // Measure container size when image loads or viewport changes
   useEffect(() => {
-    if (containerRef.current) {
-      setContainerSize({
-        width: containerRef.current.offsetWidth,
-        height: containerRef.current.offsetHeight,
-      })
-    }
-  }, [imageSrc])
+    measureContainer()
 
-  // Handle mouse down on crop box or handles
-  const handleMouseDown = (e) => {
-    if (e.target.classList.contains('crop-handle')) {
-      // Start resizing if clicking a corner handle
-      const handle = e.target.dataset.handle
-      setIsResizing(handle)
-      setDragStart({ x: e.clientX, y: e.clientY })
-    } else if (e.target.classList.contains('crop-box')) {
-      // Start dragging if clicking the crop box
-      setIsDragging(true)
-      setDragStart({
-        x: e.clientX - cropData.x,
-        y: e.clientY - cropData.y,
-      })
-    }
-  }
+    window.addEventListener('resize', measureContainer)
+    return () => window.removeEventListener('resize', measureContainer)
+    // imageSrc change can alter rendered dimensions
+  }, [imageSrc, measureContainer])
 
-  // Handle mouse movement for dragging and resizing
-  const handleMouseMove = (e) => {
-    if (!isDragging && !isResizing) return
+  useEffect(() => {
+    if (!containerSize.width || !containerSize.height) return
+    emitCropChange(cropData, containerSize)
+  }, [containerSize, cropData, emitCropChange])
 
-    // Handle dragging the entire crop box
-    if (isDragging) {
-      const newX = e.clientX - dragStart.x
-      const newY = e.clientY - dragStart.y
+  const applyPointerUpdate = useCallback((clientX, clientY) => {
+    const interaction = interactionRef.current
+    if (!interaction) return
 
-      // Keep crop box within container boundaries
-      const boundedX = Math.max(
-        0,
-        Math.min(newX, containerSize.width - cropData.width)
-      )
-      const boundedY = Math.max(
-        0,
-        Math.min(newY, containerSize.height - cropData.height)
-      )
+    const { mode, handle, startPointer, startCrop } = interaction
+    const dx = clientX - startPointer.x
+    const dy = clientY - startPointer.y
+    let nextCrop = { ...startCrop }
 
-      const newCropData = { ...cropData, x: boundedX, y: boundedY }
-      setCropData(newCropData)
-      if (onCropChange) onCropChange(newCropData)
+    if (mode === 'drag') {
+      nextCrop.x = startCrop.x + dx
+      nextCrop.y = startCrop.y + dy
     }
 
-    // Handle resizing from corner handles
-    if (isResizing) {
-      const deltaX = e.clientX - dragStart.x
-      const deltaY = e.clientY - dragStart.y
-      let newCrop = { ...cropData }
-
-      // Different logic for each corner handle
-      switch (isResizing) {
-        case 'se':
-          // Southeast: expand width and height
-          newCrop.width = Math.max(50, cropData.width + deltaX)
-          newCrop.height = Math.max(50, cropData.height + deltaY)
-          break
-        case 'sw':
-          // Southwest: move left, shrink width, expand height
-          newCrop.x = cropData.x + deltaX
-          newCrop.width = Math.max(50, cropData.width - deltaX)
-          newCrop.height = Math.max(50, cropData.height + deltaY)
-          break
-        case 'ne':
-          // Northeast: move up, expand width, shrink height
-          newCrop.y = cropData.y + deltaY
-          newCrop.width = Math.max(50, cropData.width + deltaX)
-          newCrop.height = Math.max(50, cropData.height - deltaY)
-          break
-        case 'nw':
-          // Northwest: move up and left, shrink both dimensions
-          newCrop.x = cropData.x + deltaX
-          newCrop.y = cropData.y + deltaY
-          newCrop.width = Math.max(50, cropData.width - deltaX)
-          newCrop.height = Math.max(50, cropData.height - deltaY)
-          break
-        default:
-          break
+    if (mode === 'resize') {
+      if (handle.includes('e')) {
+        nextCrop.width = startCrop.width + dx
       }
 
-      setCropData(newCrop)
-      if (onCropChange) onCropChange(newCrop)
-      setDragStart({ x: e.clientX, y: e.clientY })
+      if (handle.includes('s')) {
+        nextCrop.height = startCrop.height + dy
+      }
+
+      if (handle.includes('w')) {
+        const maxWidth = startCrop.x + startCrop.width
+        nextCrop.x = startCrop.x + dx
+        nextCrop.width = maxWidth - nextCrop.x
+      }
+
+      if (handle.includes('n')) {
+        const maxHeight = startCrop.y + startCrop.height
+        nextCrop.y = startCrop.y + dy
+        nextCrop.height = maxHeight - nextCrop.y
+      }
     }
+
+    nextCrop = clampCropToContainer(nextCrop, containerSize)
+
+    setCropData((prev) => {
+      return isSameCrop(nextCrop, prev) ? prev : nextCrop
+    })
+  }, [containerSize])
+
+  const startInteraction = (mode, event, handle = null) => {
+    if (!containerSize.width || !containerSize.height) return
+
+    activePointerIdRef.current = event.pointerId
+    interactionRef.current = {
+      mode,
+      handle,
+      startPointer: { x: event.clientX, y: event.clientY },
+      startCrop: { ...cropData },
+    }
+
+    if (event.currentTarget?.setPointerCapture) {
+      event.currentTarget.setPointerCapture(event.pointerId)
+    }
+
+    applyPointerUpdate(event.clientX, event.clientY)
   }
 
-  // Stop dragging or resizing when mouse is released
-  const handleMouseUp = () => {
-    setIsDragging(false)
-    setIsResizing(null)
+  const stopInteraction = () => {
+    interactionRef.current = null
+    activePointerIdRef.current = null
+  }
+
+  useEffect(() => () => stopInteraction(), [])
+
+  const handleBoxPointerDown = (event) => {
+    event.preventDefault()
+    startInteraction('drag', event)
+  }
+
+  const handleResizePointerDown = (handle, event) => {
+    event.preventDefault()
+    event.stopPropagation()
+    startInteraction('resize', event, handle)
+  }
+
+  const handleContainerPointerMove = (event) => {
+    if (!interactionRef.current) return
+    if (activePointerIdRef.current !== null && event.pointerId !== activePointerIdRef.current) return
+    applyPointerUpdate(event.clientX, event.clientY)
+  }
+
+  const handleContainerPointerEnd = (event) => {
+    if (activePointerIdRef.current !== null && event.pointerId !== activePointerIdRef.current) return
+    stopInteraction()
   }
 
   return (
@@ -124,11 +192,12 @@ function ImageCropper({ imageSrc, onCropChange }) {
       <div
         className="cropper-container"
         ref={containerRef}
-        onMouseMove={handleMouseMove}
-        onMouseUp={handleMouseUp}
-        onMouseLeave={handleMouseUp}
+        onPointerMove={handleContainerPointerMove}
+        onPointerUp={handleContainerPointerEnd}
+        onPointerCancel={handleContainerPointerEnd}
+        onPointerLeave={handleContainerPointerEnd}
       >
-        <img src={imageSrc} alt="Cropping preview" className="cropper-image" />
+  <img src={imageSrc} alt="Cropping preview" className="cropper-image" onLoad={measureContainer} />
         {/* Overlay layer containing the crop box and handles */}
         <div className="crop-overlay">
           {/* Draggable crop box with corner resize handles */}
@@ -140,28 +209,32 @@ function ImageCropper({ imageSrc, onCropChange }) {
               width: `${cropData.width}px`,
               height: `${cropData.height}px`,
             }}
-            onMouseDown={handleMouseDown}
+            onPointerDown={handleBoxPointerDown}
           >
             {/* Corner handles for resizing */}
             <div
               className="crop-handle"
               data-handle="nw"
               style={{ top: 0, left: 0 }}
+              onPointerDown={(event) => handleResizePointerDown('nw', event)}
             />
             <div
               className="crop-handle"
               data-handle="ne"
               style={{ top: 0, right: 0 }}
+              onPointerDown={(event) => handleResizePointerDown('ne', event)}
             />
             <div
               className="crop-handle"
               data-handle="sw"
               style={{ bottom: 0, left: 0 }}
+              onPointerDown={(event) => handleResizePointerDown('sw', event)}
             />
             <div
               className="crop-handle"
               data-handle="se"
               style={{ bottom: 0, right: 0 }}
+              onPointerDown={(event) => handleResizePointerDown('se', event)}
             />
           </div>
         </div>

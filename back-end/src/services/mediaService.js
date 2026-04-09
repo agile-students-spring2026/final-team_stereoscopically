@@ -1,0 +1,327 @@
+import sharp from 'sharp'
+
+import { MAX_EXPORT_DIMENSION } from '../config/constants.js'
+import { createMedia, getActiveMediaOrDeleteExpired } from './mediaStore.js'
+
+const createMediaId = (prefix = 'img') => `${prefix}_${Date.now()}_${Math.round(Math.random() * 1e9)}`
+
+const buildMediaUrl = (req, id) => `${req.protocol}://${req.get('host')}/api/media/${id}`
+const buildExportDownloadUrl = (req, id) => `${req.protocol}://${req.get('host')}/api/export/${id}/download`
+
+const parseLetterboxBackground = (raw) => {
+	if (raw == null || raw === '' || raw === 'transparent') {
+		return { r: 0, g: 0, b: 0, alpha: 0 }
+	}
+	if (typeof raw !== 'string') {
+		return null
+	}
+	const hex = raw.trim()
+	if (!/^#[0-9A-Fa-f]{6}$/.test(hex)) {
+		return null
+	}
+	const r = Number.parseInt(hex.slice(1, 3), 16)
+	const g = Number.parseInt(hex.slice(3, 5), 16)
+	const b = Number.parseInt(hex.slice(5, 7), 16)
+	return { r, g, b, alpha: 1 }
+}
+
+const parseCropParams = ({ x, y, width, height, unit = 'pixel', scaleX = 1, scaleY = 1 }) => {
+	const xNum = Number(x)
+	const yNum = Number(y)
+	const widthNum = Number(width)
+	const heightNum = Number(height)
+	const sx = Number(scaleX)
+	const sy = Number(scaleY)
+
+	const invalidNumber = [xNum, yNum, widthNum, heightNum].some((value) => !Number.isFinite(value))
+	if (invalidNumber) {
+		return { error: { error: 'Invalid crop bounds.', code: 'INVALID_CROP_BOUNDS', status: 400 } }
+	}
+
+	if (widthNum <= 0 || heightNum <= 0) {
+		return { error: { error: 'Crop width and height must be greater than 0.', code: 'INVALID_CROP_SIZE', status: 400 } }
+	}
+
+	if (!['pixel', 'ratio'].includes(unit)) {
+		return { error: { error: 'Invalid crop unit.', code: 'INVALID_CROP_UNIT', status: 400 } }
+	}
+
+	if (unit === 'pixel') {
+		if (!Number.isFinite(sx) || !Number.isFinite(sy) || sx <= 0 || sy <= 0) {
+			return { error: { error: 'Invalid crop scale.', code: 'INVALID_CROP_SCALE', status: 400 } }
+		}
+	}
+
+	if (unit === 'ratio') {
+		const ratioValues = [xNum, yNum, widthNum, heightNum]
+		const hasOutOfRange = ratioValues.some((value) => value < 0 || value > 1)
+		if (hasOutOfRange) {
+			return { error: { error: 'Ratio crop values must be between 0 and 1.', code: 'INVALID_CROP_RATIO', status: 400 } }
+		}
+	}
+
+	return {
+		value: {
+			xNum,
+			yNum,
+			widthNum,
+			heightNum,
+			unit,
+			sx,
+			sy,
+		},
+	}
+}
+
+export const uploadImage = (req) => {
+	if (!req.file) {
+		return { error: { status: 400, error: 'No image file uploaded.', code: 'MISSING_FILE' } }
+	}
+
+	if (!req.file.mimetype?.startsWith('image/')) {
+		return {
+			error: { status: 400, error: 'Unsupported file type. Please upload an image.', code: 'INVALID_TYPE' },
+		}
+	}
+
+	const mediaId = createMediaId('img')
+	createMedia(mediaId, {
+		buffer: req.file.buffer,
+		mimeType: req.file.mimetype,
+		size: req.file.size,
+	})
+
+	return {
+		status: 200,
+		data: {
+			id: mediaId,
+			type: 'image',
+			url: buildMediaUrl(req, mediaId),
+			mimeType: req.file.mimetype,
+			size: req.file.size,
+		},
+	}
+}
+
+export const cropImage = async (req) => {
+	const { mediaId, x, y, width, height, unit = 'pixel', scaleX = 1, scaleY = 1 } = req.body ?? {}
+
+	if (!mediaId) {
+		return { error: { status: 400, error: 'Missing mediaId.', code: 'MISSING_MEDIA_ID' } }
+	}
+
+	const media = getActiveMediaOrDeleteExpired(mediaId)
+	if (!media) {
+		return { error: { status: 404, error: 'Media not found or expired.', code: 'MEDIA_NOT_FOUND' } }
+	}
+
+	const parsed = parseCropParams({ x, y, width, height, unit, scaleX, scaleY })
+	if (parsed.error) {
+		return { error: { status: parsed.error.status, error: parsed.error.error, code: parsed.error.code } }
+	}
+
+	try {
+		const { xNum, yNum, widthNum, heightNum, sx, sy } = parsed.value
+		const pipeline = sharp(media.buffer).rotate()
+		const metadata = await pipeline.metadata()
+
+		const naturalW = metadata.width
+		const naturalH = metadata.height
+
+		if (!naturalW || !naturalH) {
+			throw new Error('Unable to determine image dimensions for crop.')
+		}
+
+		let left
+		let top
+		let cw
+		let ch
+
+		if (unit === 'ratio') {
+			left = Math.floor(xNum * naturalW)
+			top = Math.floor(yNum * naturalH)
+			cw = Math.round(widthNum * naturalW)
+			ch = Math.round(heightNum * naturalH)
+		} else {
+			left = Math.floor(xNum * sx)
+			top = Math.floor(yNum * sy)
+			cw = Math.round(widthNum * sx)
+			ch = Math.round(heightNum * sy)
+		}
+
+		const safeLeft = Math.max(0, Math.min(left, naturalW - 1))
+		const safeTop = Math.max(0, Math.min(top, naturalH - 1))
+		const safeW = Math.max(1, Math.min(cw, naturalW - safeLeft))
+		const safeH = Math.max(1, Math.min(ch, naturalH - safeTop))
+
+		const croppedBuffer = await pipeline
+			.extract({
+				left: safeLeft,
+				top: safeTop,
+				width: safeW,
+				height: safeH,
+			})
+			.png()
+			.toBuffer()
+
+		const cropId = createMediaId('img')
+		createMedia(cropId, {
+			buffer: croppedBuffer,
+			mimeType: 'image/png',
+			size: croppedBuffer.length,
+			fileName: 'cropped.png',
+		})
+
+		return {
+			status: 200,
+			data: {
+				id: cropId,
+				type: 'image',
+				url: buildMediaUrl(req, cropId),
+				mimeType: 'image/png',
+				size: croppedBuffer.length,
+				width: safeW,
+				height: safeH,
+			},
+		}
+	} catch (error) {
+		console.error('Sharp Crop Error:', error)
+		return { error: { status: 500, error: 'Failed to process image crop.', code: 'CROP_FAILED' } }
+	}
+}
+
+export const exportImage = async (req) => {
+	const { mediaId, width, height, letterboxColor } = req.body ?? {}
+	const targetWidth = Number(width)
+	const targetHeight = Number(height)
+	const background = parseLetterboxBackground(letterboxColor)
+
+	if (background === null) {
+		return {
+			error: {
+				status: 400,
+				error: 'Invalid letterbox color. Use "transparent" or a #RRGGBB hex value.',
+				code: 'INVALID_LETTERBOX_COLOR',
+			},
+		}
+	}
+
+	if (!mediaId) {
+		return { error: { status: 400, error: 'Missing mediaId for export.', code: 'MISSING_MEDIA_ID' } }
+	}
+
+	if (
+		!Number.isInteger(targetWidth) ||
+		!Number.isInteger(targetHeight) ||
+		targetWidth <= 0 ||
+		targetHeight <= 0 ||
+		targetWidth > MAX_EXPORT_DIMENSION ||
+		targetHeight > MAX_EXPORT_DIMENSION
+	) {
+		return { error: { status: 400, error: 'Invalid export dimensions.', code: 'INVALID_DIMENSIONS' } }
+	}
+
+	const media = getActiveMediaOrDeleteExpired(mediaId)
+	if (!media) {
+		return { error: { status: 404, error: 'Media not found or expired.', code: 'MEDIA_NOT_FOUND' } }
+	}
+
+	if (!media.mimeType?.startsWith('image/') || media.mimeType === 'image/gif') {
+		return {
+			error: {
+				status: 400,
+				error: 'Only static image export is supported.',
+				code: 'UNSUPPORTED_MEDIA_TYPE',
+			},
+		}
+	}
+
+	try {
+		const resizedBuf = await sharp(media.buffer)
+			.rotate()
+			.resize(targetWidth, targetHeight, {
+				fit: 'inside',
+				withoutEnlargement: false,
+			})
+			.png()
+			.toBuffer()
+
+		const { width: resizedW, height: resizedH } = await sharp(resizedBuf).metadata()
+		const rw = resizedW ?? targetWidth
+		const rh = resizedH ?? targetHeight
+		const left = Math.max(0, Math.round((targetWidth - rw) / 2))
+		const top = Math.max(0, Math.round((targetHeight - rh) / 2))
+
+		const exportedBuffer = await sharp({
+			create: {
+				width: targetWidth,
+				height: targetHeight,
+				channels: 4,
+				background,
+			},
+		})
+			.composite([{ input: resizedBuf, left, top }])
+			.png()
+			.toBuffer()
+
+		const exportId = createMediaId('exp')
+		const fileName = `sticker-${targetWidth}x${targetHeight}.png`
+
+		createMedia(exportId, {
+			buffer: exportedBuffer,
+			mimeType: 'image/png',
+			size: exportedBuffer.length,
+			fileName,
+		})
+
+		return {
+			status: 200,
+			data: {
+				id: exportId,
+				type: 'image',
+				url: buildMediaUrl(req, exportId),
+				downloadUrl: buildExportDownloadUrl(req, exportId),
+				mimeType: 'image/png',
+				width: targetWidth,
+				height: targetHeight,
+				size: exportedBuffer.length,
+				fileName,
+			},
+		}
+	} catch {
+		return { error: { status: 500, error: 'Failed to export image.', code: 'EXPORT_FAILED' } }
+	}
+}
+
+export const getMediaContent = (id) => {
+	const media = getActiveMediaOrDeleteExpired(id)
+	if (!media) {
+		return { error: { status: 404, error: 'Media not found or expired.', code: 'MEDIA_NOT_FOUND' } }
+	}
+
+	return {
+		status: 200,
+		data: media.buffer,
+		headers: {
+			'Content-Type': media.mimeType,
+			'Cache-Control': 'no-store',
+		},
+	}
+}
+
+export const getExportDownloadContent = (id) => {
+	const media = getActiveMediaOrDeleteExpired(id)
+	if (!media) {
+		return { error: { status: 404, error: 'Media not found or expired.', code: 'MEDIA_NOT_FOUND' } }
+	}
+
+	return {
+		status: 200,
+		data: media.buffer,
+		headers: {
+			'Content-Type': media.mimeType,
+			'Cache-Control': 'no-store',
+			'Content-Disposition': `attachment; filename="${media.fileName || 'sticker.png'}"`,
+		},
+	}
+}
