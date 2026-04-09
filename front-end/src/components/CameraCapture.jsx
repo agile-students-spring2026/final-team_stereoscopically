@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { isVideoTypeSupported } from './videoSupport'
+import { isVideoTypeSupported } from '../utils/videoSupport'
 
 function CameraCapture({ onCapture, onCancel }) {
     const videoRef = useRef(null)
