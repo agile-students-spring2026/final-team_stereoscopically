@@ -2,6 +2,7 @@ import sharp from 'sharp'
 
 import { MAX_EXPORT_DIMENSION } from '../config/constants.js'
 import { createMedia, getActiveMediaOrDeleteExpired } from './mediaStore.js'
+import { normalizeTextOverlayRequest, renderTextOverlayBuffer } from './textOverlayService.js'
 
 const createMediaId = (prefix = 'img') => `${prefix}_${Date.now()}_${Math.round(Math.random() * 1e9)}`
 
@@ -290,6 +291,106 @@ export const exportImage = async (req) => {
 		}
 	} catch {
 		return { error: { status: 500, error: 'Failed to export image.', code: 'EXPORT_FAILED' } }
+	}
+}
+
+export const addTextToImage = async (req) => {
+	const {
+		mediaId,
+		text,
+		x,
+		y,
+		fontFamily,
+		fontSize,
+		color,
+	} = req.body ?? {}
+
+	if (!mediaId) {
+		return { error: { status: 400, error: 'Missing mediaId.', code: 'MISSING_MEDIA_ID' } }
+	}
+
+	const media = getActiveMediaOrDeleteExpired(mediaId)
+	if (!media) {
+		return { error: { status: 404, error: 'Media not found or expired.', code: 'MEDIA_NOT_FOUND' } }
+	}
+
+	if (!media.mimeType?.startsWith('image/')) {
+		return {
+			error: {
+				status: 400,
+				error: 'Only image text overlay is supported.',
+				code: 'UNSUPPORTED_MEDIA_TYPE',
+			},
+		}
+	}
+
+	if (typeof text !== 'string') {
+		return { error: { status: 400, error: 'Invalid text payload.', code: 'INVALID_TEXT_PAYLOAD' } }
+	}
+
+	if (!text.trim()) {
+		return {
+			status: 200,
+			data: {
+				id: mediaId,
+				type: 'image',
+				url: buildMediaUrl(req, mediaId),
+				mimeType: media.mimeType,
+				size: media.size,
+				noOp: true,
+			},
+		}
+	}
+
+	const parsed = normalizeTextOverlayRequest({
+		text,
+		x,
+		y,
+		fontFamily,
+		fontSize,
+		color,
+	})
+
+	if (parsed.error) {
+		return { error: parsed.error }
+	}
+
+	try {
+		const { buffer: renderedBuffer, width, height } = await renderTextOverlayBuffer({
+			imageBuffer: media.buffer,
+			...parsed.value,
+		})
+
+		const textId = createMediaId('img')
+		createMedia(textId, {
+			buffer: renderedBuffer,
+			mimeType: 'image/png',
+			size: renderedBuffer.length,
+			fileName: 'text-overlay.png',
+		})
+
+		return {
+			status: 200,
+			data: {
+				id: textId,
+				type: 'image',
+				url: buildMediaUrl(req, textId),
+				mimeType: 'image/png',
+				size: renderedBuffer.length,
+				width,
+				height,
+				noOp: false,
+			},
+		}
+	} catch (error) {
+		console.error('Text overlay failed:', error)
+		return {
+			error: {
+				status: 500,
+				error: 'Failed to render text overlay.',
+				code: 'TEXT_RENDER_FAILED',
+			},
+		}
 	}
 }
 
