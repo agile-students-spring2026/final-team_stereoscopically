@@ -125,3 +125,68 @@ Examples:
 	- Unsupported MIME type (not an image)
 	- File too large
 - **500 Internal Server Error** – unexpected upload/processing failures
+
+## Reframe/Crop Audit (No Behavior Changes)
+
+Date audited: 2026-04-09
+
+Scope: `/api/crop/image` correctness audit only (validation, source lookup, response consistency, status codes, TTL/store behavior).
+
+### Checklist results
+
+1. **Crop endpoint validation is complete (`mediaId`, bounds, dimensions, scale)**
+
+- **Status:** ❌ Not fully complete
+- **What was observed:**
+	- `mediaId` missing correctly returns `400` + `MISSING_MEDIA_ID`.
+	- Invalid/missing numeric crop bounds (`x`,`y`,`width`,`height`,`scaleX`,`scaleY`) are not explicitly validated and currently fall through to `500 CROP_FAILED`.
+
+2. **Reads source by backend media ID (not client URL trust)**
+
+- **Status:** ✅ Verified
+- **What was observed:**
+	- Crop lookup uses `inMemoryMediaStore.get(mediaId)` from request body.
+	- No client URL is used for source resolution.
+
+3. **Returns a new media result object consistently**
+
+- **Status:** ⚠️ Partially verified
+- **What was observed:**
+	- Success path is implemented to create a new `cropId` and store new media.
+	- During live endpoint checks, valid crop input returned `500 CROP_FAILED`, so successful response consistency could not be verified end-to-end in this audit run.
+
+4. **Error codes/statuses are stable and documented**
+
+- **Status:** ⚠️ Partially verified
+- **What was observed:**
+	- `MISSING_MEDIA_ID` and `MEDIA_NOT_FOUND` are stable in code.
+	- Invalid bounds/dimensions currently map to generic `500 CROP_FAILED` instead of stable `400` validation codes.
+	- Crop endpoint error codes are not yet documented in this README.
+
+5. **TTL/store behavior doesn’t break chained edits**
+
+- **Status:** ✅ Verified (store-level behavior)
+- **What was observed:**
+	- Crop path uses same in-memory store with `expiresAt` TTL assignment.
+	- Existing and newly created media entries coexist until expiry (no eager deletion on success).
+
+### Evidence summary (HTTP checks)
+
+- `GET /health` → `200`
+- `POST /api/crop/image` with `{}` → `400 { code: "MISSING_MEDIA_ID" }`
+- `POST /api/crop/image` with valid numeric crop payload → `500 { code: "CROP_FAILED" }`
+- `POST /api/crop/image` with missing/invalid numeric bounds → `500 { code: "CROP_FAILED" }`
+
+### Follow-up commits (separate, small/safe)
+
+No API redesign required. Suggested narrow fixes:
+
+- `fix(backend): return 400 validation errors for invalid crop bounds and scales`
+- `fix(backend): make crop happy-path deterministic and verify successful media generation`
+- `docs(backend): document crop endpoint request/response and stable error codes`
+
+### Audit conclusion
+
+- Backend crop/reframe flow is **partially correct**.
+- Source-ID trust model and TTL-store chaining are good.
+- Crop validation and successful crop execution need targeted fixes before marking endpoint fully correct.

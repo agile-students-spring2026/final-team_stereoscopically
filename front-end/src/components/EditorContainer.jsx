@@ -28,6 +28,8 @@ const MAX_UPLOAD_SIZE_BYTES = 50 * 1024 * 1024
 const FILE_TOO_LARGE_MESSAGE = 'File is too large (max 50 MB).'
 const HEIC_UNSUPPORTED_MESSAGE = 'HEIC/HEIF files are not supported in this browser yet. Please upload JPG or PNG.'
 
+// TODO(refactor/editor): Move media validation rules/constants into a shared media-validation module
+// so selection handlers can focus on orchestration only.
 const isHeicFile = (file) => {
   if (!file) return false
   const lowerName = file.name?.toLowerCase() || ''
@@ -73,6 +75,8 @@ function EditorContainer() {
   const imageFileInputRef = useRef(null)
   const videoFileInputRef = useRef(null)
 
+  // TODO(refactor/editor): Centralize "effective preview" derivation (latest export vs hook result)
+  // in useMediaSelection or a dedicated selector to keep this container as a screen coordinator.
   const effectiveBackendResult = latestExportResult?.id ? latestExportResult : backendImageResult
   const effectiveBackendMediaId = effectiveBackendResult?.id || null
   const effectiveImageSrc = effectiveBackendResult?.url || previewUrl
@@ -90,6 +94,8 @@ function EditorContainer() {
 
     setLastRejectedUploadType('image')
 
+    // TODO(refactor/editor): Replace inline validation branches with a single validator result
+    // (e.g., { ok, code, message }) consumed by UI state mapping.
     if (isHeicFile(file)) {
       setUnsupportedImageMessage(HEIC_UNSUPPORTED_MESSAGE)
       return
@@ -119,6 +125,8 @@ function EditorContainer() {
 
     setLastRejectedUploadType('video')
 
+    // TODO(refactor/editor): Mirror image/video validation through one shared decision helper
+    // to avoid duplicated rejection handling and picker retry logic.
     if (file.size > MAX_UPLOAD_SIZE_BYTES) {
       setFileTooLargeMessage(FILE_TOO_LARGE_MESSAGE)
       return
@@ -209,6 +217,8 @@ function EditorContainer() {
   }
 
   const handleCropApply = async (result) => {
+    // TODO(refactor/editor): Keep crop apply orchestration-only (state transitions + delegation).
+    // Move result-fetch/blob/file normalization into backend image service.
     try {
       const response = await fetch(result.url)
       if (!response.ok) throw new Error("Failed to fetch cropped image")
@@ -274,6 +284,8 @@ function EditorContainer() {
   }
 
   const renderContent = () => {
+    // TODO(refactor/editor): Split this into route-level render functions/components.
+    // Upload flow, camera flow, and modal stack are currently mixed with editor routing.
     if (!selectedMedia) {
       if (screen === SCREENS.CAMERA) {
         return (

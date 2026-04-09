@@ -27,8 +27,7 @@ function ImageCropper({ imageSrc, onCropChange }) {
   // Reference to container element for measuring size
   const containerRef = useRef(null)
   const interactionRef = useRef(null)
-  const latestPointerRef = useRef(null)
-  const rafIdRef = useRef(null)
+  const activePointerIdRef = useRef(null)
   // Stores container width and height for boundary calculations
   const [containerSize, setContainerSize] = useState({ width: 0, height: 0 })
 
@@ -124,23 +123,10 @@ function ImageCropper({ imageSrc, onCropChange }) {
     })
   }, [containerSize, onCropChange])
 
-  const flushPointerUpdate = useCallback(() => {
-    rafIdRef.current = null
-    if (!latestPointerRef.current) return
-
-    applyPointerUpdate(latestPointerRef.current.x, latestPointerRef.current.y)
-  }, [applyPointerUpdate])
-
-  const queuePointerUpdate = useCallback((clientX, clientY) => {
-    latestPointerRef.current = { x: clientX, y: clientY }
-    if (rafIdRef.current !== null) return
-
-    rafIdRef.current = window.requestAnimationFrame(flushPointerUpdate)
-  }, [flushPointerUpdate])
-
   const startInteraction = (mode, event, handle = null) => {
     if (!containerSize.width || !containerSize.height) return
 
+    activePointerIdRef.current = event.pointerId
     interactionRef.current = {
       mode,
       handle,
@@ -148,41 +134,19 @@ function ImageCropper({ imageSrc, onCropChange }) {
       startCrop: { ...cropData },
     }
 
-    queuePointerUpdate(event.clientX, event.clientY)
+    if (event.currentTarget?.setPointerCapture) {
+      event.currentTarget.setPointerCapture(event.pointerId)
+    }
+
+    applyPointerUpdate(event.clientX, event.clientY)
   }
 
   const stopInteraction = () => {
     interactionRef.current = null
-    latestPointerRef.current = null
-
-    if (rafIdRef.current !== null) {
-      window.cancelAnimationFrame(rafIdRef.current)
-      rafIdRef.current = null
-    }
+    activePointerIdRef.current = null
   }
 
-  useEffect(() => {
-    const handleWindowPointerMove = (event) => {
-      if (!interactionRef.current) return
-      queuePointerUpdate(event.clientX, event.clientY)
-    }
-
-    const handleWindowPointerUp = () => {
-      if (!interactionRef.current) return
-      stopInteraction()
-    }
-
-    window.addEventListener('pointermove', handleWindowPointerMove)
-    window.addEventListener('pointerup', handleWindowPointerUp)
-    window.addEventListener('pointercancel', handleWindowPointerUp)
-
-    return () => {
-      window.removeEventListener('pointermove', handleWindowPointerMove)
-      window.removeEventListener('pointerup', handleWindowPointerUp)
-      window.removeEventListener('pointercancel', handleWindowPointerUp)
-      stopInteraction()
-    }
-  }, [queuePointerUpdate])
+  useEffect(() => () => stopInteraction(), [])
 
   const handleBoxPointerDown = (event) => {
     event.preventDefault()
@@ -195,12 +159,27 @@ function ImageCropper({ imageSrc, onCropChange }) {
     startInteraction('resize', event, handle)
   }
 
+  const handleContainerPointerMove = (event) => {
+    if (!interactionRef.current) return
+    if (activePointerIdRef.current !== null && event.pointerId !== activePointerIdRef.current) return
+    applyPointerUpdate(event.clientX, event.clientY)
+  }
+
+  const handleContainerPointerEnd = (event) => {
+    if (activePointerIdRef.current !== null && event.pointerId !== activePointerIdRef.current) return
+    stopInteraction()
+  }
+
   return (
     <div className="image-cropper">
       {/* Container for image and crop overlay */}
       <div
         className="cropper-container"
         ref={containerRef}
+        onPointerMove={handleContainerPointerMove}
+        onPointerUp={handleContainerPointerEnd}
+        onPointerCancel={handleContainerPointerEnd}
+        onPointerLeave={handleContainerPointerEnd}
       >
   <img src={imageSrc} alt="Cropping preview" className="cropper-image" onLoad={measureContainer} />
         {/* Overlay layer containing the crop box and handles */}
