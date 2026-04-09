@@ -1,9 +1,22 @@
 import { useCallback, useEffect, useState } from 'react'
 import {
+  addTextToImageFromBackend,
   convertBackendImageResultToLocalMedia,
   cropImageFromBackend,
   exportImageFromBackend,
 } from '../services/backendImageService'
+
+const FONT_SIZE_PRESETS = {
+  small: 24,
+  medium: 36,
+  large: 52,
+}
+
+const POSITION_RATIO_PRESETS = {
+  top: { x: 0.5, y: 0.2 },
+  center: { x: 0.5, y: 0.5 },
+  bottom: { x: 0.5, y: 0.8 },
+}
 
 const useImageEditingSession = ({
   mediaType,
@@ -23,7 +36,7 @@ const useImageEditingSession = ({
 
   const effectiveBackendResult = latestExportResult?.id ? latestExportResult : backendImageResult
   const effectiveBackendMediaId = effectiveBackendResult?.id || null
-  const effectiveImageSrc = effectiveBackendResult?.url || previewUrl
+  const effectiveImageSrc = previewUrl || effectiveBackendResult?.url || null
 
   useEffect(() => {
     if (mediaType !== 'image') return
@@ -136,6 +149,60 @@ const useImageEditingSession = ({
     }
   }, [applyTransformedImage, effectiveBackendMediaId, originalBackendMediaId])
 
+  const handleAddTextApply = useCallback(async (textRequest) => {
+    if (mediaType !== 'image') return false
+    if (!effectiveBackendMediaId) {
+      setExportError('Image is not ready for text overlay yet. Please re-upload and try again.')
+      return false
+    }
+
+    const resolvedPosition =
+      POSITION_RATIO_PRESETS[textRequest?.position] || POSITION_RATIO_PRESETS.center
+    const x = Number.isFinite(Number(textRequest?.x)) ? Number(textRequest.x) : resolvedPosition.x
+    const y = Number.isFinite(Number(textRequest?.y)) ? Number(textRequest.y) : resolvedPosition.y
+    const presetFontSize = FONT_SIZE_PRESETS[textRequest?.size] ?? undefined
+    const fontSize = Number.isFinite(Number(textRequest?.fontSize))
+      ? Number(textRequest.fontSize)
+      : presetFontSize
+
+    try {
+      setExportError(null)
+
+      const result = await addTextToImageFromBackend({
+        mediaId: effectiveBackendMediaId,
+        text: textRequest?.text ?? '',
+        x,
+        y,
+        fontFamily: textRequest?.fontFamily || textRequest?.font || 'Arial',
+        fontSize,
+        color: textRequest?.color || '#111111',
+      })
+
+      if (result?.noOp) {
+        return true
+      }
+
+      const { file, objectUrl } = await convertBackendImageResultToLocalMedia(result, {
+        fallbackFileName: 'text-overlay.png',
+        fallbackMimeType: 'image/png',
+        fetchErrorMessage: 'Failed to load text-overlay image preview.',
+      })
+
+      if (previewUrl && previewUrl !== sourceUrl) {
+        URL.revokeObjectURL(previewUrl)
+      }
+
+      applyTransformedImage(file, objectUrl, result)
+      setLatestExportResult(null)
+      setLastExportLetterbox(null)
+      return true
+    } catch (err) {
+      console.error('Add text failed:', err)
+      setExportError(err?.message || 'Failed to add text to image.')
+      return false
+    }
+  }, [applyTransformedImage, effectiveBackendMediaId, mediaType, previewUrl, sourceUrl])
+
   const handleExport = useCallback(async () => {
     if (mediaType !== 'image') return false
     if (!selectedPreset) {
@@ -208,6 +275,7 @@ const useImageEditingSession = ({
     clearCropSession,
     handleSizeSelect,
     handleCropApply,
+    handleAddTextApply,
     handleExport,
   }
 }

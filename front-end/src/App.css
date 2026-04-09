@@ -227,6 +227,47 @@
   padding-right: 0.35rem;
 }
 
+.add-text-placement-hint {
+  margin: 0;
+  font-size: 0.8rem;
+  color: #666;
+}
+
+.add-text-placement-surface {
+  position: relative;
+  width: 100%;
+  height: 190px;
+  border: 1px solid #d6d6d6;
+  border-radius: 10px;
+  background: #f6f6f6;
+  overflow: hidden;
+  touch-action: none;
+  cursor: crosshair;
+}
+
+.add-text-placement-image {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
+}
+
+.add-text-placement-marker {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  color: #ffffff;
+  text-shadow:
+    -1px -1px 0 rgba(0, 0, 0, 0.8),
+    1px -1px 0 rgba(0, 0, 0, 0.8),
+    -1px 1px 0 rgba(0, 0, 0, 0.8),
+    1px 1px 0 rgba(0, 0, 0, 0.8);
+  white-space: pre-wrap;
+  max-width: 90%;
+  text-align: center;
+  user-select: none;
+  pointer-events: none;
+}
+
 /* ============================================================================
    FILTER SCREENS & PREVIEW
    ============================================================================ */
@@ -274,6 +315,19 @@
   justify-content: center;
   margin-bottom: 1rem;
   box-sizing: border-box;
+}
+
+.preview-box-interactive {
+  position: relative;
+  overflow: hidden;
+  touch-action: none;
+  cursor: crosshair;
+}
+
+.filter-screen-preview-overlay {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
 }
 
 /* Lets letterbox / transparent margins read clearly (not “lost” on a solid white frame) */

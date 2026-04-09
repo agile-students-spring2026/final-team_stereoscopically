@@ -1,7 +1,7 @@
 import sharp from 'sharp'
 
 const MIN_TEXT_SIZE_PX = 8
-const MAX_TEXT_SIZE_PX = 160
+const MAX_TEXT_SIZE_PX = 2000
 const MAX_TEXT_LENGTH = 300
 const DEFAULT_TEXT_COLOR = '#FFFFFF'
 const DEFAULT_FONT_FAMILY = 'Arial'

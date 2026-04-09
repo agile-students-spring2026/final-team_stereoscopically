@@ -60,6 +60,33 @@ export const cropImageFromBackend = async ({ mediaId, x, y, width, height, unit 
   }
 }
 
+export const addTextToImageFromBackend = async ({
+  mediaId,
+  text,
+  x,
+  y,
+  fontFamily = 'Arial',
+  fontSize = 36,
+  color = '#FFFFFF',
+}) => {
+  const payload = await postJson({
+    path: '/api/text/image',
+    payload: { mediaId, text, x, y, fontFamily, fontSize, color },
+    fallbackErrorMessage: 'Add text failed',
+  })
+
+  return {
+    id: payload?.id ?? null,
+    type: payload?.type ?? 'image',
+    url: payload?.url ?? null,
+    mimeType: payload?.mimeType ?? 'image/png',
+    size: payload?.size ?? null,
+    width: payload?.width ?? null,
+    height: payload?.height ?? null,
+    noOp: payload?.noOp ?? false,
+  }
+}
+
 export const convertBackendImageResultToLocalMedia = async (
   result,
   {
