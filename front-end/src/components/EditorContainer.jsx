@@ -76,8 +76,6 @@ function EditorContainer() {
     setLastCropBoxPx(null)
   }
 
-  // TODO(refactor/editor): Centralize "effective preview" derivation (latest export vs hook result)
-  // in useMediaSelection or a dedicated selector to keep this container as a screen coordinator.
   const effectiveBackendResult = latestExportResult?.id ? latestExportResult : backendImageResult
   const effectiveBackendMediaId = effectiveBackendResult?.id || null
   const effectiveImageSrc = effectiveBackendResult?.url || previewUrl
@@ -203,7 +201,7 @@ function EditorContainer() {
         URL.revokeObjectURL(previewUrl)
       }
 
-  applyTransformedImage(file, objectUrl, exported)
+      applyTransformedImage(file, objectUrl, exported)
       setSelectedPreset(size)
       setLatestExportResult(exported)
       setLastExportLetterbox(letterboxColor)
@@ -260,7 +258,6 @@ function EditorContainer() {
       throw err
     }
   }
-
 
   const handleExport = async () => {
     if (mediaType !== 'image') return
