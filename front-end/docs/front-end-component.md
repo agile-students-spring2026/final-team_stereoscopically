@@ -45,6 +45,9 @@ Top-level editor container for front-end screen flow.
 - wiring child components together
 - passing media state and callbacks between screens
 - coordinating editor-level UI flow
+- crop apply orchestration (calling services and handling success/error UI state)
+- image source decisions for crop flows (original source vs current preview)
+- persisted crop-session state that spans screens (for example, last crop box)
 
 **Should not own**
 - large reusable helper logic
@@ -81,7 +84,7 @@ Primary editing screen for image-based workflows.
 **Owns**
 - image preview display
 - image editing controls shown on this screen
-- reframe flow coordination at the screen level
+- crop flow coordination at the screen level (open/apply/cancel UX)
 - applying edits initiated from image-specific UI
 
 **Should not own**
@@ -98,17 +101,23 @@ Primary editing screen for image-based workflows.
 ### `ImageCropper.jsx`
 
 **Purpose**  
-Interactive crop-box UI for image reframing.
+Interactive crop-box UI for image cropping.
 
 **Owns**
 - crop box rendering
 - drag and resize interactions
 - crop area updates from pointer input
+- restoring and clamping an incoming initial crop box for the current container
+- emitting crop payloads for parent orchestration (pixel box + normalized ratio)
 
 **Should not own**
 - screen orchestration
 - non-crop editing flows
 - backend submission logic
+
+**Notes**
+- Keep measurement and boundary-clamping logic inside this component.
+- Keep payload shape stable so parent components can remain orchestration-focused.
 
 ---
 

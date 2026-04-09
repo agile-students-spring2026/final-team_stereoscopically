@@ -1,10 +1,10 @@
-import { useState, useRef } from 'react'
+import { useState } from 'react'
 import ImageCropper from './ImageCropper'
-import { cropImageFromBackend } from '../services/backendImageService'
 
 const ImageEditor = ({
   imageSrc,
-  backendMediaId, 
+  cropSourceImageSrc = null,
+  initialCropPx = null,
   onCropApply,
   onOpenFilters,
   onBack,
@@ -16,62 +16,61 @@ const ImageEditor = ({
   exportError = null,
 }) => {
   // Track if cropper is active
-  const [isReframing, setIsReframing] = useState(false)
+  const [isCropping, setIsCropping] = useState(false)
   // Track current crop data
   const [cropData, setCropData] = useState(null)
   const [imageLoadError, setImageLoadError] = useState(false)
-  const cropContainerRef = useRef(null)
-  const [naturalSize, setNaturalSize] = useState({ width: 1, height: 1 })
+  const [cropError, setCropError] = useState(null)
 
-  const handleReframeClick = () => {
-    setIsReframing(true)
+  const handleCropClick = () => {
+    setCropError(null)
+    setIsCropping(true)
   }
 
   const handleCropChange = (data) => {
     setCropData(data)
   }
+
   const handleApplyCrop = async () => {
-    if (!cropData) return;
-
-    // Use the actual image element to find display dimensions
-    const imgElement = cropContainerRef.current.querySelector('.cropper-image');
-    const { width: displayedW, height: displayedH } = imgElement.getBoundingClientRect();
-
-    const scaleX = naturalSize.width / displayedW;
-    const scaleY = naturalSize.height / displayedH;
+    if (!cropData?.ratio) {
+      setCropError('Crop preview is not ready yet. Please try again.')
+      return
+    }
 
     try {
-      const result = await cropImageFromBackend({
-        mediaId: backendMediaId,
-        x: cropData.x * scaleX,
-        y: cropData.y * scaleY,
-        width: cropData.width * scaleX,
-        height: cropData.height * scaleY,
-      });
-      onCropApply(result);
-      setIsReframing(false);
+      setCropError(null)
+      await onCropApply?.(cropData)
+      setIsCropping(false)
     } catch (err) {
-      console.error('Crop failed:', err);
+      setCropError('Could not apply crop. Please try again.')
+      console.error('Crop failed:', err)
     }
   }
 
   const handleCancelCrop = () => {
-    setIsReframing(false)
-    setCropData(null)
+    setIsCropping(false)
+    setCropError(null)
   }
 
   const handleImageError = () => {
     setImageLoadError(true)
   }
 
-  // Show cropper if reframing, otherwise show preview
-  if (isReframing) {
+  // Show cropper if cropping, otherwise show preview
+  if (isCropping) {
     return (
       <div className="image-editor-container">
-        <h2 className="image-editor-title">Reframe Image</h2>
-        <div ref={cropContainerRef}>
-          <ImageCropper imageSrc={imageSrc} onCropChange={handleCropChange} />
-        </div>
+        <h2 className="image-editor-title">Crop Image</h2>
+        {cropError && (
+          <p role="alert" className="upload-status" style={{ marginTop: '0.5rem', color: '#ff3b30' }}>
+            {cropError}
+          </p>
+        )}
+        <ImageCropper
+          imageSrc={cropSourceImageSrc || imageSrc}
+          initialCropPx={initialCropPx}
+          onCropChange={handleCropChange}
+        />
         <div className="card-actions">
           <button type="button" className="btn-secondary" onClick={handleCancelCrop}>
             Cancel
@@ -114,7 +113,6 @@ const ImageEditor = ({
             src={imageSrc}
             alt="Preview"
             className="preview-image"
-            onLoad={(e) => setNaturalSize({ width: e.target.naturalWidth, height: e.target.naturalHeight })}
             onError={handleImageError}
           />
         )}
@@ -123,8 +121,8 @@ const ImageEditor = ({
         <button type="button" className="btn-primary" onClick={onSize || (() => {})}>
           Resize
         </button>
-        <button type="button" className="btn-primary" onClick={handleReframeClick}>
-          Reframe
+        <button type="button" className="btn-primary" onClick={handleCropClick}>
+          Crop
         </button>
         <button type="button" className="btn-primary" onClick={onOpenFilters}>
           Filters

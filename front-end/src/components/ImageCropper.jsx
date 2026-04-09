@@ -1,6 +1,12 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 
 const MIN_CROP_SIZE = 20
+const DEFAULT_CROP = {
+  x: 50,
+  y: 50,
+  width: 200,
+  height: 200,
+}
 
 const clamp = (value, min, max) => Math.max(min, Math.min(value, max))
 
@@ -16,14 +22,33 @@ const clampCropToContainer = (crop, container) => {
   return { x, y, width, height }
 }
 
-function ImageCropper({ imageSrc, onCropChange }) {
+const isSameCrop = (a, b) => (
+  a.x === b.x &&
+  a.y === b.y &&
+  a.width === b.width &&
+  a.height === b.height
+)
+
+const toCropPayload = (crop, container) => {
+  if (!container.width || !container.height) {
+    return { pixels: crop, ratio: null, unit: 'ratio' }
+  }
+
+  return {
+    pixels: crop,
+    ratio: {
+      x: crop.x / container.width,
+      y: crop.y / container.height,
+      width: crop.width / container.width,
+      height: crop.height / container.height,
+    },
+    unit: 'ratio',
+  }
+}
+
+function ImageCropper({ imageSrc, onCropChange, initialCropPx = null }) {
   // Tracks crop box position and size
-  const [cropData, setCropData] = useState({
-    x: 50,
-    y: 50,
-    width: 200,
-    height: 200,
-  })
+  const [cropData, setCropData] = useState(initialCropPx || DEFAULT_CROP)
   // Reference to container element for measuring size
   const containerRef = useRef(null)
   const interactionRef = useRef(null)
@@ -31,24 +56,18 @@ function ImageCropper({ imageSrc, onCropChange }) {
   // Stores container width and height for boundary calculations
   const [containerSize, setContainerSize] = useState({ width: 0, height: 0 })
 
+  const emitCropChange = useCallback((crop, container) => {
+    onCropChange?.(toCropPayload(crop, container))
+  }, [onCropChange])
+
   const syncCropToContainer = useCallback((nextContainer) => {
     if (!nextContainer.width || !nextContainer.height) return
 
     setCropData((prev) => {
       const next = clampCropToContainer(prev, nextContainer)
-      if (
-        next.x === prev.x &&
-        next.y === prev.y &&
-        next.width === prev.width &&
-        next.height === prev.height
-      ) {
-        return prev
-      }
-
-      onCropChange?.(next)
-      return next
+      return isSameCrop(next, prev) ? prev : next
     })
-  }, [onCropChange])
+  }, [])
 
   const measureContainer = useCallback(() => {
     if (!containerRef.current) return
@@ -57,7 +76,9 @@ function ImageCropper({ imageSrc, onCropChange }) {
       height: containerRef.current.offsetHeight,
     }
 
-    setContainerSize(next)
+    setContainerSize((prev) => (
+      prev.width === next.width && prev.height === next.height ? prev : next
+    ))
     syncCropToContainer(next)
   }, [syncCropToContainer])
 
@@ -69,6 +90,11 @@ function ImageCropper({ imageSrc, onCropChange }) {
     return () => window.removeEventListener('resize', measureContainer)
     // imageSrc change can alter rendered dimensions
   }, [imageSrc, measureContainer])
+
+  useEffect(() => {
+    if (!containerSize.width || !containerSize.height) return
+    emitCropChange(cropData, containerSize)
+  }, [containerSize, cropData, emitCropChange])
 
   const applyPointerUpdate = useCallback((clientX, clientY) => {
     const interaction = interactionRef.current
@@ -109,19 +135,9 @@ function ImageCropper({ imageSrc, onCropChange }) {
     nextCrop = clampCropToContainer(nextCrop, containerSize)
 
     setCropData((prev) => {
-      if (
-        nextCrop.x === prev.x &&
-        nextCrop.y === prev.y &&
-        nextCrop.width === prev.width &&
-        nextCrop.height === prev.height
-      ) {
-        return prev
-      }
-
-      onCropChange?.(nextCrop)
-      return nextCrop
+      return isSameCrop(nextCrop, prev) ? prev : nextCrop
     })
-  }, [containerSize, onCropChange])
+  }, [containerSize])
 
   const startInteraction = (mode, event, handle = null) => {
     if (!containerSize.width || !containerSize.height) return

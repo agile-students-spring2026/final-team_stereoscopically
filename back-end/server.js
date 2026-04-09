@@ -83,7 +83,7 @@ app.post('/api/upload/image', upload.single('file'), (req, res) => {
 	})
 })
 app.post('/api/crop/image', async (req, res) => {
-  const { mediaId, x, y, width, height, scaleX = 1, scaleY = 1 } = req.body ?? {}
+	const { mediaId, x, y, width, height, unit = 'pixel', scaleX = 1, scaleY = 1 } = req.body ?? {}
 
   if (!mediaId) {
     return res.status(400).json({ error: 'Missing mediaId.', code: 'MISSING_MEDIA_ID' })
@@ -102,11 +102,33 @@ app.post('/api/crop/image', async (req, res) => {
     const naturalW = metadata.width
     const naturalH = metadata.height
 
-    // Calculate Natural Coordinates
-    let left = Math.floor(Number(x) * Number(scaleX))
-    let top  = Math.floor(Number(y) * Number(scaleY))
-    let cw   = Math.round(Number(width) * Number(scaleX))
-    let ch   = Math.round(Number(height) * Number(scaleY))
+		if (!naturalW || !naturalH) {
+			throw new Error('Unable to determine image dimensions for crop.')
+		}
+
+		const xNum = Number(x)
+		const yNum = Number(y)
+		const widthNum = Number(width)
+		const heightNum = Number(height)
+
+		let left
+		let top
+		let cw
+		let ch
+
+		if (unit === 'ratio') {
+			left = Math.floor(xNum * naturalW)
+			top = Math.floor(yNum * naturalH)
+			cw = Math.round(widthNum * naturalW)
+			ch = Math.round(heightNum * naturalH)
+		} else {
+			const sx = Number(scaleX)
+			const sy = Number(scaleY)
+			left = Math.floor(xNum * sx)
+			top = Math.floor(yNum * sy)
+			cw = Math.round(widthNum * sx)
+			ch = Math.round(heightNum * sy)
+		}
 
     // Ensure we don't start outside the image
     const safeLeft = Math.max(0, Math.min(left, naturalW - 1))

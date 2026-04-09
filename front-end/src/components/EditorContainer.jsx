@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import CreateNew from './CreateNew'
 import ImageEditor from './ImageEditor'
 import FilterMain from './FilterMain'
@@ -13,6 +13,7 @@ import CameraCapture from './CameraCapture'
 import PhotoPreview from './PhotoPreview'
 import {
   convertBackendImageResultToLocalMedia,
+  cropImageFromBackend,
   exportImageFromBackend,
 } from '../services/backendImageService'
 
@@ -75,6 +76,8 @@ function EditorContainer() {
   const [letterboxColor, setLetterboxColor] = useState('transparent')
   const [isExporting, setIsExporting] = useState(false)
   const [exportError, setExportError] = useState(null)
+  const [originalBackendMediaId, setOriginalBackendMediaId] = useState(null)
+  const [lastCropBoxPx, setLastCropBoxPx] = useState(null)
   const imageFileInputRef = useRef(null)
   const videoFileInputRef = useRef(null)
 
@@ -83,6 +86,14 @@ function EditorContainer() {
   const effectiveBackendResult = latestExportResult?.id ? latestExportResult : backendImageResult
   const effectiveBackendMediaId = effectiveBackendResult?.id || null
   const effectiveImageSrc = effectiveBackendResult?.url || previewUrl
+
+  useEffect(() => {
+    if (mediaType !== 'image') return
+    if (originalBackendMediaId) return
+    if (!backendImageResult?.id) return
+
+    setOriginalBackendMediaId(backendImageResult.id)
+  }, [mediaType, originalBackendMediaId, backendImageResult])
 
   const openImagePicker = () => {
     imageFileInputRef.current?.click()
@@ -116,6 +127,8 @@ function EditorContainer() {
     setLastExportLetterbox(null)
     setLetterboxColor('transparent')
     setExportError(null)
+    setOriginalBackendMediaId(null)
+    setLastCropBoxPx(null)
     const applied = await selectImage(file)
     if (applied) {
       setScreen(SCREENS.EDITOR)
@@ -141,6 +154,7 @@ function EditorContainer() {
     }
     setFileTooLargeMessage(null)
     setUnsupportedVideo(null)
+    setLastCropBoxPx(null)
     const applied = await selectVideo(file)
     if (applied) {
       setScreen(SCREENS.EDITOR)
@@ -158,6 +172,8 @@ function EditorContainer() {
     setLastExportLetterbox(null)
     setLetterboxColor('transparent')
     setExportError(null)
+    setOriginalBackendMediaId(null)
+    setLastCropBoxPx(null)
     setScreen(SCREENS.EDITOR)
   }
 
@@ -215,10 +231,33 @@ function EditorContainer() {
     setScreen(SCREENS.EDITOR)
   }
 
-  const handleCropApply = async (result) => {
-    // TODO(refactor/editor): Keep crop apply orchestration-only (state transitions + delegation).
-    // Move result-fetch/blob/file normalization into backend image service.
+  const handleCropApply = async (cropRequest) => {
+    const cropSourceMediaId = originalBackendMediaId || effectiveBackendMediaId
+    const ratioCrop = cropRequest?.ratio
+
+    if (!cropSourceMediaId) {
+      const err = new Error('Image is not ready for crop yet. Please re-upload and try again.')
+      setExportError(err.message)
+      throw err
+    }
+
+    if (!ratioCrop) {
+      const err = new Error('Crop preview is not ready yet. Please try again.')
+      setExportError(err.message)
+      throw err
+    }
+
     try {
+      setExportError(null)
+      const result = await cropImageFromBackend({
+        mediaId: cropSourceMediaId,
+        x: ratioCrop.x,
+        y: ratioCrop.y,
+        width: ratioCrop.width,
+        height: ratioCrop.height,
+        unit: cropRequest?.unit || 'ratio',
+      })
+
       const { file, objectUrl } = await convertBackendImageResultToLocalMedia(result, {
         fallbackFileName: 'cropped.png',
         fallbackMimeType: 'image/png',
@@ -228,9 +267,11 @@ function EditorContainer() {
       applyTransformedImage(file, objectUrl, result)
       setLatestExportResult(null)
       setLastExportLetterbox(null)
+      setLastCropBoxPx(cropRequest?.pixels || null)
     } catch (err) {
       console.error('Error applying crop in container:', err)
       setExportError('Could not process the cropped image.')
+      throw err
     }
   }
 
@@ -438,7 +479,8 @@ function EditorContainer() {
         return (
           <ImageEditor
             imageSrc={effectiveImageSrc}
-            backendMediaId={effectiveBackendMediaId}
+            cropSourceImageSrc={sourceUrl || effectiveImageSrc}
+            initialCropPx={lastCropBoxPx}
             onCropApply={handleCropApply}
             isUploading={isUploading}
             isExporting={isExporting}
@@ -495,7 +537,8 @@ function EditorContainer() {
         return (
           <ImageEditor
             imageSrc={effectiveImageSrc}
-            backendMediaId={effectiveBackendMediaId}
+            cropSourceImageSrc={sourceUrl || effectiveImageSrc}
+            initialCropPx={lastCropBoxPx}
             onCropApply={handleCropApply}
             isUploading={isUploading}
             isExporting={isExporting}

@@ -43,10 +43,10 @@ export const exportImageFromBackend = async ({ mediaId, width, height, letterbox
   }
 }
 
-export const cropImageFromBackend = async ({ mediaId, x, y, width, height, scaleX, scaleY }) => {
+export const cropImageFromBackend = async ({ mediaId, x, y, width, height, unit = 'ratio' }) => {
   const payload = await postJson({
     path: '/api/crop/image',
-    payload: { mediaId, x, y, width, height, scaleX, scaleY },
+    payload: { mediaId, x, y, width, height, unit },
     fallbackErrorMessage: 'Image crop failed',
   })
   return {
