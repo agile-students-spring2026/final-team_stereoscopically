@@ -1,7 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react'
-import { convertVideoToGif } from '../services/backendGifService'
 
-const GifEditor = ({ videoFile, onCancel, onConverted }) => {
+const GifEditor = ({ videoFile, onCancel, onConverted, onCreateGif }) => {
     const [isProcessing, setIsProcessing] = useState(false)
     const [statusMessage, setStatusMessage] = useState(null)
     const [backendResult, setBackendResult] = useState(null)
@@ -77,7 +76,10 @@ const GifEditor = ({ videoFile, onCancel, onConverted }) => {
         setStatusMessage('Converting clip to GIF…')
 
         try {
-            const result = await convertVideoToGif(videoFile)
+            if (!onCreateGif) {
+                throw new Error('GIF conversion is not available right now. Please try again.')
+            }
+            const result = await onCreateGif(videoFile)
             setBackendResult(result)
             setStatusMessage('GIF created. Download support is coming soon.')
         } catch (error) {

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import MediaEntry from './MediaEntry'
 import ImageEditor from './ImageEditor'
 import FilterMain from './FilterMain'
@@ -8,13 +8,10 @@ import AddText from './AddText'
 import ColorFilters from './ColorFilters'
 import GifEditor from './GifEditor'
 import useMediaSelection, { MEDIA_SELECTION_CODES } from '../hooks/useMediaSelection'
+import useGifConversion from '../hooks/useGifConversion'
+import useImageEditingSession from '../hooks/useImageEditingSession'
 import CameraCapture from './CameraCapture'
 import PhotoPreview from './PhotoPreview'
-import {
-  convertBackendImageResultToLocalMedia,
-  cropImageFromBackend,
-  exportImageFromBackend,
-} from '../services/backendImageService'
 
 const SCREENS = {
   EDITOR: 'editor',
@@ -47,46 +44,33 @@ function EditorContainer() {
     resetSelection,
     applyTransformedImage,
   } = useMediaSelection()
+  const { createGif } = useGifConversion()
+
+  const {
+    letterboxColor,
+    setLetterboxColor,
+    isExporting,
+    exportError,
+    lastCropBoxPx,
+    effectiveImageSrc,
+    resetImageEditingSessionState,
+    clearCropSession,
+    handleSizeSelect,
+    handleCropApply,
+    handleExport,
+  } = useImageEditingSession({
+    mediaType,
+    backendImageResult,
+    previewUrl,
+    sourceUrl,
+    applyTransformedImage,
+  })
 
   const [screen, setScreen] = useState(SCREENS.EDITOR)
   const [fileTooLargeMessage, setFileTooLargeMessage] = useState(null)
   const [unsupportedImageMessage, setUnsupportedImageMessage] = useState(null)
   const [lastRejectedUploadType, setLastRejectedUploadType] = useState(null)
   const [tempCapturedFile, setTempCapturedFile] = useState(null)
-  const [selectedPreset, setSelectedPreset] = useState(null)
-  const [latestExportResult, setLatestExportResult] = useState(null)
-  const [lastExportLetterbox, setLastExportLetterbox] = useState(null)
-  const [letterboxColor, setLetterboxColor] = useState('transparent')
-  const [isExporting, setIsExporting] = useState(false)
-  const [exportError, setExportError] = useState(null)
-  const [originalBackendMediaId, setOriginalBackendMediaId] = useState(null)
-  const [lastCropBoxPx, setLastCropBoxPx] = useState(null)
-
-  const resetExportSessionState = () => {
-    setSelectedPreset(null)
-    setLatestExportResult(null)
-    setLastExportLetterbox(null)
-    setLetterboxColor('transparent')
-    setExportError(null)
-  }
-
-  const resetImageEditingSessionState = () => {
-    resetExportSessionState()
-    setOriginalBackendMediaId(null)
-    setLastCropBoxPx(null)
-  }
-
-  const effectiveBackendResult = latestExportResult?.id ? latestExportResult : backendImageResult
-  const effectiveBackendMediaId = effectiveBackendResult?.id || null
-  const effectiveImageSrc = effectiveBackendResult?.url || previewUrl
-
-  useEffect(() => {
-    if (mediaType !== 'image') return
-    if (originalBackendMediaId) return
-    if (!backendImageResult?.id) return
-
-    setOriginalBackendMediaId(backendImageResult.id)
-  }, [mediaType, originalBackendMediaId, backendImageResult])
 
   const handleImageSelect = async (file) => {
     if (!file) return
@@ -145,7 +129,7 @@ function EditorContainer() {
 
     setFileTooLargeMessage(null)
     setUnsupportedVideo(null)
-    setLastCropBoxPx(null)
+    clearCropSession()
     if (result?.applied) {
       setScreen(SCREENS.EDITOR)
     }
@@ -173,136 +157,9 @@ function EditorContainer() {
     setScreen(SCREENS.PRESET_SIZES)
   }
 
-  const handleSizeSelect = async (size) => {
-    if (!effectiveBackendMediaId) {
-      setExportError('Image is not ready for backend export yet. Please re-upload and try again.')
-      setScreen(SCREENS.EDITOR)
-      return
-    }
-
-    try {
-      setIsExporting(true)
-      setExportError(null)
-
-      const exported = await exportImageFromBackend({
-        mediaId: effectiveBackendMediaId,
-        width: size.width,
-        height: size.height,
-        letterboxColor,
-      })
-
-      const { file, objectUrl } = await convertBackendImageResultToLocalMedia(exported, {
-        fallbackFileName: 'sticker.png',
-        fallbackMimeType: 'image/png',
-        fetchErrorMessage: 'Failed to load exported image preview.',
-      })
-
-      if (previewUrl && previewUrl !== sourceUrl) {
-        URL.revokeObjectURL(previewUrl)
-      }
-
-      applyTransformedImage(file, objectUrl, exported)
-      setSelectedPreset(size)
-      setLatestExportResult(exported)
-      setLastExportLetterbox(letterboxColor)
-    } catch (err) {
-      console.error('Preset export failed:', err)
-      setExportError(err?.message || 'Failed to export image at the selected size.')
-    } finally {
-      setIsExporting(false)
-    }
-
+  const handlePresetSizeSelect = async (size) => {
+    await handleSizeSelect(size)
     setScreen(SCREENS.EDITOR)
-  }
-
-  const handleCropApply = async (cropRequest) => {
-    const cropSourceMediaId = originalBackendMediaId || effectiveBackendMediaId
-    const ratioCrop = cropRequest?.ratio
-
-    if (!cropSourceMediaId) {
-      const err = new Error('Image is not ready for crop yet. Please re-upload and try again.')
-      setExportError(err.message)
-      throw err
-    }
-
-    if (!ratioCrop) {
-      const err = new Error('Crop preview is not ready yet. Please try again.')
-      setExportError(err.message)
-      throw err
-    }
-
-    try {
-      setExportError(null)
-      const result = await cropImageFromBackend({
-        mediaId: cropSourceMediaId,
-        x: ratioCrop.x,
-        y: ratioCrop.y,
-        width: ratioCrop.width,
-        height: ratioCrop.height,
-        unit: cropRequest?.unit || 'ratio',
-      })
-
-      const { file, objectUrl } = await convertBackendImageResultToLocalMedia(result, {
-        fallbackFileName: 'cropped.png',
-        fallbackMimeType: 'image/png',
-        fetchErrorMessage: 'Failed to fetch cropped image',
-      })
-
-      applyTransformedImage(file, objectUrl, result)
-      setLatestExportResult(null)
-      setLastExportLetterbox(null)
-      setLastCropBoxPx(cropRequest?.pixels || null)
-    } catch (err) {
-      console.error('Error applying crop in container:', err)
-      setExportError('Could not process the cropped image.')
-      throw err
-    }
-  }
-
-  const handleExport = async () => {
-    if (mediaType !== 'image') return
-    if (!selectedPreset) {
-      setExportError('Please choose a preset size before exporting.')
-      return
-    }
-    if (!effectiveBackendMediaId) {
-      setExportError('Image is not ready for backend export yet. Please re-upload and try again.')
-      return
-    }
-
-    try {
-      setIsExporting(true)
-      setExportError(null)
-      const dimsMatch =
-        latestExportResult &&
-        latestExportResult.width === selectedPreset.width &&
-        latestExportResult.height === selectedPreset.height
-      const letterboxMatch = lastExportLetterbox === letterboxColor
-
-      const exported =
-        dimsMatch && letterboxMatch
-          ? latestExportResult
-          : await exportImageFromBackend({
-              mediaId: effectiveBackendMediaId,
-              width: selectedPreset.width,
-              height: selectedPreset.height,
-              letterboxColor,
-            })
-
-      setLatestExportResult(exported)
-      setLastExportLetterbox(letterboxColor)
-      const link = document.createElement('a')
-      link.href = exported.downloadUrl || exported.url
-      link.download = exported.fileName || 'sticker.png'
-      document.body.appendChild(link)
-      link.click()
-      link.remove()
-    } catch (err) {
-      console.error('Download export failed:', err)
-      setExportError(err?.message || 'Failed to download exported image.')
-    } finally {
-      setIsExporting(false)
-    }
   }
 
   const renderImageEditor = () => (
@@ -387,7 +244,14 @@ function EditorContainer() {
     const videoKey = selectedMedia
       ? `${selectedMedia.name ?? selectedMedia.id ?? 'video'}-${selectedMedia.lastModified ?? ''}-${selectedMedia.size ?? ''}`
       : 'video'
-    return <GifEditor key={videoKey} videoFile={selectedMedia} onCancel={handleBackToUpload} />
+    return (
+      <GifEditor
+        key={videoKey}
+        videoFile={selectedMedia}
+        onCancel={handleBackToUpload}
+        onCreateGif={createGif}
+      />
+    )
   }
 
   const renderImageFlow = () => {
@@ -431,7 +295,7 @@ function EditorContainer() {
           <PresetSizes
             letterboxColor={letterboxColor}
             onLetterboxColorChange={setLetterboxColor}
-            onSelect={handleSizeSelect}
+            onSelect={handlePresetSizeSelect}
             onCancel={() => setScreen(SCREENS.EDITOR)}
           />
         )

@@ -10,11 +10,6 @@ It covers:
 - what components are not responsible for
 - the purpose and scope of each current component
 
-This document does not cover ownership for:
-- `hooks`
-- `services`
-- `utils`
-
 ---
 
 ## `src/components` scope
@@ -131,15 +126,16 @@ Top-level container for editor screen flow.
 - passing media state and callbacks between screens
 - coordinating editor-level UI flow
 - mapping upstream media-selection validation outcomes to selection-flow state and callbacks
-- crop apply orchestration, including service calls and success or error UI state
+- crop apply and export action wiring to hook-provided callbacks, including success or error UI state
 - image source decisions for crop flows, including original source versus current preview
-- persisted crop-session state that spans screens, such as the last crop box
+- passing hook-managed crop-session state across screens, such as the last crop box
 
 **Not responsible for**
 - large reusable helper logic
 - low-level media-processing logic
 - file-admission decision rules (type, size, format support)
 - UI behavior that belongs entirely to a child component
+- direct backend service imports or endpoint calls
 
 **Notes**
 - Keep this component focused on orchestration.
@@ -220,6 +216,7 @@ Editing screen for video-to-GIF workflows.
 - trim controls
 - conversion-related UI state
 - processing feedback for the user
+- emitting conversion intent through callback props
 
 **Not responsible for**
 - duplicated validation already handled upstream
