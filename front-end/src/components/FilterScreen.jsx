@@ -9,6 +9,7 @@ function FilterScreen({
   onPreviewPointerMove,
   previewOverlay = null,
   previewContainerRef = null,
+  previewImageRef = null,
 }) {
   return (
     <div className="preset-sizes-screen">
@@ -22,7 +23,7 @@ function FilterScreen({
         onPointerMove={previewInteractive ? onPreviewPointerMove : undefined}
       >
         {imageSrc ? (
-          <img src={imageSrc} alt="Preview" className="preview-image" />
+          <img ref={previewImageRef} src={imageSrc} alt="Preview" className="preview-image" />
         ) : (
           <span className="preview-label">Preview of Creation</span>
         )}

@@ -10,29 +10,53 @@ const BACKEND_FONT_SCALE = 30
 
 const DEFAULT_TEXT_COLOR = '#111111'
 
-const getRenderedImageBox = ({ containerWidth, containerHeight, imageWidth, imageHeight }) => {
-  const safeContainerW = Math.max(1, containerWidth || 1)
-  const safeContainerH = Math.max(1, containerHeight || 1)
-  const safeImageW = Math.max(1, imageWidth || 1)
-  const safeImageH = Math.max(1, imageHeight || 1)
+const getContainedContentFrame = ({
+  frameLeft,
+  frameTop,
+  frameWidth,
+  frameHeight,
+  naturalWidth,
+  naturalHeight,
+}) => {
+  const safeFrameWidth = Math.max(1, frameWidth || 1)
+  const safeFrameHeight = Math.max(1, frameHeight || 1)
+  const safeNaturalWidth = Math.max(1, naturalWidth || 1)
+  const safeNaturalHeight = Math.max(1, naturalHeight || 1)
 
-  const scale = Math.min(safeContainerW / safeImageW, safeContainerH / safeImageH)
-  const width = safeImageW * scale
-  const height = safeImageH * scale
-  const left = (safeContainerW - width) / 2
-  const top = (safeContainerH - height) / 2
+  const scale = Math.min(safeFrameWidth / safeNaturalWidth, safeFrameHeight / safeNaturalHeight)
+  const width = safeNaturalWidth * scale
+  const height = safeNaturalHeight * scale
 
-  return { left, top, width, height }
+  return {
+    left: frameLeft + (safeFrameWidth - width) / 2,
+    top: frameTop + (safeFrameHeight - height) / 2,
+    width,
+    height,
+  }
+}
+
+const getSafeFrame = (frame, containerSize) => {
+  const fallbackWidth = Math.max(1, containerSize.width || 1)
+  const fallbackHeight = Math.max(1, containerSize.height || 1)
+
+  return {
+    left: Number.isFinite(frame?.left) ? frame.left : 0,
+    top: Number.isFinite(frame?.top) ? frame.top : 0,
+    width: Number.isFinite(frame?.width) && frame.width > 0 ? frame.width : fallbackWidth,
+    height: Number.isFinite(frame?.height) && frame.height > 0 ? frame.height : fallbackHeight,
+  }
 }
 
 function AddText({ imageSrc, onApply, onCancel, applyError = null }) {
   const [text, setText] = useState('')
   const [font, setFont] = useState('Arial')
+  const [textColor, setTextColor] = useState(DEFAULT_TEXT_COLOR)
   const [fontSize, setFontSize] = useState(DEFAULT_UI_FONT_SIZE)
   const [placement, setPlacement] = useState({ x: 0.5, y: 0.5 })
-  const [imageNaturalSize, setImageNaturalSize] = useState({ width: 1, height: 1 })
   const [previewContainerSize, setPreviewContainerSize] = useState({ width: 1, height: 1 })
+  const [imageFrame, setImageFrame] = useState({ left: 0, top: 0, width: 1, height: 1 })
   const previewContainerRef = useRef(null)
+  const previewImageRef = useRef(null)
 
   const safeUiFontSize = clamp(Number(fontSize) || DEFAULT_UI_FONT_SIZE, MIN_UI_FONT_SIZE, MAX_UI_FONT_SIZE)
   const backendFontSize = Math.round(safeUiFontSize * BACKEND_FONT_SCALE)
@@ -40,56 +64,68 @@ function AddText({ imageSrc, onApply, onCancel, applyError = null }) {
   const previewText = useMemo(() => text || 'Click where you want text', [text])
 
   useEffect(() => {
-    if (!imageSrc) return
+    const container = previewContainerRef.current
+    const image = previewImageRef.current
+    if (!container) return
 
-    const image = new Image()
-    image.onload = () => {
-      setImageNaturalSize({
-        width: image.naturalWidth || 1,
-        height: image.naturalHeight || 1,
+    const syncFrame = () => {
+      const containerRect = container.getBoundingClientRect()
+      setPreviewContainerSize({
+        width: container.clientWidth || 1,
+        height: container.clientHeight || 1,
       })
+
+      if (!image || !image.clientWidth || !image.clientHeight) {
+        setImageFrame({ left: 0, top: 0, width: container.clientWidth || 1, height: container.clientHeight || 1 })
+        return
+      }
+
+  const naturalWidth = image.naturalWidth || 1
+  const naturalHeight = image.naturalHeight || 1
+
+      const imageRect = image.getBoundingClientRect()
+      const containedFrame = getContainedContentFrame({
+        frameLeft: imageRect.left - containerRect.left,
+        frameTop: imageRect.top - containerRect.top,
+        frameWidth: imageRect.width,
+        frameHeight: imageRect.height,
+        naturalWidth,
+        naturalHeight,
+      })
+
+      setImageFrame(containedFrame)
     }
-    image.src = imageSrc
+
+    const rafId = requestAnimationFrame(syncFrame)
+
+    const onResize = () => syncFrame()
+    window.addEventListener('resize', onResize)
+
+    let observer
+    if (typeof ResizeObserver !== 'undefined') {
+      observer = new ResizeObserver(syncFrame)
+      observer.observe(container)
+      if (image) observer.observe(image)
+    }
+
+    if (image) {
+      image.addEventListener('load', syncFrame)
+      if (image.complete) syncFrame()
+    }
+
+    return () => {
+      cancelAnimationFrame(rafId)
+      window.removeEventListener('resize', onResize)
+      if (image) image.removeEventListener('load', syncFrame)
+      observer?.disconnect()
+    }
   }, [imageSrc])
 
-  useEffect(() => {
-    const element = previewContainerRef.current
-    if (!element) return
-
-    const syncSize = () => {
-      setPreviewContainerSize({
-        width: element.clientWidth || 1,
-        height: element.clientHeight || 1,
-      })
-    }
-
-    syncSize()
-
-    if (typeof ResizeObserver === 'undefined') {
-      window.addEventListener('resize', syncSize)
-      return () => window.removeEventListener('resize', syncSize)
-    }
-
-    const observer = new ResizeObserver(syncSize)
-    observer.observe(element)
-    return () => observer.disconnect()
-  }, [])
-
-  const renderedImageBox = getRenderedImageBox({
-    containerWidth: previewContainerSize.width,
-    containerHeight: previewContainerSize.height,
-    imageWidth: imageNaturalSize.width,
-    imageHeight: imageNaturalSize.height,
-  })
+  const renderedImageBox = getSafeFrame(imageFrame, previewContainerSize)
 
   const updatePlacementFromPointer = (event) => {
     const rect = event.currentTarget.getBoundingClientRect()
-    const imageBox = getRenderedImageBox({
-      containerWidth: rect.width,
-      containerHeight: rect.height,
-      imageWidth: imageNaturalSize.width,
-      imageHeight: imageNaturalSize.height,
-    })
+    const imageBox = getSafeFrame(imageFrame, previewContainerSize)
 
     const x = clamp((event.clientX - rect.left - imageBox.left) / imageBox.width, 0, 1)
     const y = clamp((event.clientY - rect.top - imageBox.top) / imageBox.height, 0, 1)
@@ -103,7 +139,7 @@ function AddText({ imageSrc, onApply, onCancel, applyError = null }) {
       font,
       fontFamily: font,
       fontSize: backendFontSize,
-      color: DEFAULT_TEXT_COLOR,
+      color: textColor,
       x: placement.x,
       y: placement.y,
     })
@@ -122,6 +158,7 @@ function AddText({ imageSrc, onApply, onCancel, applyError = null }) {
         updatePlacementFromPointer(event)
       }}
       previewContainerRef={previewContainerRef}
+      previewImageRef={previewImageRef}
       previewOverlay={(
         <div
           className="add-text-overlay-image-frame"
@@ -139,7 +176,7 @@ function AddText({ imageSrc, onApply, onCancel, applyError = null }) {
               top: `${placement.y * 100}%`,
               fontFamily: font,
               fontSize: `${previewFontSize}px`,
-              color: DEFAULT_TEXT_COLOR,
+              color: textColor,
             }}
           >
             {previewText}
@@ -185,6 +222,20 @@ function AddText({ imageSrc, onApply, onCancel, applyError = null }) {
             <option value="Helvetica">Helvetica</option>
             <option value="Georgia">Georgia</option>
           </select>
+        </div>
+
+        <div className="add-text-field add-text-field--grid">
+          <span className="add-text-label">Color</span>
+          <div className="add-text-color-controls">
+            <input
+              type="color"
+              value={textColor}
+              onChange={(e) => setTextColor(e.target.value)}
+              className="add-text-color-input"
+              aria-label="Text color"
+            />
+            <span className="add-text-color-value">{textColor.toUpperCase()}</span>
+          </div>
         </div>
 
         <div className="add-text-field add-text-field--grid">
