@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useState } from 'react'
 import MediaEntry from './MediaEntry'
 import ImageEditor from './ImageEditor'
 import FilterMain from './FilterMain'
@@ -61,8 +61,6 @@ function EditorContainer() {
   const [exportError, setExportError] = useState(null)
   const [originalBackendMediaId, setOriginalBackendMediaId] = useState(null)
   const [lastCropBoxPx, setLastCropBoxPx] = useState(null)
-  const imageFileInputRef = useRef(null)
-  const videoFileInputRef = useRef(null)
 
   const resetExportSessionState = () => {
     setSelectedPreset(null)
@@ -91,14 +89,6 @@ function EditorContainer() {
 
     setOriginalBackendMediaId(backendImageResult.id)
   }, [mediaType, originalBackendMediaId, backendImageResult])
-
-  const openImagePicker = () => {
-    imageFileInputRef.current?.click()
-  }
-
-  const openVideoPicker = () => {
-    videoFileInputRef.current?.click()
-  }
 
   const handleImageSelect = async (file) => {
     if (!file) return
@@ -367,107 +357,21 @@ function EditorContainer() {
   )
 
   const renderMediaEntry = () => (
-    <>
-      <input
-        ref={imageFileInputRef}
-        type="file"
-        accept="image/*"
-        style={{ display: 'none' }}
-        onChange={(event) => {
-          const file = event.target.files?.[0]
-          if (file) {
-            handleImageSelect(file)
-          }
-          event.target.value = ''
-        }}
-      />
-      <input
-        ref={videoFileInputRef}
-        type="file"
-        accept="video/*"
-        style={{ display: 'none' }}
-        onChange={(event) => {
-          const file = event.target.files?.[0]
-          if (file) {
-            handleVideoSelect(file)
-          }
-          event.target.value = ''
-        }}
-      />
-      <MediaEntry
-        onImageSelect={handleImageSelect}
-        onVideoSelect={handleVideoSelect}
-        onCameraSelect={handleCameraSelect}
-        isLoading={isSelectionLoading || isUploading}
-        selectionError={selectionError}
-        validationError={validationError}
-      />
-      {unsupportedVideo && (
-        <div className="modal-overlay" style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', background: 'rgba(0,0,0,0.4)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <div className="modal-content" style={{ background: '#fff', padding: '2rem', borderRadius: '8px', boxShadow: '0 2px 16px rgba(0,0,0,0.2)', maxWidth: 360, textAlign: 'center' }}>
-            <h3 style={{ color: '#c00', marginBottom: '1rem' }}>Unsupported Video Format</h3>
-            <p style={{ marginBottom: '1.5rem' }}>
-              This video format ({unsupportedVideo.type || unsupportedVideo.name.split('.').pop()}) is not supported by your browser.<br />
-              Please upload an MP4 or WebM video.
-            </p>
-            <button
-              className="btn-primary"
-              style={{ marginBottom: '1rem' }}
-              onClick={() => {
-                setUnsupportedVideo(null)
-                openVideoPicker()
-              }}
-            >
-              Re-upload Video
-            </button>
-          </div>
-        </div>
-      )}
-
-      {fileTooLargeMessage && (
-        <div className="modal-overlay" style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', background: 'rgba(0,0,0,0.4)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <div className="modal-content" style={{ background: '#fff', padding: '2rem', borderRadius: '8px', boxShadow: '0 2px 16px rgba(0,0,0,0.2)', maxWidth: 360, textAlign: 'center' }}>
-            <h3 style={{ color: '#c00', marginBottom: '1rem' }}>Upload Error</h3>
-            <p style={{ marginBottom: '1.5rem' }}>{fileTooLargeMessage}</p>
-            <button
-              className="btn-primary"
-              style={{ marginBottom: '1rem' }}
-              onClick={() => {
-                setFileTooLargeMessage(null)
-                if (lastRejectedUploadType === 'video') {
-                  openVideoPicker()
-                  return
-                }
-                if (lastRejectedUploadType === 'image') {
-                  openImagePicker()
-                }
-              }}
-            >
-              Re-upload
-            </button>
-          </div>
-        </div>
-      )}
-
-      {unsupportedImageMessage && (
-        <div className="modal-overlay" style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', background: 'rgba(0,0,0,0.4)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <div className="modal-content" style={{ background: '#fff', padding: '2rem', borderRadius: '8px', boxShadow: '0 2px 16px rgba(0,0,0,0.2)', maxWidth: 360, textAlign: 'center' }}>
-            <h3 style={{ color: '#c00', marginBottom: '1rem' }}>Unsupported Image Format</h3>
-            <p style={{ marginBottom: '1.5rem' }}>{unsupportedImageMessage}</p>
-            <button
-              className="btn-primary"
-              style={{ marginBottom: '1rem' }}
-              onClick={() => {
-                setUnsupportedImageMessage(null)
-                openImagePicker()
-              }}
-            >
-              Re-upload
-            </button>
-          </div>
-        </div>
-      )}
-    </>
+    <MediaEntry
+      onImageSelect={handleImageSelect}
+      onVideoSelect={handleVideoSelect}
+      onCameraSelect={handleCameraSelect}
+      isLoading={isSelectionLoading || isUploading}
+      selectionError={selectionError}
+      validationError={validationError}
+      unsupportedVideo={unsupportedVideo}
+      fileTooLargeMessage={fileTooLargeMessage}
+      unsupportedImageMessage={unsupportedImageMessage}
+      lastRejectedUploadType={lastRejectedUploadType}
+      onDismissUnsupportedVideo={() => setUnsupportedVideo(null)}
+      onDismissFileTooLarge={() => setFileTooLargeMessage(null)}
+      onDismissUnsupportedImage={() => setUnsupportedImageMessage(null)}
+    />
   )
 
   const renderNoSelectionFlow = () => {
