@@ -8,6 +8,7 @@ function FilterScreen({
   onPreviewPointerDown,
   onPreviewPointerMove,
   previewOverlay = null,
+  previewContainerRef = null,
 }) {
   return (
     <div className="preset-sizes-screen">
@@ -15,6 +16,7 @@ function FilterScreen({
         <h2 className="screen-title">{title}</h2>
       </div>
       <div
+        ref={previewContainerRef}
         className={`preview-box ${previewInteractive ? 'preview-box-interactive' : ''}`}
         onPointerDown={previewInteractive ? onPreviewPointerDown : undefined}
         onPointerMove={previewInteractive ? onPreviewPointerMove : undefined}

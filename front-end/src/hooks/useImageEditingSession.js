@@ -6,17 +6,11 @@ import {
   exportImageFromBackend,
 } from '../services/backendImageService'
 
-const FONT_SIZE_PRESETS = {
-  small: 24,
-  medium: 36,
-  large: 52,
-}
+const MIN_BACKEND_FONT_SIZE = 8
+const MAX_BACKEND_FONT_SIZE = 2000
+const DEFAULT_BACKEND_FONT_SIZE = 960
 
-const POSITION_RATIO_PRESETS = {
-  top: { x: 0.5, y: 0.2 },
-  center: { x: 0.5, y: 0.5 },
-  bottom: { x: 0.5, y: 0.8 },
-}
+const clamp = (value, min, max) => Math.min(max, Math.max(min, value))
 
 const useImageEditingSession = ({
   mediaType,
@@ -156,14 +150,15 @@ const useImageEditingSession = ({
       return false
     }
 
-    const resolvedPosition =
-      POSITION_RATIO_PRESETS[textRequest?.position] || POSITION_RATIO_PRESETS.center
-    const x = Number.isFinite(Number(textRequest?.x)) ? Number(textRequest.x) : resolvedPosition.x
-    const y = Number.isFinite(Number(textRequest?.y)) ? Number(textRequest.y) : resolvedPosition.y
-    const presetFontSize = FONT_SIZE_PRESETS[textRequest?.size] ?? undefined
-    const fontSize = Number.isFinite(Number(textRequest?.fontSize))
-      ? Number(textRequest.fontSize)
-      : presetFontSize
+    const x = Number.isFinite(Number(textRequest?.x)) ? Number(textRequest.x) : 0.5
+    const y = Number.isFinite(Number(textRequest?.y)) ? Number(textRequest.y) : 0.5
+    const fontSize = clamp(
+      Number.isFinite(Number(textRequest?.fontSize))
+        ? Number(textRequest.fontSize)
+        : DEFAULT_BACKEND_FONT_SIZE,
+      MIN_BACKEND_FONT_SIZE,
+      MAX_BACKEND_FONT_SIZE
+    )
 
     try {
       setExportError(null)

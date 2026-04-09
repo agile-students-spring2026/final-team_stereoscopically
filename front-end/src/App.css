@@ -208,23 +208,26 @@
   box-sizing: border-box;
 }
 
-.add-text-button-group {
-  display: flex;
-  flex-wrap: nowrap;
-  gap: 0.45rem;
-  align-items: stretch;
+.add-text-size-input {
   width: 100%;
-  min-width: 0;
+  max-width: 100%;
+  margin-bottom: 0;
 }
 
-.add-text-button-group .btn-secondary {
+.add-text-size-controls {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.add-text-size-slider {
+  width: 100%;
+}
+
+.add-text-size-help {
   margin: 0;
-  flex: 1 1 0;
-  min-width: 0;
-  text-transform: capitalize;
-  text-align: center;
-  padding-left: 0.35rem;
-  padding-right: 0.35rem;
+  font-size: 0.78rem;
+  color: #666;
 }
 
 .add-text-placement-hint {
@@ -233,39 +236,20 @@
   color: #666;
 }
 
-.add-text-placement-surface {
-  position: relative;
-  width: 100%;
-  height: 190px;
-  border: 1px solid #d6d6d6;
-  border-radius: 10px;
-  background: #f6f6f6;
-  overflow: hidden;
-  touch-action: none;
-  cursor: crosshair;
-}
-
-.add-text-placement-image {
-  width: 100%;
-  height: 100%;
-  object-fit: contain;
-  display: block;
-}
-
 .add-text-placement-marker {
   position: absolute;
   transform: translate(-50%, -50%);
   color: #ffffff;
-  text-shadow:
-    -1px -1px 0 rgba(0, 0, 0, 0.8),
-    1px -1px 0 rgba(0, 0, 0, 0.8),
-    -1px 1px 0 rgba(0, 0, 0, 0.8),
-    1px 1px 0 rgba(0, 0, 0, 0.8);
-  white-space: pre-wrap;
-  max-width: 90%;
+  white-space: pre;
   text-align: center;
+  line-height: 1.2;
+  font-weight: 400;
   user-select: none;
   pointer-events: none;
+}
+
+.add-text-overlay-image-frame {
+  position: absolute;
 }
 
 /* ============================================================================

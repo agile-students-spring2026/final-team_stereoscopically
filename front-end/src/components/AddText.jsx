@@ -1,35 +1,98 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import FilterScreen from './FilterScreen'
 
 const clamp = (value, min, max) => Math.min(max, Math.max(min, value))
 
-const PREVIEW_FONT_SIZE = {
-  small: 16,
-  medium: 24,
-  large: 32,
-}
-
-const BACKEND_FONT_SIZE = {
-  small: 520,
-  medium: 760,
-  large: 980,
-}
+const MIN_UI_FONT_SIZE = 8
+const MAX_UI_FONT_SIZE = 120
+const DEFAULT_UI_FONT_SIZE = 32
+const BACKEND_FONT_SCALE = 30
 
 const DEFAULT_TEXT_COLOR = '#111111'
+
+const getRenderedImageBox = ({ containerWidth, containerHeight, imageWidth, imageHeight }) => {
+  const safeContainerW = Math.max(1, containerWidth || 1)
+  const safeContainerH = Math.max(1, containerHeight || 1)
+  const safeImageW = Math.max(1, imageWidth || 1)
+  const safeImageH = Math.max(1, imageHeight || 1)
+
+  const scale = Math.min(safeContainerW / safeImageW, safeContainerH / safeImageH)
+  const width = safeImageW * scale
+  const height = safeImageH * scale
+  const left = (safeContainerW - width) / 2
+  const top = (safeContainerH - height) / 2
+
+  return { left, top, width, height }
+}
 
 function AddText({ imageSrc, onApply, onCancel, applyError = null }) {
   const [text, setText] = useState('')
   const [font, setFont] = useState('Arial')
-  const [size, setSize] = useState('medium')
+  const [fontSize, setFontSize] = useState(DEFAULT_UI_FONT_SIZE)
   const [placement, setPlacement] = useState({ x: 0.5, y: 0.5 })
+  const [imageNaturalSize, setImageNaturalSize] = useState({ width: 1, height: 1 })
+  const [previewContainerSize, setPreviewContainerSize] = useState({ width: 1, height: 1 })
+  const previewContainerRef = useRef(null)
 
-  const previewFontSize = PREVIEW_FONT_SIZE[size] ?? PREVIEW_FONT_SIZE.medium
+  const safeUiFontSize = clamp(Number(fontSize) || DEFAULT_UI_FONT_SIZE, MIN_UI_FONT_SIZE, MAX_UI_FONT_SIZE)
+  const backendFontSize = Math.round(safeUiFontSize * BACKEND_FONT_SCALE)
+  const previewFontSize = clamp(safeUiFontSize, 12, 84)
   const previewText = useMemo(() => text || 'Click where you want text', [text])
+
+  useEffect(() => {
+    if (!imageSrc) return
+
+    const image = new Image()
+    image.onload = () => {
+      setImageNaturalSize({
+        width: image.naturalWidth || 1,
+        height: image.naturalHeight || 1,
+      })
+    }
+    image.src = imageSrc
+  }, [imageSrc])
+
+  useEffect(() => {
+    const element = previewContainerRef.current
+    if (!element) return
+
+    const syncSize = () => {
+      setPreviewContainerSize({
+        width: element.clientWidth || 1,
+        height: element.clientHeight || 1,
+      })
+    }
+
+    syncSize()
+
+    if (typeof ResizeObserver === 'undefined') {
+      window.addEventListener('resize', syncSize)
+      return () => window.removeEventListener('resize', syncSize)
+    }
+
+    const observer = new ResizeObserver(syncSize)
+    observer.observe(element)
+    return () => observer.disconnect()
+  }, [])
+
+  const renderedImageBox = getRenderedImageBox({
+    containerWidth: previewContainerSize.width,
+    containerHeight: previewContainerSize.height,
+    imageWidth: imageNaturalSize.width,
+    imageHeight: imageNaturalSize.height,
+  })
 
   const updatePlacementFromPointer = (event) => {
     const rect = event.currentTarget.getBoundingClientRect()
-    const x = clamp((event.clientX - rect.left) / rect.width, 0, 1)
-    const y = clamp((event.clientY - rect.top) / rect.height, 0, 1)
+    const imageBox = getRenderedImageBox({
+      containerWidth: rect.width,
+      containerHeight: rect.height,
+      imageWidth: imageNaturalSize.width,
+      imageHeight: imageNaturalSize.height,
+    })
+
+    const x = clamp((event.clientX - rect.left - imageBox.left) / imageBox.width, 0, 1)
+    const y = clamp((event.clientY - rect.top - imageBox.top) / imageBox.height, 0, 1)
 
     setPlacement({ x, y })
   }
@@ -38,9 +101,8 @@ function AddText({ imageSrc, onApply, onCancel, applyError = null }) {
     onApply?.({
       text,
       font,
-      size,
       fontFamily: font,
-      fontSize: BACKEND_FONT_SIZE[size] ?? BACKEND_FONT_SIZE.medium,
+      fontSize: backendFontSize,
       color: DEFAULT_TEXT_COLOR,
       x: placement.x,
       y: placement.y,
@@ -59,18 +121,29 @@ function AddText({ imageSrc, onApply, onCancel, applyError = null }) {
         if (event.buttons !== 1) return
         updatePlacementFromPointer(event)
       }}
+      previewContainerRef={previewContainerRef}
       previewOverlay={(
         <div
-          className="add-text-placement-marker"
+          className="add-text-overlay-image-frame"
           style={{
-            left: `${placement.x * 100}%`,
-            top: `${placement.y * 100}%`,
-            fontFamily: font,
-            fontSize: `${previewFontSize}px`,
-            color: DEFAULT_TEXT_COLOR,
+            left: `${(renderedImageBox.left / previewContainerSize.width) * 100}%`,
+            top: `${(renderedImageBox.top / previewContainerSize.height) * 100}%`,
+            width: `${(renderedImageBox.width / previewContainerSize.width) * 100}%`,
+            height: `${(renderedImageBox.height / previewContainerSize.height) * 100}%`,
           }}
         >
-          {previewText}
+          <div
+            className="add-text-placement-marker"
+            style={{
+              left: `${placement.x * 100}%`,
+              top: `${placement.y * 100}%`,
+              fontFamily: font,
+              fontSize: `${previewFontSize}px`,
+              color: DEFAULT_TEXT_COLOR,
+            }}
+          >
+            {previewText}
+          </div>
         </div>
       )}
     >
@@ -110,17 +183,28 @@ function AddText({ imageSrc, onApply, onCancel, applyError = null }) {
 
         <div className="add-text-field add-text-field--grid">
           <span className="add-text-label">Size</span>
-          <div className="add-text-button-group">
-            {['small', 'medium', 'large'].map((s) => (
-              <button
-                key={s}
-                type="button"
-                className={`btn-secondary ${size === s ? 'active' : ''}`}
-                onClick={() => setSize(s)}
-              >
-                {s}
-              </button>
-            ))}
+          <div className="add-text-size-controls">
+            <input
+              type="number"
+              min={MIN_UI_FONT_SIZE}
+              max={MAX_UI_FONT_SIZE}
+              step={1}
+              value={fontSize}
+              onChange={(e) => setFontSize(e.target.value)}
+              className="text-input add-text-size-input"
+            />
+            <input
+              type="range"
+              min={MIN_UI_FONT_SIZE}
+              max={MAX_UI_FONT_SIZE}
+              step={1}
+              value={safeUiFontSize}
+              onChange={(e) => setFontSize(e.target.value)}
+              className="add-text-size-slider"
+            />
+            <p className="add-text-size-help">
+              Size: {safeUiFontSize}px (range {MIN_UI_FONT_SIZE}–{MAX_UI_FONT_SIZE})
+            </p>
           </div>
         </div>
 
