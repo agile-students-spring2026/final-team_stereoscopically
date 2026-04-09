@@ -11,7 +11,10 @@ import useMediaSelection from '../hooks/useMediaSelection'
 import { isVideoTypeSupported } from '../utils/videoSupport'
 import CameraCapture from './CameraCapture'
 import PhotoPreview from './PhotoPreview'
-import { exportImageFromBackend } from '../services/backendImageService'
+import {
+  convertBackendImageResultToLocalMedia,
+  exportImageFromBackend,
+} from '../services/backendImageService'
 
 const SCREENS = {
   EDITOR: 'editor',
@@ -188,15 +191,11 @@ function EditorContainer() {
         letterboxColor,
       })
 
-      const response = await fetch(exported.url)
-      if (!response.ok) {
-        throw new Error('Failed to load exported image preview.')
-      }
-      const blob = await response.blob()
-      const file = new File([blob], exported.fileName || 'sticker.png', {
-        type: exported.mimeType || 'image/png',
+      const { file, objectUrl } = await convertBackendImageResultToLocalMedia(exported, {
+        fallbackFileName: 'sticker.png',
+        fallbackMimeType: 'image/png',
+        fetchErrorMessage: 'Failed to load exported image preview.',
       })
-      const objectUrl = URL.createObjectURL(blob)
 
       if (previewUrl && previewUrl !== sourceUrl) {
         URL.revokeObjectURL(previewUrl)
@@ -220,19 +219,18 @@ function EditorContainer() {
     // TODO(refactor/editor): Keep crop apply orchestration-only (state transitions + delegation).
     // Move result-fetch/blob/file normalization into backend image service.
     try {
-      const response = await fetch(result.url)
-      if (!response.ok) throw new Error("Failed to fetch cropped image")
-      
-      const blob = await response.blob()
-      const file = new File([blob], 'cropped.png', { type: 'image/png' })
-      const objectUrl = URL.createObjectURL(blob)
+      const { file, objectUrl } = await convertBackendImageResultToLocalMedia(result, {
+        fallbackFileName: 'cropped.png',
+        fallbackMimeType: 'image/png',
+        fetchErrorMessage: 'Failed to fetch cropped image',
+      })
 
       applyTransformedImage(file, objectUrl, result)
       setLatestExportResult(null)
       setLastExportLetterbox(null)
     } catch (err) {
-      console.error("Error applying crop in container:", err)
-      setExportError("Could not process the cropped image.")
+      console.error('Error applying crop in container:', err)
+      setExportError('Could not process the cropped image.')
     }
   }
 

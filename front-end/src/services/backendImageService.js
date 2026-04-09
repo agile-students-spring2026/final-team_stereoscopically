@@ -59,3 +59,35 @@ export const cropImageFromBackend = async ({ mediaId, x, y, width, height, scale
     height: payload?.height ?? null,
   }
 }
+
+export const convertBackendImageResultToLocalMedia = async (
+  result,
+  {
+    fallbackFileName = 'sticker.png',
+    fallbackMimeType = 'image/png',
+    fetchErrorMessage = 'Failed to load exported image preview.',
+  } = {}
+) => {
+  const sourceUrl = result?.url
+  if (!sourceUrl) {
+    throw new Error(fetchErrorMessage)
+  }
+
+  const response = await fetch(sourceUrl)
+  if (!response.ok) {
+    throw new Error(fetchErrorMessage)
+  }
+
+  const blob = await response.blob()
+  const fileName = result?.fileName || fallbackFileName
+  const mimeType = result?.mimeType || blob.type || fallbackMimeType
+  const file = new File([blob], fileName, { type: mimeType })
+  const objectUrl = URL.createObjectURL(blob)
+
+  return {
+    file,
+    objectUrl,
+    fileName,
+    mimeType,
+  }
+}

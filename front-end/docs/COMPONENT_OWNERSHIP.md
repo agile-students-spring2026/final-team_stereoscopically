@@ -49,7 +49,8 @@ Components should avoid:
 | `ColorFilters.jsx` | Slider controls for color adjustments + apply payload. | **Keep as-is**. |
 | `AddText.jsx` | Text/font/size/position controls + apply payload. | **Keep as-is**. |
 | `PresetSizes.jsx` | Output size presets + letterbox color options + selection callback. | **Keep as-is**. |
-| `videoSupport.js` | Browser video MIME support helper. | **Defer move** (agreed): currently here, can be relocated later. |
+
+> Note: `videoSupport.js` has been moved out of `src/components` and now lives in `src/utils/videoSupport.js`.
 
 ---
 
