@@ -89,7 +89,7 @@ Components in `src/components` are not responsible for:
 **Responsible for**
 - screen transitions and editor flow coordination
 - media selection entry points
-- selection-time validation and rejection messaging
+- selection-time rejection messaging and flow handling based on upstream validation outcomes
 - wiring between image and GIF workflows
 - shared filter navigation and layout used across filter screens
 - shared filter controls intended to be available across media types
@@ -130,6 +130,7 @@ Top-level container for editor screen flow.
 - wiring child components together
 - passing media state and callbacks between screens
 - coordinating editor-level UI flow
+- mapping upstream media-selection validation outcomes to local selection-time UI behavior
 - crop apply orchestration, including service calls and success or error UI state
 - image source decisions for crop flows, including original source versus current preview
 - persisted crop-session state that spans screens, such as the last crop box
@@ -137,6 +138,7 @@ Top-level container for editor screen flow.
 **Not responsible for**
 - large reusable helper logic
 - low-level media-processing logic
+- file-admission decision rules (type, size, format support)
 - UI behavior that belongs entirely to a child component
 
 **Notes**

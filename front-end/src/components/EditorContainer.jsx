@@ -7,8 +7,7 @@ import PresetSizes from './PresetSizes'
 import AddText from './AddText'
 import ColorFilters from './ColorFilters'
 import GifEditor from './GifEditor'
-import useMediaSelection from '../hooks/useMediaSelection'
-import { isVideoTypeSupported } from '../utils/videoSupport'
+import useMediaSelection, { MEDIA_SELECTION_CODES } from '../hooks/useMediaSelection'
 import CameraCapture from './CameraCapture'
 import PhotoPreview from './PhotoPreview'
 import {
@@ -28,24 +27,8 @@ const SCREENS = {
   CAMERA_PREVIEW: 'camera-preview'
 }
 
-const MAX_UPLOAD_SIZE_BYTES = 50 * 1024 * 1024
 const FILE_TOO_LARGE_MESSAGE = 'File is too large (max 50 MB).'
 const HEIC_UNSUPPORTED_MESSAGE = 'HEIC/HEIF files are not supported in this browser yet. Please upload JPG or PNG.'
-
-// TODO(refactor/editor): Move media validation rules/constants into a shared media-validation module
-// so selection handlers can focus on orchestration only.
-const isHeicFile = (file) => {
-  if (!file) return false
-  const lowerName = file.name?.toLowerCase() || ''
-  const lowerType = file.type?.toLowerCase() || ''
-
-  return (
-    lowerName.endsWith('.heic') ||
-    lowerName.endsWith('.heif') ||
-    lowerType === 'image/heic' ||
-    lowerType === 'image/heif'
-  )
-}
 
 function EditorContainer() {
   const {
@@ -81,6 +64,20 @@ function EditorContainer() {
   const imageFileInputRef = useRef(null)
   const videoFileInputRef = useRef(null)
 
+  const resetExportSessionState = () => {
+    setSelectedPreset(null)
+    setLatestExportResult(null)
+    setLastExportLetterbox(null)
+    setLetterboxColor('transparent')
+    setExportError(null)
+  }
+
+  const resetImageEditingSessionState = () => {
+    resetExportSessionState()
+    setOriginalBackendMediaId(null)
+    setLastCropBoxPx(null)
+  }
+
   // TODO(refactor/editor): Centralize "effective preview" derivation (latest export vs hook result)
   // in useMediaSelection or a dedicated selector to keep this container as a screen coordinator.
   const effectiveBackendResult = latestExportResult?.id ? latestExportResult : backendImageResult
@@ -108,29 +105,28 @@ function EditorContainer() {
 
     setLastRejectedUploadType('image')
 
-    // TODO(refactor/editor): Replace inline validation branches with a single validator result
-    // (e.g., { ok, code, message }) consumed by UI state mapping.
-    if (isHeicFile(file)) {
+    const result = await selectImage(file)
+
+    if (result?.code === MEDIA_SELECTION_CODES.UNSUPPORTED_IMAGE) {
       setUnsupportedImageMessage(HEIC_UNSUPPORTED_MESSAGE)
+      setFileTooLargeMessage(null)
       return
     }
 
-    if (file.size > MAX_UPLOAD_SIZE_BYTES) {
+    if (result?.code === MEDIA_SELECTION_CODES.FILE_TOO_LARGE) {
+      setUnsupportedImageMessage(null)
       setFileTooLargeMessage(FILE_TOO_LARGE_MESSAGE)
+      return
+    }
+
+    if (result?.code !== MEDIA_SELECTION_CODES.OK) {
       return
     }
 
     setUnsupportedImageMessage(null)
     setFileTooLargeMessage(null)
-    setSelectedPreset(null)
-    setLatestExportResult(null)
-    setLastExportLetterbox(null)
-    setLetterboxColor('transparent')
-    setExportError(null)
-    setOriginalBackendMediaId(null)
-    setLastCropBoxPx(null)
-    const applied = await selectImage(file)
-    if (applied) {
+    resetImageEditingSessionState()
+    if (result?.applied) {
       setScreen(SCREENS.EDITOR)
     }
   }
@@ -141,22 +137,28 @@ function EditorContainer() {
 
     setLastRejectedUploadType('video')
 
-    // TODO(refactor/editor): Mirror image/video validation through one shared decision helper
-    // to avoid duplicated rejection handling and picker retry logic.
-    if (file.size > MAX_UPLOAD_SIZE_BYTES) {
+    const result = await selectVideo(file)
+
+    if (result?.code === MEDIA_SELECTION_CODES.FILE_TOO_LARGE) {
+      setUnsupportedVideo(null)
       setFileTooLargeMessage(FILE_TOO_LARGE_MESSAGE)
       return
     }
 
-    if (!isVideoTypeSupported(file)) {
+    if (result?.code === MEDIA_SELECTION_CODES.UNSUPPORTED_VIDEO) {
+      setFileTooLargeMessage(null)
       setUnsupportedVideo(file)
       return
     }
+
+    if (result?.code !== MEDIA_SELECTION_CODES.OK) {
+      return
+    }
+
     setFileTooLargeMessage(null)
     setUnsupportedVideo(null)
     setLastCropBoxPx(null)
-    const applied = await selectVideo(file)
-    if (applied) {
+    if (result?.applied) {
       setScreen(SCREENS.EDITOR)
     }
   }
@@ -167,13 +169,7 @@ function EditorContainer() {
 
   const handleBackToUpload = () => {
     resetSelection()
-    setSelectedPreset(null)
-    setLatestExportResult(null)
-    setLastExportLetterbox(null)
-    setLetterboxColor('transparent')
-    setExportError(null)
-    setOriginalBackendMediaId(null)
-    setLastCropBoxPx(null)
+    resetImageEditingSessionState()
     setScreen(SCREENS.EDITOR)
   }
 
@@ -322,176 +318,181 @@ function EditorContainer() {
     }
   }
 
-  const renderContent = () => {
-    // TODO(refactor/editor): Split this into route-level render functions/components.
-    // Upload flow, camera flow, and modal stack are currently mixed with editor routing.
-    if (!selectedMedia) {
-      if (screen === SCREENS.CAMERA) {
-        return (
-          <CameraCapture
-            onCapture={(file) => {
-              setTempCapturedFile(file)
-              setScreen(SCREENS.CAMERA_PREVIEW)
-            }}
-            onCancel={handleBackToUpload}
-          />
-        )
-      }
+  const renderImageEditor = () => (
+    <ImageEditor
+      imageSrc={effectiveImageSrc}
+      cropSourceImageSrc={sourceUrl || effectiveImageSrc}
+      initialCropPx={lastCropBoxPx}
+      onCropApply={handleCropApply}
+      isUploading={isUploading}
+      isExporting={isExporting}
+      uploadError={uploadError}
+      exportError={exportError}
+      onBack={handleBackToUpload}
+      onOpenFilters={handleOpenFilters}
+      onSize={handleOpenSizes}
+      onExport={handleExport}
+    />
+  )
 
-      if (screen === SCREENS.CAMERA_PREVIEW){
-        return (
-          <PhotoPreview
-            file={tempCapturedFile}
-            onRetake={() =>{
-              setTempCapturedFile(null)
-              setScreen(SCREENS.CAMERA)
-            }}
-            onConfirm={ async () => {
-              const file = tempCapturedFile
-              setTempCapturedFile(null)
+  const renderCameraCapture = () => (
+    <CameraCapture
+      onCapture={(file) => {
+        setTempCapturedFile(file)
+        setScreen(SCREENS.CAMERA_PREVIEW)
+      }}
+      onCancel={handleBackToUpload}
+    />
+  )
 
-              if (file.type.startsWith('video/')) {
-                await handleVideoSelect(file)
-              } else {
-                await handleImageSelect(file)
-              }
-            }
+  const renderCameraPreview = () => (
+    <PhotoPreview
+      file={tempCapturedFile}
+      onRetake={() => {
+        setTempCapturedFile(null)
+        setScreen(SCREENS.CAMERA)
+      }}
+      onConfirm={async () => {
+        const file = tempCapturedFile
+        setTempCapturedFile(null)
+
+        if (file.type.startsWith('video/')) {
+          await handleVideoSelect(file)
+        } else {
+          await handleImageSelect(file)
+        }
+      }}
+      onBack={handleBackToUpload}
+    />
+  )
+
+  const renderMediaEntry = () => (
+    <>
+      <input
+        ref={imageFileInputRef}
+        type="file"
+        accept="image/*"
+        style={{ display: 'none' }}
+        onChange={(event) => {
+          const file = event.target.files?.[0]
+          if (file) {
+            handleImageSelect(file)
           }
-          onBack={handleBackToUpload}
-          />
-        )
-      }
+          event.target.value = ''
+        }}
+      />
+      <input
+        ref={videoFileInputRef}
+        type="file"
+        accept="video/*"
+        style={{ display: 'none' }}
+        onChange={(event) => {
+          const file = event.target.files?.[0]
+          if (file) {
+            handleVideoSelect(file)
+          }
+          event.target.value = ''
+        }}
+      />
+      <MediaEntry
+        onImageSelect={handleImageSelect}
+        onVideoSelect={handleVideoSelect}
+        onCameraSelect={handleCameraSelect}
+        isLoading={isSelectionLoading || isUploading}
+        selectionError={selectionError}
+        validationError={validationError}
+      />
+      {unsupportedVideo && (
+        <div className="modal-overlay" style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', background: 'rgba(0,0,0,0.4)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <div className="modal-content" style={{ background: '#fff', padding: '2rem', borderRadius: '8px', boxShadow: '0 2px 16px rgba(0,0,0,0.2)', maxWidth: 360, textAlign: 'center' }}>
+            <h3 style={{ color: '#c00', marginBottom: '1rem' }}>Unsupported Video Format</h3>
+            <p style={{ marginBottom: '1.5rem' }}>
+              This video format ({unsupportedVideo.type || unsupportedVideo.name.split('.').pop()}) is not supported by your browser.<br />
+              Please upload an MP4 or WebM video.
+            </p>
+            <button
+              className="btn-primary"
+              style={{ marginBottom: '1rem' }}
+              onClick={() => {
+                setUnsupportedVideo(null)
+                openVideoPicker()
+              }}
+            >
+              Re-upload Video
+            </button>
+          </div>
+        </div>
+      )}
 
-      return (
-        <>
-          <input
-            ref={imageFileInputRef}
-            type="file"
-            accept="image/*"
-            style={{ display: 'none' }}
-            onChange={(event) => {
-              const file = event.target.files?.[0]
-              if (file) {
-                handleImageSelect(file)
-              }
-              event.target.value = ''
-            }}
-          />
-          <input
-            ref={videoFileInputRef}
-            type="file"
-            accept="video/*"
-            style={{ display: 'none' }}
-            onChange={(event) => {
-              const file = event.target.files?.[0]
-              if (file) {
-                handleVideoSelect(file)
-              }
-              event.target.value = ''
-            }}
-          />
-          <MediaEntry
-            onImageSelect={handleImageSelect}
-            onVideoSelect={handleVideoSelect}
-            onCameraSelect={handleCameraSelect}
-            isLoading={isSelectionLoading || isUploading}
-            selectionError={selectionError}
-            validationError={validationError}
-          />
-          {unsupportedVideo && (
-            <div className="modal-overlay" style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', background: 'rgba(0,0,0,0.4)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <div className="modal-content" style={{ background: '#fff', padding: '2rem', borderRadius: '8px', boxShadow: '0 2px 16px rgba(0,0,0,0.2)', maxWidth: 360, textAlign: 'center' }}>
-                <h3 style={{ color: '#c00', marginBottom: '1rem' }}>Unsupported Video Format</h3>
-                <p style={{ marginBottom: '1.5rem' }}>
-                  This video format ({unsupportedVideo.type || unsupportedVideo.name.split('.').pop()}) is not supported by your browser.<br />
-                  Please upload an MP4 or WebM video.
-                </p>
-                <button
-                  className="btn-primary"
-                  style={{ marginBottom: '1rem' }}
-                  onClick={() => {
-                    setUnsupportedVideo(null)
-                    openVideoPicker()
-                  }}
-                >
-                  Re-upload Video
-                </button>
-              </div>
-            </div>
-          )}
+      {fileTooLargeMessage && (
+        <div className="modal-overlay" style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', background: 'rgba(0,0,0,0.4)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <div className="modal-content" style={{ background: '#fff', padding: '2rem', borderRadius: '8px', boxShadow: '0 2px 16px rgba(0,0,0,0.2)', maxWidth: 360, textAlign: 'center' }}>
+            <h3 style={{ color: '#c00', marginBottom: '1rem' }}>Upload Error</h3>
+            <p style={{ marginBottom: '1.5rem' }}>{fileTooLargeMessage}</p>
+            <button
+              className="btn-primary"
+              style={{ marginBottom: '1rem' }}
+              onClick={() => {
+                setFileTooLargeMessage(null)
+                if (lastRejectedUploadType === 'video') {
+                  openVideoPicker()
+                  return
+                }
+                if (lastRejectedUploadType === 'image') {
+                  openImagePicker()
+                }
+              }}
+            >
+              Re-upload
+            </button>
+          </div>
+        </div>
+      )}
 
-          {fileTooLargeMessage && (
-            <div className="modal-overlay" style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', background: 'rgba(0,0,0,0.4)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <div className="modal-content" style={{ background: '#fff', padding: '2rem', borderRadius: '8px', boxShadow: '0 2px 16px rgba(0,0,0,0.2)', maxWidth: 360, textAlign: 'center' }}>
-                <h3 style={{ color: '#c00', marginBottom: '1rem' }}>Upload Error</h3>
-                <p style={{ marginBottom: '1.5rem' }}>{fileTooLargeMessage}</p>
-                <button
-                  className="btn-primary"
-                  style={{ marginBottom: '1rem' }}
-                  onClick={() => {
-                    setFileTooLargeMessage(null)
-                    if (lastRejectedUploadType === 'video') {
-                      openVideoPicker()
-                      return
-                    }
-                    if (lastRejectedUploadType === 'image') {
-                      openImagePicker()
-                    }
-                  }}
-                >
-                  Re-upload
-                </button>
-              </div>
-            </div>
-          )}
+      {unsupportedImageMessage && (
+        <div className="modal-overlay" style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', background: 'rgba(0,0,0,0.4)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <div className="modal-content" style={{ background: '#fff', padding: '2rem', borderRadius: '8px', boxShadow: '0 2px 16px rgba(0,0,0,0.2)', maxWidth: 360, textAlign: 'center' }}>
+            <h3 style={{ color: '#c00', marginBottom: '1rem' }}>Unsupported Image Format</h3>
+            <p style={{ marginBottom: '1.5rem' }}>{unsupportedImageMessage}</p>
+            <button
+              className="btn-primary"
+              style={{ marginBottom: '1rem' }}
+              onClick={() => {
+                setUnsupportedImageMessage(null)
+                openImagePicker()
+              }}
+            >
+              Re-upload
+            </button>
+          </div>
+        </div>
+      )}
+    </>
+  )
 
-          {unsupportedImageMessage && (
-            <div className="modal-overlay" style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', background: 'rgba(0,0,0,0.4)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <div className="modal-content" style={{ background: '#fff', padding: '2rem', borderRadius: '8px', boxShadow: '0 2px 16px rgba(0,0,0,0.2)', maxWidth: 360, textAlign: 'center' }}>
-                <h3 style={{ color: '#c00', marginBottom: '1rem' }}>Unsupported Image Format</h3>
-                <p style={{ marginBottom: '1.5rem' }}>{unsupportedImageMessage}</p>
-                <button
-                  className="btn-primary"
-                  style={{ marginBottom: '1rem' }}
-                  onClick={() => {
-                    setUnsupportedImageMessage(null)
-                    openImagePicker()
-                  }}
-                >
-                  Re-upload
-                </button>
-              </div>
-            </div>
-          )}
-        </>
-      )
+  const renderNoSelectionFlow = () => {
+    if (screen === SCREENS.CAMERA) {
+      return renderCameraCapture()
     }
 
-    if (mediaType === 'video') {
-      const videoKey = selectedMedia
-        ? `${selectedMedia.name ?? selectedMedia.id ?? 'video'}-${selectedMedia.lastModified ?? ''}-${selectedMedia.size ?? ''}`
-        : 'video'
-      return <GifEditor key={videoKey} videoFile={selectedMedia} onCancel={handleBackToUpload} />
+    if (screen === SCREENS.CAMERA_PREVIEW) {
+      return renderCameraPreview()
     }
 
+    return renderMediaEntry()
+  }
+
+  const renderVideoFlow = () => {
+    const videoKey = selectedMedia
+      ? `${selectedMedia.name ?? selectedMedia.id ?? 'video'}-${selectedMedia.lastModified ?? ''}-${selectedMedia.size ?? ''}`
+      : 'video'
+    return <GifEditor key={videoKey} videoFile={selectedMedia} onCancel={handleBackToUpload} />
+  }
+
+  const renderImageFlow = () => {
     switch (screen) {
       case SCREENS.EDITOR:
-        return (
-          <ImageEditor
-            imageSrc={effectiveImageSrc}
-            cropSourceImageSrc={sourceUrl || effectiveImageSrc}
-            initialCropPx={lastCropBoxPx}
-            onCropApply={handleCropApply}
-            isUploading={isUploading}
-            isExporting={isExporting}
-            uploadError={uploadError}
-            exportError={exportError}
-            onBack={handleBackToUpload}
-            onOpenFilters={handleOpenFilters}
-            onSize={handleOpenSizes}
-            onExport={handleExport}
-          />
-        )
+        return renderImageEditor()
       case SCREENS.FILTERS_MAIN:
         return (
           <FilterMain
@@ -534,23 +535,20 @@ function EditorContainer() {
           />
         )
       default:
-        return (
-          <ImageEditor
-            imageSrc={effectiveImageSrc}
-            cropSourceImageSrc={sourceUrl || effectiveImageSrc}
-            initialCropPx={lastCropBoxPx}
-            onCropApply={handleCropApply}
-            isUploading={isUploading}
-            isExporting={isExporting}
-            uploadError={uploadError}
-            exportError={exportError}
-            onBack={handleBackToUpload}
-            onOpenFilters={handleOpenFilters}
-            onSize={handleOpenSizes}
-            onExport={handleExport}
-          />
-        )
+        return renderImageEditor()
     }
+  }
+
+  const renderContent = () => {
+    if (!selectedMedia) {
+      return renderNoSelectionFlow()
+    }
+
+    if (mediaType === 'video') {
+      return renderVideoFlow()
+    }
+
+    return renderImageFlow()
   }
 
   return renderContent()
