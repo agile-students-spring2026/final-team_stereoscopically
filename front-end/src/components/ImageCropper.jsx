@@ -29,23 +29,8 @@ function ImageCropper({ imageSrc, onCropChange }) {
   const interactionRef = useRef(null)
   const latestPointerRef = useRef(null)
   const rafIdRef = useRef(null)
-  const cropDataRef = useRef(cropData)
-  const containerSizeRef = useRef({ width: 0, height: 0 })
-  const onCropChangeRef = useRef(onCropChange)
   // Stores container width and height for boundary calculations
   const [containerSize, setContainerSize] = useState({ width: 0, height: 0 })
-
-  useEffect(() => {
-    cropDataRef.current = cropData
-  }, [cropData])
-
-  useEffect(() => {
-    containerSizeRef.current = containerSize
-  }, [containerSize])
-
-  useEffect(() => {
-    onCropChangeRef.current = onCropChange
-  }, [onCropChange])
 
   const syncCropToContainer = useCallback((nextContainer) => {
     if (!nextContainer.width || !nextContainer.height) return
@@ -61,10 +46,10 @@ function ImageCropper({ imageSrc, onCropChange }) {
         return prev
       }
 
-      onCropChangeRef.current?.(next)
+      onCropChange?.(next)
       return next
     })
-  }, [])
+  }, [onCropChange])
 
   const measureContainer = useCallback(() => {
     if (!containerRef.current) return
@@ -122,7 +107,7 @@ function ImageCropper({ imageSrc, onCropChange }) {
       }
     }
 
-    nextCrop = clampCropToContainer(nextCrop, containerSizeRef.current)
+    nextCrop = clampCropToContainer(nextCrop, containerSize)
 
     setCropData((prev) => {
       if (
@@ -134,10 +119,10 @@ function ImageCropper({ imageSrc, onCropChange }) {
         return prev
       }
 
-      onCropChangeRef.current?.(nextCrop)
+      onCropChange?.(nextCrop)
       return nextCrop
     })
-  }, [])
+  }, [containerSize, onCropChange])
 
   const flushPointerUpdate = useCallback(() => {
     rafIdRef.current = null
@@ -154,13 +139,13 @@ function ImageCropper({ imageSrc, onCropChange }) {
   }, [flushPointerUpdate])
 
   const startInteraction = (mode, event, handle = null) => {
-    if (!containerSizeRef.current.width || !containerSizeRef.current.height) return
+    if (!containerSize.width || !containerSize.height) return
 
     interactionRef.current = {
       mode,
       handle,
       startPointer: { x: event.clientX, y: event.clientY },
-      startCrop: { ...cropDataRef.current },
+      startCrop: { ...cropData },
     }
 
     queuePointerUpdate(event.clientX, event.clientY)
