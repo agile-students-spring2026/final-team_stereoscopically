@@ -1,0 +1,69 @@
+import {
+	cropImage,
+	exportImage,
+	getExportDownloadContent,
+	getMediaContent,
+	uploadImage,
+} from '../services/mediaService.js'
+
+const sendResult = (res, result) => {
+	if (result.error) {
+		return res.status(result.error.status).json({
+			error: result.error.error,
+			code: result.error.code,
+		})
+	}
+
+	return res.status(result.status).json(result.data)
+}
+
+export const healthCheck = (_req, res) => {
+	return res.json({ status: 'ok' })
+}
+
+export const uploadImageHandler = (req, res) => {
+	const result = uploadImage(req)
+	return sendResult(res, result)
+}
+
+export const cropImageHandler = async (req, res) => {
+	const result = await cropImage(req)
+	return sendResult(res, result)
+}
+
+export const exportImageHandler = async (req, res) => {
+	const result = await exportImage(req)
+	return sendResult(res, result)
+}
+
+export const getMediaHandler = (req, res) => {
+	const result = getMediaContent(req.params.id)
+	if (result.error) {
+		return res.status(result.error.status).json({
+			error: result.error.error,
+			code: result.error.code,
+		})
+	}
+
+	for (const [header, value] of Object.entries(result.headers ?? {})) {
+		res.setHeader(header, value)
+	}
+
+	return res.status(result.status).send(result.data)
+}
+
+export const downloadExportHandler = (req, res) => {
+	const result = getExportDownloadContent(req.params.id)
+	if (result.error) {
+		return res.status(result.error.status).json({
+			error: result.error.error,
+			code: result.error.code,
+		})
+	}
+
+	for (const [header, value] of Object.entries(result.headers ?? {})) {
+		res.setHeader(header, value)
+	}
+
+	return res.status(result.status).send(result.data)
+}
