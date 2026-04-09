@@ -264,13 +264,21 @@
 .add-text-placement-marker {
   position: absolute;
   transform: translate(-50%, -50%);
-  color: #ffffff;
+  user-select: none;
+  pointer-events: none;
+}
+
+.add-text-placement-marker-box {
+  display: inline-block;
+  max-width: 95%;
+  padding: 4px 8px;
+  border: 1px dashed rgba(26, 26, 26, 0.42);
+  border-radius: 4px;
+  background: transparent;
   white-space: pre;
   text-align: center;
   line-height: 1.2;
   font-weight: 400;
-  user-select: none;
-  pointer-events: none;
 }
 
 .add-text-overlay-image-frame {

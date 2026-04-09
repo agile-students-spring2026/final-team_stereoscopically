@@ -1,12 +1,13 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import FilterScreen from './FilterScreen'
 
 const clamp = (value, min, max) => Math.min(max, Math.max(min, value))
 
-const MIN_UI_FONT_SIZE = 8
-const MAX_UI_FONT_SIZE = 120
-const DEFAULT_UI_FONT_SIZE = 32
-const BACKEND_FONT_SCALE = 30
+/* Slider is a relative scale; backend uses image-space px = round(slider * BACKEND_FONT_SCALE). */
+const MIN_UI_FONT_SIZE = 10
+const MAX_UI_FONT_SIZE = 56
+const DEFAULT_UI_FONT_SIZE = 22
+const BACKEND_FONT_SCALE = 5
 
 const DEFAULT_TEXT_COLOR = '#111111'
 
@@ -55,12 +56,13 @@ function AddText({ imageSrc, onApply, onCancel, applyError = null }) {
   const [placement, setPlacement] = useState({ x: 0.5, y: 0.5 })
   const [previewContainerSize, setPreviewContainerSize] = useState({ width: 1, height: 1 })
   const [imageFrame, setImageFrame] = useState({ left: 0, top: 0, width: 1, height: 1 })
+  const [naturalImageSize, setNaturalImageSize] = useState({ width: 1, height: 1 })
   const previewContainerRef = useRef(null)
   const previewImageRef = useRef(null)
+  const placementDragActiveRef = useRef(false)
 
   const safeUiFontSize = clamp(Number(fontSize) || DEFAULT_UI_FONT_SIZE, MIN_UI_FONT_SIZE, MAX_UI_FONT_SIZE)
   const backendFontSize = Math.round(safeUiFontSize * BACKEND_FONT_SCALE)
-  const previewFontSize = clamp(safeUiFontSize, 12, 84)
   const previewText = useMemo(() => text || 'Click where you want text', [text])
 
   useEffect(() => {
@@ -76,12 +78,14 @@ function AddText({ imageSrc, onApply, onCancel, applyError = null }) {
       })
 
       if (!image || !image.clientWidth || !image.clientHeight) {
+        setNaturalImageSize({ width: 1, height: 1 })
         setImageFrame({ left: 0, top: 0, width: container.clientWidth || 1, height: container.clientHeight || 1 })
         return
       }
 
-  const naturalWidth = image.naturalWidth || 1
-  const naturalHeight = image.naturalHeight || 1
+      const naturalWidth = Math.max(1, image.naturalWidth || 1)
+      const naturalHeight = Math.max(1, image.naturalHeight || 1)
+      setNaturalImageSize({ width: naturalWidth, height: naturalHeight })
 
       const imageRect = image.getBoundingClientRect()
       const containedFrame = getContainedContentFrame({
@@ -123,7 +127,15 @@ function AddText({ imageSrc, onApply, onCancel, applyError = null }) {
 
   const renderedImageBox = getSafeFrame(imageFrame, previewContainerSize)
 
-  const updatePlacementFromPointer = (event) => {
+  /** Match Sharp/SVG overlay: fontSize is in full-image pixels; scale to preview CSS px. */
+  const previewOverlayFontPx = useMemo(() => {
+    const nw = Math.max(1, naturalImageSize.width)
+    const displayW = Math.max(1, renderedImageBox.width)
+    const raw = backendFontSize * (displayW / nw)
+    return clamp(raw, 6, 320)
+  }, [backendFontSize, naturalImageSize.width, renderedImageBox.width])
+
+  const updatePlacementFromPointer = useCallback((event) => {
     const rect = event.currentTarget.getBoundingClientRect()
     const imageBox = getSafeFrame(imageFrame, previewContainerSize)
 
@@ -131,7 +143,43 @@ function AddText({ imageSrc, onApply, onCancel, applyError = null }) {
     const y = clamp((event.clientY - rect.top - imageBox.top) / imageBox.height, 0, 1)
 
     setPlacement({ x, y })
-  }
+  }, [imageFrame, previewContainerSize])
+
+  const handlePreviewPointerDown = useCallback(
+    (event) => {
+      if (event.button !== 0) return
+      /* Default <img> drag steals pointer moves; keep placement drag on the preview. */
+      event.preventDefault()
+      placementDragActiveRef.current = true
+      updatePlacementFromPointer(event)
+      try {
+        event.currentTarget.setPointerCapture(event.pointerId)
+      } catch {
+        /* ignore */
+      }
+    },
+    [updatePlacementFromPointer],
+  )
+
+  const handlePreviewPointerMove = useCallback(
+    (event) => {
+      if (!placementDragActiveRef.current && event.buttons !== 1) return
+      updatePlacementFromPointer(event)
+    },
+    [updatePlacementFromPointer],
+  )
+
+  const releasePreviewCapture = useCallback((event) => {
+    placementDragActiveRef.current = false
+    const el = event.currentTarget
+    if (typeof el.hasPointerCapture === 'function' && el.hasPointerCapture(event.pointerId)) {
+      el.releasePointerCapture(event.pointerId)
+    }
+  }, [])
+
+  const handlePreviewLostPointerCapture = useCallback(() => {
+    placementDragActiveRef.current = false
+  }, [])
 
   const handleApply = () => {
     onApply?.({
@@ -152,11 +200,11 @@ function AddText({ imageSrc, onApply, onCancel, applyError = null }) {
       onApply={handleApply}
       onCancel={onCancel}
       previewInteractive
-      onPreviewPointerDown={updatePlacementFromPointer}
-      onPreviewPointerMove={(event) => {
-        if (event.buttons !== 1) return
-        updatePlacementFromPointer(event)
-      }}
+      onPreviewPointerDown={handlePreviewPointerDown}
+      onPreviewPointerMove={handlePreviewPointerMove}
+      onPreviewPointerUp={releasePreviewCapture}
+      onPreviewPointerCancel={releasePreviewCapture}
+      onPreviewLostPointerCapture={handlePreviewLostPointerCapture}
       previewContainerRef={previewContainerRef}
       previewImageRef={previewImageRef}
       previewOverlay={(
@@ -174,12 +222,18 @@ function AddText({ imageSrc, onApply, onCancel, applyError = null }) {
             style={{
               left: `${placement.x * 100}%`,
               top: `${placement.y * 100}%`,
-              fontFamily: font,
-              fontSize: `${previewFontSize}px`,
-              color: textColor,
             }}
           >
-            {previewText}
+            <div
+              className="add-text-placement-marker-box"
+              style={{
+                fontFamily: font,
+                fontSize: `${previewOverlayFontPx}px`,
+                color: textColor,
+              }}
+            >
+              {previewText}
+            </div>
           </div>
         </div>
       )}
@@ -192,9 +246,7 @@ function AddText({ imageSrc, onApply, onCancel, applyError = null }) {
         ) : null}
 
         <p className="add-text-placement-hint add-text-placement-hint--top">
-          Placement
-          <br />
-          Click or drag on the preview above to place your text.
+          Click or drag the preview to move the text.
         </p>
 
         <div className="add-text-field add-text-field--stack">
@@ -260,7 +312,7 @@ function AddText({ imageSrc, onApply, onCancel, applyError = null }) {
               className="add-text-size-slider"
             />
             <p className="add-text-size-help">
-              Size: {safeUiFontSize}px (range {MIN_UI_FONT_SIZE}–{MAX_UI_FONT_SIZE})
+              Scale {safeUiFontSize} (~{backendFontSize}px on the full image; preview matches export).
             </p>
           </div>
         </div>

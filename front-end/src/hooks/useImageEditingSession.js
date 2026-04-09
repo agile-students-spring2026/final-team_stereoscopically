@@ -8,7 +8,7 @@ import {
 
 const MIN_BACKEND_FONT_SIZE = 8
 const MAX_BACKEND_FONT_SIZE = 2000
-const DEFAULT_BACKEND_FONT_SIZE = 960
+const DEFAULT_BACKEND_FONT_SIZE = 110
 
 const clamp = (value, min, max) => Math.min(max, Math.max(min, value))
 

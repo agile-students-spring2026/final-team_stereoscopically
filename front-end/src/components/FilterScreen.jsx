@@ -7,6 +7,9 @@ function FilterScreen({
   previewInteractive = false,
   onPreviewPointerDown,
   onPreviewPointerMove,
+  onPreviewPointerUp,
+  onPreviewPointerCancel,
+  onPreviewLostPointerCapture,
   previewOverlay = null,
   previewContainerRef = null,
   previewImageRef = null,
@@ -21,9 +24,18 @@ function FilterScreen({
         className={`preview-box ${previewInteractive ? 'preview-box-interactive' : ''}`}
         onPointerDown={previewInteractive ? onPreviewPointerDown : undefined}
         onPointerMove={previewInteractive ? onPreviewPointerMove : undefined}
+        onPointerUp={previewInteractive ? onPreviewPointerUp : undefined}
+        onPointerCancel={previewInteractive ? onPreviewPointerCancel : undefined}
+        onLostPointerCapture={previewInteractive ? onPreviewLostPointerCapture : undefined}
       >
         {imageSrc ? (
-          <img ref={previewImageRef} src={imageSrc} alt="Preview" className="preview-image" />
+          <img
+            ref={previewImageRef}
+            src={imageSrc}
+            alt="Preview"
+            className="preview-image"
+            draggable={previewInteractive ? false : undefined}
+          />
         ) : (
           <span className="preview-label">Preview of Creation</span>
         )}
