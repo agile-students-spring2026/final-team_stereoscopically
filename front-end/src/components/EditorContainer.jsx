@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import CreateNew from './CreateNew'
+import MediaEntry from './MediaEntry'
 import ImageEditor from './ImageEditor'
 import FilterMain from './FilterMain'
 import PresetFilters from './PresetFilters'
@@ -390,7 +390,7 @@ function EditorContainer() {
               event.target.value = ''
             }}
           />
-          <CreateNew
+          <MediaEntry
             onImageSelect={handleImageSelect}
             onVideoSelect={handleVideoSelect}
             onCameraSelect={handleCameraSelect}

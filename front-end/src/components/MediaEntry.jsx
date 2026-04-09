@@ -1,4 +1,4 @@
-const CreateNew = ({
+const MediaEntry = ({
   onImageSelect,
   onVideoSelect,
   onCameraSelect,
@@ -71,4 +71,4 @@ const CreateNew = ({
   )
 }
 
-export default CreateNew
+export default MediaEntry
