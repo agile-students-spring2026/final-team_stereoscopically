@@ -60,7 +60,6 @@ function EditorContainer() {
   } = useMediaSelection()
 
   const [screen, setScreen] = useState(SCREENS.EDITOR)
-  const effectiveImageSrc = previewUrl || backendImageResult?.url
   const [fileTooLargeMessage, setFileTooLargeMessage] = useState(null)
   const [unsupportedImageMessage, setUnsupportedImageMessage] = useState(null)
   const [lastRejectedUploadType, setLastRejectedUploadType] = useState(null)
@@ -73,6 +72,10 @@ function EditorContainer() {
   const [exportError, setExportError] = useState(null)
   const imageFileInputRef = useRef(null)
   const videoFileInputRef = useRef(null)
+
+  const effectiveBackendResult = latestExportResult?.id ? latestExportResult : backendImageResult
+  const effectiveBackendMediaId = effectiveBackendResult?.id || null
+  const effectiveImageSrc = effectiveBackendResult?.url || previewUrl
 
   const openImagePicker = () => {
     imageFileInputRef.current?.click()
@@ -160,7 +163,7 @@ function EditorContainer() {
   }
 
   const handleSizeSelect = async (size) => {
-    if (!backendImageResult?.id) {
+    if (!effectiveBackendMediaId) {
       setExportError('Image is not ready for backend export yet. Please re-upload and try again.')
       setScreen(SCREENS.EDITOR)
       return
@@ -171,7 +174,7 @@ function EditorContainer() {
       setExportError(null)
 
       const exported = await exportImageFromBackend({
-        mediaId: backendImageResult.id,
+        mediaId: effectiveBackendMediaId,
         width: size.width,
         height: size.height,
         letterboxColor,
@@ -191,7 +194,7 @@ function EditorContainer() {
         URL.revokeObjectURL(previewUrl)
       }
 
-      applyTransformedImage(file, objectUrl)
+  applyTransformedImage(file, objectUrl, exported)
       setSelectedPreset(size)
       setLatestExportResult(exported)
       setLastExportLetterbox(letterboxColor)
@@ -215,6 +218,8 @@ function EditorContainer() {
       const objectUrl = URL.createObjectURL(blob)
 
       applyTransformedImage(file, objectUrl, result)
+      setLatestExportResult(null)
+      setLastExportLetterbox(null)
     } catch (err) {
       console.error("Error applying crop in container:", err)
       setExportError("Could not process the cropped image.")
@@ -228,7 +233,7 @@ function EditorContainer() {
       setExportError('Please choose a preset size before exporting.')
       return
     }
-    if (!backendImageResult?.id) {
+    if (!effectiveBackendMediaId) {
       setExportError('Image is not ready for backend export yet. Please re-upload and try again.')
       return
     }
@@ -246,7 +251,7 @@ function EditorContainer() {
         dimsMatch && letterboxMatch
           ? latestExportResult
           : await exportImageFromBackend({
-              mediaId: backendImageResult?.id,
+              mediaId: effectiveBackendMediaId,
               width: selectedPreset.width,
               height: selectedPreset.height,
               letterboxColor,
@@ -423,7 +428,7 @@ function EditorContainer() {
         return (
           <ImageEditor
             imageSrc={effectiveImageSrc}
-            backendMediaId={backendImageResult?.id}
+            backendMediaId={effectiveBackendMediaId}
             onCropApply={handleCropApply}
             isUploading={isUploading}
             isExporting={isExporting}
@@ -480,7 +485,7 @@ function EditorContainer() {
         return (
           <ImageEditor
             imageSrc={effectiveImageSrc}
-            backendMediaId={backendImageResult?.id}
+            backendMediaId={effectiveBackendMediaId}
             onCropApply={handleCropApply}
             isUploading={isUploading}
             isExporting={isExporting}

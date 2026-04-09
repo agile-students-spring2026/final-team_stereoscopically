@@ -1,16 +1,17 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo } from 'react'
 
 function PhotoPreview({ file, onRetake, onConfirm, onBack }) {
-    const [previewUrl, setPreviewUrl] = useState(null)
+    const previewUrl = useMemo(() => {
+        if (!file) return null
+        return URL.createObjectURL(file)
+    }, [file])
 
     useEffect(() => {
-        if (!file) return
-        const url = URL.createObjectURL(file)
-        setPreviewUrl(url)
-        
+        if (!previewUrl) return
+
         // Cleanup to prevent memory leaks
-        return () => URL.revokeObjectURL(url)
-    }, [file])
+        return () => URL.revokeObjectURL(previewUrl)
+    }, [previewUrl])
 
     const isVideo = file?.type.startsWith('video/')
 

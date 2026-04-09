@@ -19,43 +19,74 @@ const ImageEditor = ({
   const [isReframing, setIsReframing] = useState(false)
   // Track current crop data
   const [cropData, setCropData] = useState(null)
+  const [isApplyingCrop, setIsApplyingCrop] = useState(false)
+  const [cropError, setCropError] = useState(null)
   const [imageLoadError, setImageLoadError] = useState(false)
   const cropContainerRef = useRef(null)
   const [naturalSize, setNaturalSize] = useState({ width: 1, height: 1 })
 
   const handleReframeClick = () => {
+    setCropError(null)
     setIsReframing(true)
   }
 
   const handleCropChange = (data) => {
     setCropData(data)
+    if (cropError) {
+      setCropError(null)
+    }
   }
+
   const handleApplyCrop = async () => {
-    if (!cropData) return;
+    if (!cropData || isApplyingCrop) return
+    if (!backendMediaId) {
+      setCropError('Image is not ready for cropping yet. Please re-upload and try again.')
+      return
+    }
+
+    const imgElement = cropContainerRef.current?.querySelector('.cropper-image')
+    if (!imgElement) {
+      setCropError('Crop preview is not ready yet. Please try again.')
+      return
+    }
 
     // Use the actual image element to find display dimensions
-    const imgElement = cropContainerRef.current.querySelector('.cropper-image');
-    const { width: displayedW, height: displayedH } = imgElement.getBoundingClientRect();
+    const { width: displayedW, height: displayedH } = imgElement.getBoundingClientRect()
+    if (!displayedW || !displayedH || !naturalSize.width || !naturalSize.height) {
+      setCropError('Crop dimensions are not ready yet. Please try again.')
+      return
+    }
 
-    const scaleX = naturalSize.width / displayedW;
-    const scaleY = naturalSize.height / displayedH;
+    const scaleX = naturalSize.width / displayedW
+    const scaleY = naturalSize.height / displayedH
 
     try {
+      setIsApplyingCrop(true)
+      setCropError(null)
+
       const result = await cropImageFromBackend({
         mediaId: backendMediaId,
-        x: cropData.x * scaleX,
-        y: cropData.y * scaleY,
-        width: cropData.width * scaleX,
-        height: cropData.height * scaleY,
-      });
-      onCropApply(result);
-      setIsReframing(false);
+        x: cropData.x,
+        y: cropData.y,
+        width: cropData.width,
+        height: cropData.height,
+        scaleX,
+        scaleY,
+      })
+      onCropApply(result)
+      setIsReframing(false)
+      setCropData(null)
     } catch (err) {
-      console.error('Crop failed:', err);
+      console.error('Crop failed:', err)
+      setCropError(err?.message || 'Failed to apply crop. Please try again.')
+    } finally {
+      setIsApplyingCrop(false)
     }
   }
 
   const handleCancelCrop = () => {
+    setIsApplyingCrop(false)
+    setCropError(null)
     setIsReframing(false)
     setCropData(null)
   }
@@ -69,15 +100,25 @@ const ImageEditor = ({
     return (
       <div className="image-editor-container">
         <h2 className="image-editor-title">Reframe Image</h2>
+        {cropError && (
+          <p role="alert" className="upload-status" style={{ marginTop: '0.5rem', color: '#ff3b30' }}>
+            {cropError}
+          </p>
+        )}
         <div ref={cropContainerRef}>
           <ImageCropper imageSrc={imageSrc} onCropChange={handleCropChange} />
         </div>
         <div className="card-actions">
-          <button type="button" className="btn-secondary" onClick={handleCancelCrop}>
+          <button type="button" className="btn-secondary" onClick={handleCancelCrop} disabled={isApplyingCrop}>
             Cancel
           </button>
-          <button type="button" className="btn-primary" onClick={handleApplyCrop}>
-            Apply Crop
+          <button
+            type="button"
+            className="btn-primary"
+            onClick={handleApplyCrop}
+            disabled={isApplyingCrop || !cropData || !backendMediaId}
+          >
+            {isApplyingCrop ? 'Applying...' : 'Apply Crop'}
           </button>
         </div>
       </div>

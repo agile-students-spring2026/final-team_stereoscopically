@@ -566,6 +566,7 @@ input[type='range']::-moz-range-thumb {
   overflow: visible;
   background-color: transparent;
   line-height: 0;
+  touch-action: none;
 }
 
 .cropper-image {
@@ -591,6 +592,7 @@ input[type='range']::-moz-range-thumb {
   background-color: rgba(100, 108, 255, 0.1);
   cursor: move;
   pointer-events: auto;
+  touch-action: none;
 }
 
 .crop-handle {
@@ -601,6 +603,7 @@ input[type='range']::-moz-range-thumb {
   border: 2px solid white;
   border-radius: 50%;
   pointer-events: auto;
+  touch-action: none;
 }
 
 .crop-handle[data-handle='nw'] {
