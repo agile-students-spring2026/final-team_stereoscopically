@@ -156,6 +156,60 @@ Default server URL: `http://localhost:4000`
 - `404 { "error": "Media not found or expired.", "code": "MEDIA_NOT_FOUND" }`
 - `500 { "error": "Failed to export image.", "code": "EXPORT_FAILED" }`
 
+### Add text to image
+
+- **Method:** `POST`
+- **Path:** `/api/text/image`
+- **Content-Type:** `application/json`
+
+**Request body**
+
+```json
+{
+  "mediaId": "img_...",
+  "text": "Hello\nWorld",
+  "x": 0.5,
+  "y": 0.5,
+  "fontFamily": "Arial",
+  "fontSize": 960,
+  "color": "#111111"
+}
+```
+
+Notes:
+- `x` and `y` are center-anchor ratio coordinates in the range `0..1`.
+- `text` supports multiline values using `\n` line breaks.
+- Supported font families are `Arial`, `Helvetica`, and `Georgia`.
+- Unsupported `fontFamily` values fall back to `Arial`.
+- `fontSize` must be between `8` and `2000`.
+- If `text` is empty or whitespace-only, the endpoint returns a successful no-op response with the same media ID.
+
+**Success response (200)**
+
+```json
+{
+  "id": "img_...",
+  "type": "image",
+  "url": "http://localhost:4000/api/media/<id>",
+  "mimeType": "image/png",
+  "size": 12345,
+  "width": 512,
+  "height": 512,
+  "noOp": false
+}
+```
+
+**Validation/error responses**
+
+- `400 { "error": "Missing mediaId.", "code": "MISSING_MEDIA_ID" }`
+- `400 { "error": "Invalid text payload.", "code": "INVALID_TEXT_PAYLOAD" }`
+- `400 { "error": "Text is too long. Maximum allowed length is 300 characters.", "code": "INVALID_TEXT_PAYLOAD" }`
+- `400 { "error": "Invalid text position.", "code": "INVALID_POSITION" }`
+- `400 { "error": "Invalid font size. Must be between 8 and 2000.", "code": "INVALID_FONT_SIZE" }`
+- `400 { "error": "Only image text overlay is supported.", "code": "UNSUPPORTED_MEDIA_TYPE" }`
+- `404 { "error": "Media not found or expired.", "code": "MEDIA_NOT_FOUND" }`
+- `500 { "error": "Failed to render text overlay.", "code": "TEXT_RENDER_FAILED" }`
+
 ### Fetch media by ID
 
 - **Method:** `GET`

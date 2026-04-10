@@ -57,6 +57,7 @@ function EditorContainer() {
     clearCropSession,
     handleSizeSelect,
     handleCropApply,
+    handleAddTextApply,
     handleExport,
   } = useImageEditingSession({
     mediaType,
@@ -160,6 +161,13 @@ function EditorContainer() {
   const handlePresetSizeSelect = async (size) => {
     await handleSizeSelect(size)
     setScreen(SCREENS.EDITOR)
+  }
+
+  const handleAddTextScreenApply = async (textRequest) => {
+    const applied = await handleAddTextApply(textRequest)
+    if (applied) {
+      setScreen(SCREENS.EDITOR)
+    }
   }
 
   const renderImageEditor = () => (
@@ -278,8 +286,9 @@ function EditorContainer() {
         return (
           <AddText
             imageSrc={effectiveImageSrc}
-            onApply={handleApplyFilters}
+            onApply={handleAddTextScreenApply}
             onCancel={() => setScreen(SCREENS.EDITOR)}
+            applyError={exportError}
           />
         )
       case SCREENS.COLOR_FILTERS:

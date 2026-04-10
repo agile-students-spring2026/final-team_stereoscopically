@@ -225,7 +225,9 @@ Shared hook for image editing session orchestration across export and crop inter
 
 **Responsible for**
 - maintaining image export session state, including selected preset and letterbox state
-- handling crop and export orchestration through image service functions
+- handling crop, export, and add-text orchestration through image service functions
+- mapping Add Text UI payloads into backend-ready request contracts, including placement coordinates and scaled font size
+- maintaining transformed-preview continuity after image mutations
 - exposing editor-facing actions and state for image workflows
 
 **Not responsible for**
@@ -257,7 +259,7 @@ Shared low-level backend HTTP client abstraction.
 Image-specific backend API contract layer.
 
 **Responsible for**
-- image upload, export, and crop backend calls
+- image upload, export, crop, and add-text backend calls
 - response normalization for image workflows
 - adapting backend result URLs into front-end-usable local media objects where required
 

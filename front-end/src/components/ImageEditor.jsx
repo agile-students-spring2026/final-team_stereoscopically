@@ -61,6 +61,9 @@ const ImageEditor = ({
     return (
       <div className="image-editor-container">
         <h2 className="image-editor-title">Crop Image</h2>
+        <p role="note" className="upload-status" style={{ marginTop: '0.5rem', color: '#ff9500' }}>
+          Warning: Applying a crop will remove any filters or text overlays you have applied.
+        </p>
         {cropError && (
           <p role="alert" className="upload-status" style={{ marginTop: '0.5rem', color: '#ff3b30' }}>
             {cropError}

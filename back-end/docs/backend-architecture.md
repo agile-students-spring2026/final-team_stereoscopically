@@ -105,6 +105,7 @@ Frontend preflight checks are optional UX helpers and do not replace backend enf
 - `POST /api/upload/image`
 - `POST /api/crop/image`
 - `POST /api/export/image`
+- `POST /api/text/image`
 - `GET /api/media/:id`
 - `GET /api/export/:id/download`
 
@@ -112,7 +113,8 @@ Frontend preflight checks are optional UX helpers and do not replace backend enf
 
 - Route declarations are owned by `src/routes/mediaRoutes.js`.
 - Request/response orchestration is owned by `src/controllers/mediaController.js`.
-- Processing and validation behavior is owned by `src/services/mediaService.js`.
+- Core endpoint orchestration is owned by `src/services/mediaService.js`.
+- Text-overlay payload normalization and rendering helpers are owned by `src/services/textOverlayService.js`.
 - Media lifecycle state is owned by `src/services/mediaStore.js`.
 
 ---
@@ -140,10 +142,14 @@ Examples of current validation/service codes include:
 - `INVALID_CROP_RATIO`
 - `INVALID_DIMENSIONS`
 - `INVALID_LETTERBOX_COLOR`
+- `INVALID_TEXT_PAYLOAD`
+- `INVALID_POSITION`
+- `INVALID_FONT_SIZE`
 - `UNSUPPORTED_MEDIA_TYPE`
 - `MEDIA_NOT_FOUND`
 - `CROP_FAILED`
 - `EXPORT_FAILED`
+- `TEXT_RENDER_FAILED`
 
 ---
 
@@ -200,7 +206,20 @@ Responsible for:
 - upload flow result shaping
 - crop flow processing and validation
 - export flow processing and validation
+- add-text endpoint orchestration and media result shaping
 - media and export download payload assembly
+
+### `src/services/textOverlayService.js`
+
+Purpose:
+Text-overlay validation, normalization, and rendering utilities.
+
+Responsible for:
+- add-text request payload validation and normalization
+- add-text size and placement bounds validation
+- supported font fallback and style defaults
+- SVG text overlay generation for multiline rendering
+- Sharp compositing helpers used by add-text workflow
 
 ### `src/services/mediaStore.js`
 
