@@ -79,7 +79,7 @@ const GifEditor = ({ videoFile, onCancel, onConverted, onCreateGif }) => {
             if (!onCreateGif) {
                 throw new Error('GIF conversion is not available right now. Please try again.')
             }
-            const result = await onCreateGif(videoFile)
+            const result = await onCreateGif(videoFile,trimStart, trimEnd)
             setBackendResult(result)
             setStatusMessage('GIF created. Download support is coming soon.')
         } catch (error) {

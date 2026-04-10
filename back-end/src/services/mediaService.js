@@ -1,4 +1,8 @@
 import sharp from 'sharp'
+import ffmpeg from 'fluent-ffmpeg'
+import ffmpegInstaller from '@ffmpeg-installer/ffmpeg'
+import { Readable } from 'stream'
+ffmpeg.setFfmpegPath(ffmpegInstaller.path)
 
 import { MAX_EXPORT_DIMENSION } from '../config/constants.js'
 import { createMedia, getActiveMediaOrDeleteExpired } from './mediaStore.js'
@@ -324,4 +328,63 @@ export const getExportDownloadContent = (id) => {
 			'Content-Disposition': `attachment; filename="${media.fileName || 'sticker.png'}"`,
 		},
 	}
+}
+
+export const trimVideo = async (req) => {
+    const { trimStart, trimEnd } = req.body ?? {}
+
+    if (!req.file) {
+        return { error: { status: 400, error: 'No video file uploaded.', code: 'MISSING_FILE' } }
+    }
+
+    const trimStartNum = Number(trimStart)
+    const trimEndNum = Number(trimEnd)
+
+    if (!Number.isFinite(trimStartNum) || !Number.isFinite(trimEndNum)) {
+        return { error: { status: 400, error: 'Invalid trim values.', code: 'INVALID_TRIM_VALUES' } }
+    }
+
+    if (trimStartNum < 0 || trimEndNum <= trimStartNum) {
+        return { error: { status: 400, error: 'trimEnd must be greater than trimStart.', code: 'INVALID_TRIM_RANGE' } }
+    }
+
+    try {
+        const duration = trimEndNum - trimStartNum
+        const inputStream = Readable.from(req.file.buffer)
+
+        const outputBuffer = await new Promise((resolve, reject) => {
+            const chunks = []
+            const passthrough = ffmpeg(inputStream)
+                .setStartTime(trimStartNum)
+                .setDuration(duration)
+                .outputFormat('mp4')
+                .outputOptions(['-movflags frag_keyframe+empty_moov'])
+                .pipe()
+            passthrough.on('data', (chunk) => chunks.push(chunk))
+            passthrough.on('end', () => resolve(Buffer.concat(chunks)))
+            passthrough.on('error', reject)
+        })
+
+        const trimId = createMediaId('vid')
+        createMedia(trimId, {
+            buffer: outputBuffer,
+            mimeType: 'video/mp4',
+            size: outputBuffer.length,
+            fileName: 'trimmed.mp4',
+        })
+
+        return {
+            status: 200,
+            data: {
+                id: trimId,
+                type: 'video',
+                url: buildMediaUrl(req, trimId),
+                mimeType: 'video/mp4',
+                size: outputBuffer.length,
+            },
+        }
+    } catch (error) {
+        console.error('FFmpeg Trim Error:', error)
+        return { error: { status: 500, error: 'Failed to trim video.', code: 'TRIM_FAILED' } }
+    }
 }

@@ -7,8 +7,9 @@ import {
 	getMediaHandler,
 	healthCheck,
 	uploadImageHandler,
+	trimVideoHandler,
 } from '../controllers/mediaController.js'
-import { imageUpload } from '../middleware/uploadMiddleware.js'
+import { imageUpload, videoUpload } from '../middleware/uploadMiddleware.js'
 
 const router = Router()
 
@@ -18,5 +19,7 @@ router.post('/api/crop/image', cropImageHandler)
 router.post('/api/export/image', exportImageHandler)
 router.get('/api/media/:id', getMediaHandler)
 router.get('/api/export/:id/download', downloadExportHandler)
+router.post('/api/trim/video', videoUpload.single('video'), trimVideoHandler)
+
 
 export default router
