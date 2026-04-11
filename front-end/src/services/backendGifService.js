@@ -56,3 +56,4 @@ export const trimVideoService = async (videoFile, trimStart, trimEnd) => {
     size: payload?.size ?? null,
   }
 }
+

@@ -1,10 +1,11 @@
 import {
+	addTextToImage,
 	cropImage,
 	exportImage,
 	getExportDownloadContent,
 	getMediaContent,
 	uploadImage,
-	trimVideo,
+	trimVideo, 
 } from '../services/mediaService.js'
 
 const sendResult = (res, result) => {
@@ -34,6 +35,11 @@ export const cropImageHandler = async (req, res) => {
 
 export const exportImageHandler = async (req, res) => {
 	const result = await exportImage(req)
+	return sendResult(res, result)
+}
+
+export const addTextImageHandler = async (req, res) => {
+	const result = await addTextToImage(req)
 	return sendResult(res, result)
 }
 
