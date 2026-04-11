@@ -7,11 +7,6 @@ ffmpeg.setFfmpegPath(ffmpegInstaller.path)
 import { MAX_EXPORT_DIMENSION } from '../config/constants.js'
 import { createMedia, getActiveMediaOrDeleteExpired } from './mediaStore.js'
 
-import ffmpeg from 'fluent-ffmpeg'
-import ffmpegInstaller from '@ffmpeg-installer/ffmpeg'
-import { Readable } from 'stream'
-ffmpeg.setFfmpegPath(ffmpegInstaller.path)
-
 const createMediaId = (prefix = 'img') => `${prefix}_${Date.now()}_${Math.round(Math.random() * 1e9)}`
 
 const buildMediaUrl = (req, id) => `${req.protocol}://${req.get('host')}/api/media/${id}`
