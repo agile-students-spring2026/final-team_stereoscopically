@@ -1,5 +1,7 @@
 import {
 	addTextToImage,
+	adjustImage,
+	applyPresetImageFilter,
 	cropImage,
 	exportImage,
 	getExportDownloadContent,
@@ -25,6 +27,16 @@ export const healthCheck = (_req, res) => {
 
 export const uploadImageHandler = (req, res) => {
 	const result = uploadImage(req)
+	return sendResult(res, result)
+}
+
+export const adjustImageHandler = async (req, res) => {
+	const result = await adjustImage(req)
+	return sendResult(res, result)
+}
+
+export const applyPresetImageFilterHandler = async (req, res) => {
+	const result = await applyPresetImageFilter(req)
 	return sendResult(res, result)
 }
 

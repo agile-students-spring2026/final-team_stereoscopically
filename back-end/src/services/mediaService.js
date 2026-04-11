@@ -6,6 +6,7 @@ ffmpeg.setFfmpegPath(ffmpegInstaller.path)
 
 import { MAX_EXPORT_DIMENSION } from '../config/constants.js'
 import { createMedia, getActiveMediaOrDeleteExpired } from './mediaStore.js'
+import { applyImageAdjustments, PRESET_ADJUSTMENTS } from './imageAdjustService.js'
 import { normalizeTextOverlayRequest, renderTextOverlayBuffer } from './textOverlayService.js'
 
 const createMediaId = (prefix = 'img') => `${prefix}_${Date.now()}_${Math.round(Math.random() * 1e9)}`
@@ -295,6 +296,143 @@ export const exportImage = async (req) => {
 		}
 	} catch {
 		return { error: { status: 500, error: 'Failed to export image.', code: 'EXPORT_FAILED' } }
+	}
+}
+
+const staticImageOnly = (media) =>
+	media.mimeType?.startsWith('image/') && media.mimeType !== 'image/gif'
+
+export const adjustImage = async (req) => {
+	const {
+		mediaId,
+		brightness,
+		contrast,
+		saturation,
+		hue,
+		grayscale,
+		sepia,
+		sharpness,
+	} = req.body ?? {}
+
+	if (!mediaId) {
+		return { error: { status: 400, error: 'Missing mediaId.', code: 'MISSING_MEDIA_ID' } }
+	}
+
+	const media = getActiveMediaOrDeleteExpired(mediaId)
+	if (!media) {
+		return { error: { status: 404, error: 'Media not found or expired.', code: 'MEDIA_NOT_FOUND' } }
+	}
+
+	if (!staticImageOnly(media)) {
+		return {
+			error: {
+				status: 400,
+				error: 'Only static images are supported (not GIF).',
+				code: 'UNSUPPORTED_MEDIA_TYPE',
+			},
+		}
+	}
+
+	const opts = {
+		brightness: brightness ?? 1,
+		contrast: contrast ?? 1,
+		saturation: saturation ?? 1,
+		hue: hue ?? 0,
+		grayscale: grayscale ?? 0,
+		sepia: sepia ?? 0,
+		sharpness: sharpness ?? 1,
+	}
+
+	const numericKeys = ['brightness', 'contrast', 'saturation', 'hue', 'grayscale', 'sepia', 'sharpness']
+	for (const k of numericKeys) {
+		const v = opts[k]
+		if (typeof v !== 'number' || !Number.isFinite(v)) {
+			return { error: { status: 400, error: 'Adjustment values must be finite numbers.', code: 'INVALID_ADJUST_PARAMS' } }
+		}
+	}
+
+	try {
+		const out = await applyImageAdjustments(media.buffer, opts)
+		const newId = createMediaId('img')
+		createMedia(newId, {
+			buffer: out,
+			mimeType: 'image/png',
+			size: out.length,
+			fileName: 'adjusted.png',
+		})
+		const meta = await sharp(out).metadata()
+		return {
+			status: 200,
+			data: {
+				id: newId,
+				type: 'image',
+				url: buildMediaUrl(req, newId),
+				mimeType: 'image/png',
+				size: out.length,
+				width: meta.width,
+				height: meta.height,
+			},
+		}
+	} catch (error) {
+		console.error('Adjust image error:', error)
+		return { error: { status: 500, error: 'Failed to adjust image.', code: 'ADJUST_FAILED' } }
+	}
+}
+
+export const applyPresetImageFilter = async (req) => {
+	const { mediaId, preset } = req.body ?? {}
+
+	if (!mediaId) {
+		return { error: { status: 400, error: 'Missing mediaId.', code: 'MISSING_MEDIA_ID' } }
+	}
+
+	const key = typeof preset === 'string' ? preset.toLowerCase() : ''
+	const presetOpts = PRESET_ADJUSTMENTS[key]
+	if (!presetOpts) {
+		return { error: { status: 400, error: 'Invalid or unsupported preset.', code: 'INVALID_PRESET' } }
+	}
+
+	const media = getActiveMediaOrDeleteExpired(mediaId)
+	if (!media) {
+		return { error: { status: 404, error: 'Media not found or expired.', code: 'MEDIA_NOT_FOUND' } }
+	}
+
+	if (!staticImageOnly(media)) {
+		return {
+			error: {
+				status: 400,
+				error: 'Only static images are supported (not GIF).',
+				code: 'UNSUPPORTED_MEDIA_TYPE',
+			},
+		}
+	}
+
+	try {
+		const out = await applyImageAdjustments(media.buffer, presetOpts)
+		const newId = createMediaId('img')
+		createMedia(newId, {
+			buffer: out,
+			mimeType: 'image/png',
+			size: out.length,
+			fileName: `preset-${key}.png`,
+		})
+		const meta = await sharp(out).metadata()
+		return {
+			status: 200,
+			data: {
+				id: newId,
+				type: 'image',
+				url: buildMediaUrl(req, newId),
+				mimeType: 'image/png',
+				size: out.length,
+				width: meta.width,
+				height: meta.height,
+				preset: key,
+			},
+		}
+	} catch (error) {
+		console.error('Preset filter error:', error)
+		return { error: { status: 500, error: 'Failed to apply preset filter.', code: 'PRESET_FILTER_FAILED' } }
 	}
 }
 
