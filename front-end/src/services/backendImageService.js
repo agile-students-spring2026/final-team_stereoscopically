@@ -43,6 +43,50 @@ export const exportImageFromBackend = async ({ mediaId, width, height, letterbox
   }
 }
 
+export const adjustImageFromBackend = async ({
+  mediaId,
+  brightness = 1,
+  contrast = 1,
+  saturation = 1,
+  hue = 0,
+  grayscale = 0,
+  sepia = 0,
+  sharpness = 1,
+}) => {
+  const payload = await postJson({
+    path: '/api/adjust/image',
+    payload: { mediaId, brightness, contrast, saturation, hue, grayscale, sepia, sharpness },
+    fallbackErrorMessage: 'Image adjustment failed',
+  })
+  return {
+    id: payload?.id ?? null,
+    type: payload?.type ?? 'image',
+    url: payload?.url ?? null,
+    mimeType: payload?.mimeType ?? 'image/png',
+    size: payload?.size ?? null,
+    width: payload?.width ?? null,
+    height: payload?.height ?? null,
+  }
+}
+
+export const applyPresetImageFilterFromBackend = async ({ mediaId, preset }) => {
+  const payload = await postJson({
+    path: '/api/filter/image',
+    payload: { mediaId, preset },
+    fallbackErrorMessage: 'Preset filter failed',
+  })
+  return {
+    id: payload?.id ?? null,
+    type: payload?.type ?? 'image',
+    url: payload?.url ?? null,
+    mimeType: payload?.mimeType ?? 'image/png',
+    size: payload?.size ?? null,
+    width: payload?.width ?? null,
+    height: payload?.height ?? null,
+    preset: payload?.preset ?? preset,
+  }
+}
+
 export const cropImageFromBackend = async ({ mediaId, x, y, width, height, unit = 'ratio' }) => {
   const payload = await postJson({
     path: '/api/crop/image',
