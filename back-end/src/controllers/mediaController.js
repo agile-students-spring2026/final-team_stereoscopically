@@ -5,6 +5,7 @@ import {
 	getExportDownloadContent,
 	getMediaContent,
 	uploadImage,
+	trimVideo,
 } from '../services/mediaService.js'
 
 const sendResult = (res, result) => {
@@ -72,4 +73,9 @@ export const downloadExportHandler = (req, res) => {
 	}
 
 	return res.status(result.status).send(result.data)
+}
+
+export const trimVideoHandler = async (req, res) => {
+    const result = await trimVideo(req)
+    return sendResult(res, result)
 }

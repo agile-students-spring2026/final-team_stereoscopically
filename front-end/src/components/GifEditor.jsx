@@ -79,7 +79,7 @@ const GifEditor = ({ videoFile, onCancel, onConverted, onCreateGif }) => {
             if (!onCreateGif) {
                 throw new Error('GIF conversion is not available right now. Please try again.')
             }
-            const result = await onCreateGif(videoFile)
+            const result = await onCreateGif(videoFile, trimStart, trimEnd)
             setBackendResult(result)
             setStatusMessage('GIF created. Download support is coming soon.')
         } catch (error) {
@@ -104,6 +104,12 @@ const GifEditor = ({ videoFile, onCancel, onConverted, onCreateGif }) => {
                             const total = videoRef.current.duration
                             setDuration(total)
                             setTrimEnd(total)
+                        }}
+                        onTimeUpdate={() => {
+                            if (videoRef.current && videoRef.current.currentTime >= trimEnd) {
+                                videoRef.current.pause()
+                                videoRef.current.currentTime = trimStart
+                            }
                         }}
                     />
                 ) : (
@@ -130,7 +136,11 @@ const GifEditor = ({ videoFile, onCancel, onConverted, onCreateGif }) => {
                     <label style={{ display: 'flex', flexDirection: 'column', gap: '4px', fontSize: '0.9rem' }}>
                         Start
                         <input type="range" min={0} max={trimEnd} step={0.1} value={trimStart}
-                            onChange={(e) => setTrimStart(Number(e.target.value))}
+                            onChange={(e) => {
+                                const val = Number(e.target.value)
+                                setTrimStart(val)
+                                if (videoRef.current) videoRef.current.currentTime = val
+                            }}
                             style={{ width: '100%', accentColor: '#ffd60a' }} />
                     </label>
                     <label style={{ display: 'flex', flexDirection: 'column', gap: '4px', fontSize: '0.9rem' }}>
