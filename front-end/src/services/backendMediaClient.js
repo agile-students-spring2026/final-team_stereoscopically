@@ -1,6 +1,6 @@
 const DEFAULT_BACKEND_BASE_URL = 'http://localhost:4000'
 
-const getBackendBaseUrl = () =>
+export const getBackendBaseUrl = () =>
   (import.meta.env?.VITE_BACKEND_BASE_URL || DEFAULT_BACKEND_BASE_URL).trim()
 
 const parseErrorMessage = async (response, fallbackMessage = 'Request failed') => {
