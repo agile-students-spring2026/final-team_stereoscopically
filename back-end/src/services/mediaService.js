@@ -627,3 +627,63 @@ export const trimVideo = async (req) => {
         return { error: { status: 500, error: 'Failed to trim video.', code: 'TRIM_FAILED' } }
     }
 }
+
+export const applyPresetVideoFilter = async (req) => {
+    const { preset } = req.body ?? {}
+
+    if (!req.file) {
+        return { error: { status: 400, error: 'No video file uploaded.', code: 'MISSING_FILE' } }
+    }
+
+    const key = typeof preset === 'string' ? preset.toLowerCase() : ''
+    const validPresets = ['noir', 'sepia', 'vivid', 'fade']
+    if (!validPresets.includes(key)) {
+        return { error: { status: 400, error: 'Invalid or unsupported preset.', code: 'INVALID_PRESET' } }
+    }
+
+    try {
+        const inputStream = Readable.from(req.file.buffer)
+
+        const ffmpegFilters = {
+            noir: 'hue=s=0,eq=contrast=1.4:brightness=-0.05',
+            sepia: 'colorchannelmixer=.393:.769:.189:0:.349:.686:.168:0:.272:.534:.131',
+            vivid: 'eq=saturation=1.4:contrast=1.2:brightness=0.1',
+            fade: 'eq=contrast=0.8:brightness=0.1:saturation=0.8',
+        }
+
+        const outputBuffer = await new Promise((resolve, reject) => {
+            const chunks = []
+            const passthrough = ffmpeg(inputStream)
+                .videoFilters(ffmpegFilters[key])
+                .outputFormat('mp4')
+                .outputOptions(['-movflags frag_keyframe+empty_moov'])
+                .pipe()
+            passthrough.on('data', (chunk) => chunks.push(chunk))
+            passthrough.on('end', () => resolve(Buffer.concat(chunks)))
+            passthrough.on('error', reject)
+        })
+
+        const filterId = createMediaId('vid')
+        createMedia(filterId, {
+            buffer: outputBuffer,
+            mimeType: 'video/mp4',
+            size: outputBuffer.length,
+            fileName: `filtered-${key}.mp4`,
+        })
+
+        return {
+            status: 200,
+            data: {
+                id: filterId,
+                type: 'video',
+                url: buildMediaUrl(req, filterId),
+                mimeType: 'video/mp4',
+                size: outputBuffer.length,
+                preset: key,
+            },
+        }
+    } catch (error) {
+        console.error('Video Filter Error:', error)
+        return { error: { status: 500, error: 'Failed to apply video filter.', code: 'VIDEO_FILTER_FAILED' } }
+    }
+}

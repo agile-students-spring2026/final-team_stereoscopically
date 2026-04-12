@@ -13,6 +13,7 @@ import useImageEditingSession from '../hooks/useImageEditingSession'
 import { convertBackendImageResultToLocalMedia } from '../services/backendImageService'
 import CameraCapture from './CameraCapture'
 import PhotoPreview from './PhotoPreview'
+import VideoPresetFilters from './VideoPresetFilters'
 
 const SCREENS = {
   EDITOR: 'editor',
@@ -22,7 +23,8 @@ const SCREENS = {
   COLOR_FILTERS: 'color',
   PRESET_SIZES: 'preset-sizes',
   CAMERA: 'camera',
-  CAMERA_PREVIEW: 'camera-preview'
+  CAMERA_PREVIEW: 'camera-preview',
+  GIF_FILTERS: 'gif-filters',
 }
 
 const FILE_TOO_LARGE_MESSAGE = 'File is too large (max 50 MB).'
@@ -284,10 +286,11 @@ function EditorContainer() {
       : 'video'
     return (
       <GifEditor
-        key={videoKey}
-        videoFile={selectedMedia}
-        onCancel={handleBackToUpload}
-        onCreateGif={createGif}
+          key={videoKey}
+          videoFile={selectedMedia}
+          onCancel={handleBackToUpload}
+          onCreateGif={createGif}
+          onOpenFilters={() => setScreen(SCREENS.GIF_FILTERS)}
       />
     )
   }
@@ -353,6 +356,15 @@ function EditorContainer() {
     }
 
     if (mediaType === 'video') {
+      if (screen === SCREENS.GIF_FILTERS) {
+        return (
+          <VideoPresetFilters
+            videoFile={selectedMedia}
+            onApply={() => setScreen(SCREENS.EDITOR)}
+            onCancel={() => setScreen(SCREENS.EDITOR)}
+          />
+        )
+      }
       return renderVideoFlow()
     }
 

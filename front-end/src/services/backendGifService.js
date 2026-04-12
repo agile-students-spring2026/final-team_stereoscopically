@@ -57,3 +57,35 @@ export const trimVideoService = async (videoFile, trimStart, trimEnd) => {
   }
 }
 
+export const applyVideoFilter = async (videoFile, preset) => {
+  if (!videoFile) {
+    throw new Error('No video file provided')
+  }
+
+  const formData = new FormData()
+  formData.append('video', videoFile)
+  formData.append('preset', preset)
+
+  let response
+  try {
+    response = await fetch('http://localhost:4000/api/filter/video', {
+      method: 'POST',
+      body: formData,
+    })
+  } catch {
+    throw new Error('Unable to reach backend. Please make sure the backend server is running.')
+  }
+
+  if (!response.ok) {
+    const data = await response.json().catch(() => ({}))
+    throw new Error(data?.error || 'Video filter failed')
+  }
+
+  const payload = await response.json()
+  return {
+    id: payload?.id ?? null,
+    type: payload?.type ?? 'video',
+    url: payload?.url ?? null,
+    preset: payload?.preset ?? null,
+  }
+}
