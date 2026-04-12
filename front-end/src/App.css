@@ -444,6 +444,13 @@
   color: #1a1a1a;
 }
 
+.preset-letterbox-hint {
+  margin: 0 0 0.35rem 0;
+  font-size: 0.78rem;
+  line-height: 1.35;
+  color: #555;
+}
+
 .preset-letterbox-row {
   display: flex;
   flex-wrap: wrap;
@@ -572,6 +579,12 @@ input[type='range']::-moz-range-thumb {
   text-align: center;
 }
 
+.session-notice {
+  margin-top: 0.5rem;
+  color: #2f6feb;
+  font-size: 0.9rem;
+}
+
 .image-editor-actions {
   align-items: stretch;
   gap: 0;
@@ -584,6 +597,13 @@ input[type='range']::-moz-range-thumb {
 }
 
 .image-editor-actions .btn-primary + .btn-primary {
+  margin-top: 0.75rem;
+}
+
+.image-editor-actions .btn-secondary {
+  width: 100%;
+  display: block;
+  text-align: center;
   margin-top: 0.75rem;
 }
 
