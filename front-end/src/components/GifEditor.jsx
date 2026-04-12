@@ -170,7 +170,12 @@ const GifEditor = ({ videoFile, onCancel, onConverted, onCreateGif }) => {
             </div>
 
             <div className="card-actions card-actions-spaced">
-                <button type="button" className="btn-secondary" onClick={() => onCancel?.()}>
+                <button type="button" className="btn-secondary" onClick={() => {
+                    setTrimStart(0)
+                    setTrimEnd(duration)
+                    setBackendResult(null)
+                    onCancel?.()
+                }}>
                     Cancel
                 </button>
                 <button
