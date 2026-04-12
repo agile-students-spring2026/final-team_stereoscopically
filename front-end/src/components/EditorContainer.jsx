@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useCallback, useState } from 'react'
 import MediaEntry from './MediaEntry'
 import ImageEditor from './ImageEditor'
 import FilterMain from './FilterMain'
@@ -10,6 +10,7 @@ import GifEditor from './GifEditor'
 import useMediaSelection, { MEDIA_SELECTION_CODES } from '../hooks/useMediaSelection'
 import useGifConversion from '../hooks/useGifConversion'
 import useImageEditingSession from '../hooks/useImageEditingSession'
+import { convertBackendImageResultToLocalMedia } from '../services/backendImageService'
 import CameraCapture from './CameraCapture'
 import PhotoPreview from './PhotoPreview'
 
@@ -53,6 +54,7 @@ function EditorContainer() {
     exportError,
     lastCropBoxPx,
     effectiveImageSrc,
+    effectiveBackendMediaId,
     resetImageEditingSessionState,
     clearCropSession,
     handleSizeSelect,
@@ -150,9 +152,37 @@ function EditorContainer() {
     setScreen(SCREENS.FILTERS_MAIN)
   }
 
-  const handleApplyFilters = () => {
-    setScreen(SCREENS.EDITOR)
-  }
+  const handleColorFiltersCommit = useCallback(
+    async (backendResult) => {
+      const { file, objectUrl } = await convertBackendImageResultToLocalMedia(backendResult, {
+        fetchErrorMessage: 'Failed to load adjusted image.',
+      })
+      if (previewUrl && previewUrl !== sourceUrl) {
+        URL.revokeObjectURL(previewUrl)
+      }
+      applyTransformedImage(file, objectUrl, backendResult)
+      setScreen(SCREENS.EDITOR)
+    },
+    [applyTransformedImage, previewUrl, sourceUrl]
+  )
+
+  const handlePresetFiltersCommit = useCallback(
+    async (result) => {
+      if (!result) {
+        setScreen(SCREENS.EDITOR)
+        return
+      }
+      const { file, objectUrl } = await convertBackendImageResultToLocalMedia(result, {
+        fetchErrorMessage: 'Failed to load preset image.',
+      })
+      if (previewUrl && previewUrl !== sourceUrl) {
+        URL.revokeObjectURL(previewUrl)
+      }
+      applyTransformedImage(file, objectUrl, result)
+      setScreen(SCREENS.EDITOR)
+    },
+    [applyTransformedImage, previewUrl, sourceUrl]
+  )
 
   const handleOpenSizes = () => {
     setScreen(SCREENS.PRESET_SIZES)
@@ -278,8 +308,10 @@ function EditorContainer() {
         return (
           <PresetFilters
             imageSrc={effectiveImageSrc}
-            onApply={handleApplyFilters}
+            mediaId={effectiveBackendMediaId}
+            onApply={handlePresetFiltersCommit}
             onCancel={() => setScreen(SCREENS.EDITOR)}
+            applyError={exportError}
           />
         )
       case SCREENS.ADD_TEXT:
@@ -295,8 +327,10 @@ function EditorContainer() {
         return (
           <ColorFilters
             imageSrc={effectiveImageSrc}
-            onApply={handleApplyFilters}
+            mediaId={effectiveBackendMediaId}
+            onApply={handleColorFiltersCommit}
             onCancel={() => setScreen(SCREENS.EDITOR)}
+            applyError={exportError}
           />
         )
       case SCREENS.PRESET_SIZES:
