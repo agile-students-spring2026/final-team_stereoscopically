@@ -11,7 +11,7 @@ const LETTERBOX_SWATCHES = [
   { id: 'black', label: 'Black', value: '#000000' },
 ]
 
-function PresetSizes({ letterboxColor, onLetterboxColorChange, onSelect, onCancel }) {
+function PresetSizes({ letterboxColor, onLetterboxColorChange, onSelect, onCancel, isBusy = false }) {
   return (
     <div className="preset-sizes-screen">
       <div className="screen-header screen-header-column">
@@ -19,6 +19,9 @@ function PresetSizes({ letterboxColor, onLetterboxColorChange, onSelect, onCance
       </div>
       <div className="preset-letterbox card">
         <p className="preset-letterbox-label">Letterbox / margins</p>
+        <p className="preset-letterbox-hint">
+          After you pick a platform size, changing margin color updates the main preview automatically.
+        </p>
         <div className="preset-letterbox-row">
           {LETTERBOX_SWATCHES.map(({ id, label, value }) => (
             <button
@@ -26,6 +29,7 @@ function PresetSizes({ letterboxColor, onLetterboxColorChange, onSelect, onCance
               type="button"
               className={letterboxColor === value ? 'btn-primary' : 'btn-secondary'}
               onClick={() => onLetterboxColorChange(value)}
+              disabled={isBusy}
             >
               {label}
             </button>
@@ -37,6 +41,7 @@ function PresetSizes({ letterboxColor, onLetterboxColorChange, onSelect, onCance
               className="preset-letterbox-color-input"
               value={letterboxColor === 'transparent' ? '#ffffff' : letterboxColor}
               onChange={(e) => onLetterboxColorChange(e.target.value.toLowerCase())}
+              disabled={isBusy}
               aria-label="Custom letterbox color"
             />
           </label>
@@ -49,6 +54,7 @@ function PresetSizes({ letterboxColor, onLetterboxColorChange, onSelect, onCance
             type="button"
             className="btn-primary"
             onClick={() => onSelect({ id, label, width, height })}
+            disabled={isBusy}
           >
             {label} ({width} × {height} px)
           </button>
