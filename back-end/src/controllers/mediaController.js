@@ -8,6 +8,7 @@ import {
 	getMediaContent,
 	uploadImage,
 	trimVideo,
+	applyPresetVideoFilter,
 } from '../services/mediaService.js'
 
 const sendResult = (res, result) => {
@@ -89,5 +90,10 @@ export const downloadExportHandler = (req, res) => {
 
 export const trimVideoHandler = async (req, res) => {
     const result = await trimVideo(req)
+    return sendResult(res, result)
+}
+
+export const applyPresetVideoFilterHandler = async (req, res) => {
+    const result = await applyPresetVideoFilter(req)
     return sendResult(res, result)
 }

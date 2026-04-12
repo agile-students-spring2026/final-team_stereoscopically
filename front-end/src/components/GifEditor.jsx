@@ -1,6 +1,8 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react'
+import { applyVideoFilter } from '../services/backendGifService'
 
-const GifEditor = ({ videoFile, onCancel, onConverted, onCreateGif }) => {
+
+const GifEditor = ({ videoFile, onCancel, onConverted, onCreateGif, onOpenFilters }) => {
     const [isProcessing, setIsProcessing] = useState(false)
     const [statusMessage, setStatusMessage] = useState(null)
     const [backendResult, setBackendResult] = useState(null)
@@ -10,6 +12,9 @@ const GifEditor = ({ videoFile, onCancel, onConverted, onCreateGif }) => {
     const [trimStart, setTrimStart] = useState(0)
     const [trimEnd, setTrimEnd] = useState(0)
     const [showTrim, setShowTrim] = useState(false)
+
+    const [selectedFilter, setSelectedFilter] = useState('none')
+    const [isApplyingFilter, setIsApplyingFilter] = useState(false)
 
     const videoRef = useRef(null)
 
@@ -63,7 +68,20 @@ const GifEditor = ({ videoFile, onCancel, onConverted, onCreateGif }) => {
     }, [videoFile])
 
     const formatTime = (s) => `${s.toFixed(1)}s`
-
+    
+    const handleApplyFilter = async (preset) => {
+        if (!videoFile || preset === 'none') return
+        setIsApplyingFilter(true)
+        try {
+            const result = await applyVideoFilter(videoFile, preset)
+            setBackendResult(result)
+            setStatusMessage(`Filter "${preset}" applied!`)
+        } catch (error) {
+            setConversionError(error?.message || 'Filter failed.')
+        } finally {
+            setIsApplyingFilter(false)
+        }
+    }
     const handleConvertToGif = async () => {
         if (isProcessing) return
         if (!videoFile || !videoUrl) {
@@ -164,7 +182,7 @@ const GifEditor = ({ videoFile, onCancel, onConverted, onCreateGif }) => {
                 <button type="button" className="btn-primary">
                     Reframe
                 </button>
-                <button type="button" className="btn-primary">
+                <button type="button" className="btn-primary" onClick={onOpenFilters}>
                     Filters
                 </button>
             </div>

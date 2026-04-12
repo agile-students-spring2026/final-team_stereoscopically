@@ -2,6 +2,7 @@ function FilterScreen({
   title,
   children,
   imageSrc,
+  videoSrc,
   onApply,
   onCancel,
   previewInteractive = false,
@@ -36,6 +37,8 @@ function FilterScreen({
             className="preview-image"
             draggable={previewInteractive ? false : undefined}
           />
+        ) : videoSrc ? (
+          <video src={videoSrc} controls className="preview-image" />
         ) : (
           <span className="preview-label">Preview of Creation</span>
         )}
