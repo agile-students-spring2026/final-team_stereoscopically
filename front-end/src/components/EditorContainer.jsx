@@ -54,10 +54,15 @@ function EditorContainer() {
     setLetterboxColor,
     isExporting,
     exportError,
+    sessionNotice,
     lastCropBoxPx,
     effectiveImageSrc,
     effectiveBackendMediaId,
+    selectedPreset,
+    latestExportResult,
     resetImageEditingSessionState,
+    resetPresetExportSettings,
+    invalidateLatestExport,
     clearCropSession,
     handleSizeSelect,
     handleCropApply,
@@ -163,9 +168,10 @@ function EditorContainer() {
         URL.revokeObjectURL(previewUrl)
       }
       applyTransformedImage(file, objectUrl, backendResult)
+      invalidateLatestExport()
       setScreen(SCREENS.EDITOR)
     },
-    [applyTransformedImage, previewUrl, sourceUrl]
+    [applyTransformedImage, invalidateLatestExport, previewUrl, sourceUrl]
   )
 
   const handlePresetFiltersCommit = useCallback(
@@ -181,9 +187,10 @@ function EditorContainer() {
         URL.revokeObjectURL(previewUrl)
       }
       applyTransformedImage(file, objectUrl, result)
+      invalidateLatestExport()
       setScreen(SCREENS.EDITOR)
     },
-    [applyTransformedImage, previewUrl, sourceUrl]
+    [applyTransformedImage, invalidateLatestExport, previewUrl, sourceUrl]
   )
 
   const handleOpenSizes = () => {
@@ -205,17 +212,20 @@ function EditorContainer() {
   const renderImageEditor = () => (
     <ImageEditor
       imageSrc={effectiveImageSrc}
-      cropSourceImageSrc={sourceUrl || effectiveImageSrc}
+      cropSourceImageSrc={effectiveImageSrc}
       initialCropPx={lastCropBoxPx}
       onCropApply={handleCropApply}
       isUploading={isUploading}
       isExporting={isExporting}
       uploadError={uploadError}
       exportError={exportError}
+      sessionNotice={sessionNotice}
       onBack={handleBackToUpload}
       onOpenFilters={handleOpenFilters}
       onSize={handleOpenSizes}
       onExport={handleExport}
+      onResetExportSettings={resetPresetExportSettings}
+      showResetExportSettings={Boolean(selectedPreset || latestExportResult)}
     />
   )
 
@@ -343,6 +353,7 @@ function EditorContainer() {
             onLetterboxColorChange={setLetterboxColor}
             onSelect={handlePresetSizeSelect}
             onCancel={() => setScreen(SCREENS.EDITOR)}
+            isBusy={isExporting}
           />
         )
       default:

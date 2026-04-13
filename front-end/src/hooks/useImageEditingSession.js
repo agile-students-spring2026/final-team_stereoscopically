@@ -1,4 +1,5 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
+import { getBackendBaseUrl } from '../services/backendMediaClient'
 import {
   addTextToImageFromBackend,
   convertBackendImageResultToLocalMedia,
@@ -25,20 +26,41 @@ const useImageEditingSession = ({
   const [letterboxColor, setLetterboxColor] = useState('transparent')
   const [isExporting, setIsExporting] = useState(false)
   const [exportError, setExportError] = useState(null)
-  const [originalBackendMediaId, setOriginalBackendMediaId] = useState(null)
+  const [sessionNotice, setSessionNotice] = useState(null)
   const [lastCropBoxPx, setLastCropBoxPx] = useState(null)
+
+  /** Media id of the image to letterbox from (never the letterboxed export id). */
+  const presetExportSourceIdRef = useRef(null)
+  const lastPresetExportAtRef = useRef(0)
+  const liveExportRef = useRef({
+    selectedPreset: null,
+    latestExportResult: null,
+    effectiveBackendMediaId: null,
+    previewUrl,
+    sourceUrl,
+    letterboxColor: 'transparent',
+    applyTransformedImage,
+  })
 
   const effectiveBackendResult = latestExportResult?.id ? latestExportResult : backendImageResult
   const effectiveBackendMediaId = effectiveBackendResult?.id || null
   const effectiveImageSrc = previewUrl || effectiveBackendResult?.url || null
 
-  useEffect(() => {
-    if (mediaType !== 'image') return
-    if (originalBackendMediaId) return
-    if (!backendImageResult?.id) return
+  liveExportRef.current = {
+    selectedPreset,
+    latestExportResult,
+    effectiveBackendMediaId,
+    previewUrl,
+    sourceUrl,
+    letterboxColor,
+    applyTransformedImage,
+  }
 
-    setOriginalBackendMediaId(backendImageResult.id)
-  }, [mediaType, originalBackendMediaId, backendImageResult])
+  useEffect(() => {
+    if (!latestExportResult?.id && effectiveBackendMediaId) {
+      presetExportSourceIdRef.current = effectiveBackendMediaId
+    }
+  }, [latestExportResult, effectiveBackendMediaId])
 
   const resetExportSessionState = useCallback(() => {
     setSelectedPreset(null)
@@ -50,16 +72,26 @@ const useImageEditingSession = ({
 
   const resetImageEditingSessionState = useCallback(() => {
     resetExportSessionState()
-    setOriginalBackendMediaId(null)
+    setSessionNotice(null)
     setLastCropBoxPx(null)
   }, [resetExportSessionState])
+
+  /** Clear cached preset export so the next resize/export uses the current pipeline image (#31 sync). */
+  const invalidateLatestExport = useCallback(() => {
+    setLatestExportResult(null)
+    setLastExportLetterbox(null)
+  }, [])
 
   const clearCropSession = useCallback(() => {
     setLastCropBoxPx(null)
   }, [])
 
   const handleSizeSelect = useCallback(async (size) => {
-    if (!effectiveBackendMediaId) {
+    const inputMediaId = latestExportResult?.id
+      ? presetExportSourceIdRef.current
+      : effectiveBackendMediaId
+
+    if (!inputMediaId) {
       setExportError('Image is not ready for backend export yet. Please re-upload and try again.')
       return false
     }
@@ -69,7 +101,7 @@ const useImageEditingSession = ({
       setExportError(null)
 
       const exported = await exportImageFromBackend({
-        mediaId: effectiveBackendMediaId,
+        mediaId: inputMediaId,
         width: size.width,
         height: size.height,
         letterboxColor,
@@ -86,9 +118,12 @@ const useImageEditingSession = ({
       }
 
       applyTransformedImage(file, objectUrl, exported)
+      presetExportSourceIdRef.current = inputMediaId
+      lastPresetExportAtRef.current = Date.now()
       setSelectedPreset(size)
       setLatestExportResult(exported)
       setLastExportLetterbox(letterboxColor)
+      setSessionNotice(null)
       return true
     } catch (err) {
       console.error('Preset export failed:', err)
@@ -97,10 +132,64 @@ const useImageEditingSession = ({
     } finally {
       setIsExporting(false)
     }
-  }, [applyTransformedImage, effectiveBackendMediaId, letterboxColor, previewUrl, sourceUrl])
+  }, [applyTransformedImage, effectiveBackendMediaId, latestExportResult, letterboxColor, previewUrl, sourceUrl])
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => {
+      if (Date.now() - lastPresetExportAtRef.current < 450) return
+
+      const {
+        selectedPreset: sp,
+        latestExportResult: ler,
+        effectiveBackendMediaId: eid,
+        previewUrl: purl,
+        sourceUrl: surl,
+        letterboxColor: lb,
+        applyTransformedImage: apply,
+      } = liveExportRef.current
+
+      if (!sp?.width) return
+
+      const inputMediaId = ler?.id ? presetExportSourceIdRef.current : eid
+      if (!inputMediaId) return
+
+      void (async () => {
+        try {
+          setIsExporting(true)
+          setExportError(null)
+          const exported = await exportImageFromBackend({
+            mediaId: inputMediaId,
+            width: sp.width,
+            height: sp.height,
+            letterboxColor: lb,
+          })
+          const { file, objectUrl } = await convertBackendImageResultToLocalMedia(exported, {
+            fallbackFileName: 'sticker.png',
+            fallbackMimeType: 'image/png',
+            fetchErrorMessage: 'Failed to load exported image preview.',
+          })
+          if (purl && purl !== surl) {
+            URL.revokeObjectURL(purl)
+          }
+          apply(file, objectUrl, exported)
+          presetExportSourceIdRef.current = inputMediaId
+          lastPresetExportAtRef.current = Date.now()
+          setLatestExportResult(exported)
+          setLastExportLetterbox(lb)
+        } catch (err) {
+          console.error('Preset preview refresh failed:', err)
+          setExportError(err?.message || 'Failed to update preview for letterbox.')
+        } finally {
+          setIsExporting(false)
+        }
+      })()
+    }, 320)
+
+    return () => window.clearTimeout(timer)
+  }, [letterboxColor])
 
   const handleCropApply = useCallback(async (cropRequest) => {
-    const cropSourceMediaId = originalBackendMediaId || effectiveBackendMediaId
+    const cropSourceMediaId = effectiveBackendMediaId
     const ratioCrop = cropRequest?.ratio
 
     if (!cropSourceMediaId) {
@@ -133,15 +222,15 @@ const useImageEditingSession = ({
       })
 
       applyTransformedImage(file, objectUrl, result)
-      setLatestExportResult(null)
-      setLastExportLetterbox(null)
+      resetExportSessionState()
+      setSessionNotice('Platform size cleared — use Resize before Export.')
       setLastCropBoxPx(cropRequest?.pixels || null)
     } catch (err) {
       console.error('Error applying crop in container:', err)
       setExportError('Could not process the cropped image.')
       throw err
     }
-  }, [applyTransformedImage, effectiveBackendMediaId, originalBackendMediaId])
+  }, [applyTransformedImage, effectiveBackendMediaId, resetExportSessionState])
 
   const handleAddTextApply = useCallback(async (textRequest) => {
     if (mediaType !== 'image') return false
@@ -204,7 +293,11 @@ const useImageEditingSession = ({
       setExportError('Please choose a preset size before exporting.')
       return false
     }
-    if (!effectiveBackendMediaId) {
+    const exportInputMediaId = latestExportResult?.id
+      ? presetExportSourceIdRef.current
+      : effectiveBackendMediaId
+
+    if (!exportInputMediaId) {
       setExportError('Image is not ready for backend export yet. Please re-upload and try again.')
       return false
     }
@@ -222,7 +315,7 @@ const useImageEditingSession = ({
         dimsMatch && letterboxMatch
           ? latestExportResult
           : await exportImageFromBackend({
-              mediaId: effectiveBackendMediaId,
+              mediaId: exportInputMediaId,
               width: selectedPreset.width,
               height: selectedPreset.height,
               letterboxColor,
@@ -253,6 +346,35 @@ const useImageEditingSession = ({
     selectedPreset,
   ])
 
+  const resetPresetExportSettings = useCallback(async () => {
+    const restoreId = presetExportSourceIdRef.current
+    resetExportSessionState()
+    setSessionNotice(null)
+    if (!restoreId) return
+    try {
+      setExportError(null)
+      const url = `${getBackendBaseUrl()}/api/media/${restoreId}`
+      const result = {
+        id: restoreId,
+        url,
+        mimeType: 'image/png',
+      }
+      const { file, objectUrl } = await convertBackendImageResultToLocalMedia(result, {
+        fallbackFileName: 'restored.png',
+        fetchErrorMessage: 'Failed to restore image preview.',
+      })
+      if (previewUrl && previewUrl !== sourceUrl) {
+        URL.revokeObjectURL(previewUrl)
+      }
+      applyTransformedImage(file, objectUrl, result)
+      presetExportSourceIdRef.current = restoreId
+      lastPresetExportAtRef.current = Date.now()
+    } catch (err) {
+      console.error('Reset export settings failed:', err)
+      setExportError(err?.message || 'Could not restore preview after reset.')
+    }
+  }, [applyTransformedImage, previewUrl, resetExportSessionState, sourceUrl])
+
   return {
     selectedPreset,
     latestExportResult,
@@ -261,6 +383,7 @@ const useImageEditingSession = ({
     setLetterboxColor,
     isExporting,
     exportError,
+    sessionNotice,
     lastCropBoxPx,
     effectiveBackendResult,
     effectiveBackendMediaId,
@@ -272,6 +395,8 @@ const useImageEditingSession = ({
     handleCropApply,
     handleAddTextApply,
     handleExport,
+    resetPresetExportSettings,
+    invalidateLatestExport,
   }
 }
 

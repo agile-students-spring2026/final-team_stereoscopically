@@ -10,10 +10,13 @@ const ImageEditor = ({
   onBack,
   onSize,
   onExport,
+  onResetExportSettings,
+  showResetExportSettings = false,
   isUploading = false,
   uploadError = null,
   isExporting = false,
   exportError = null,
+  sessionNotice = null,
 }) => {
   // Track if cropper is active
   const [isCropping, setIsCropping] = useState(false)
@@ -61,8 +64,8 @@ const ImageEditor = ({
     return (
       <div className="image-editor-container">
         <h2 className="image-editor-title">Crop Image</h2>
-        <p role="note" className="upload-status" style={{ marginTop: '0.5rem', color: '#ff9500' }}>
-          Warning: Applying a crop will remove any filters or text overlays you have applied.
+        <p role="note" className="upload-status" style={{ marginTop: '0.5rem', color: '#555' }}>
+          Cropping uses your current preview (filters and color edits included).
         </p>
         {cropError && (
           <p role="alert" className="upload-status" style={{ marginTop: '0.5rem', color: '#ff3b30' }}>
@@ -100,6 +103,11 @@ const ImageEditor = ({
           {exportError}
         </p>
       )}
+      {sessionNotice && (
+        <p role="status" className="upload-status session-notice">
+          {sessionNotice}
+        </p>
+      )}
 
       {imageLoadError && (
         <p role="alert" className="upload-status" style={{ marginTop: '0.5rem', color: '#ff3b30' }}>
@@ -121,15 +129,25 @@ const ImageEditor = ({
         )}
       </div>
       <div className="card image-editor-actions">
-        <button type="button" className="btn-primary" onClick={onSize || (() => {})}>
-          Resize
+        <button type="button" className="btn-primary" onClick={onOpenFilters}>
+          Filters
         </button>
         <button type="button" className="btn-primary" onClick={handleCropClick}>
           Crop
         </button>
-        <button type="button" className="btn-primary" onClick={onOpenFilters}>
-          Filters
+        <button type="button" className="btn-primary" onClick={onSize || (() => {})}>
+          Resize
         </button>
+        {showResetExportSettings && (
+          <button
+            type="button"
+            className="btn-secondary"
+            onClick={() => onResetExportSettings?.()}
+            disabled={isExporting}
+          >
+            Reset resize
+          </button>
+        )}
       </div>
       <div className="card-actions card-actions-spaced">
         <button type="button" className="btn-secondary" onClick={onBack}>
