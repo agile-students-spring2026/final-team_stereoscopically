@@ -49,3 +49,12 @@ Ensure you have Node.js and npm installed
 - Also start the back-end server in `back-end` (`npm install` then `npm run dev`) so API requests work at `http://localhost:4000`.
 
 - Open the app in your browser by navigating to: `http://localhost:5173/`
+
+### Run Unit Tests (Mocha + Chai)
+
+- Run: `npm test` in `back-end`
+
+### Check Back-End Coverage (c8)
+
+- Run: `npm run coverage` in `back-end`
+- This generates a terminal coverage summary and an HTML report.
