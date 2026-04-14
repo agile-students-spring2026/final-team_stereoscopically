@@ -18,6 +18,7 @@ export const postMultipart = async ({
   path,
   fileField,
   file,
+  fields,
   fallbackErrorMessage = 'Request failed',
 }) => {
   if (!file) {
@@ -26,6 +27,13 @@ export const postMultipart = async ({
 
   const formData = new FormData()
   formData.append(fileField, file)
+
+  if (fields && typeof fields === 'object') {
+    Object.entries(fields).forEach(([key, value]) => {
+      if (value === undefined || value === null) return
+      formData.append(key, String(value))
+    })
+  }
 
   const endpoint = `${getBackendBaseUrl()}${path}`
 

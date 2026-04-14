@@ -100,11 +100,10 @@ export const applyPresetVideoFilterHandler = async (req, res) => {
 }
 
 export const exportGifHandler = async (req, res, next) => {
-  try {
-    const result = await exportGifService(req)
-    if (result.error) return res.status(result.error.status).json(result.error)
-    res.json({ data: result.data })
-  } catch (err) {
-    next(err)
-  }
+	try {
+		const result = await exportGifService(req)
+		return sendResult(res, result)
+	} catch (err) {
+		next(err)
+	}
 }

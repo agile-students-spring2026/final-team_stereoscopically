@@ -34,6 +34,7 @@ Components in `src/components` are not responsible for:
 
 **Components**
 - `GifEditor.jsx`
+- `VideoPresetFilters.jsx`
 
 **Responsible for**
 - video and GIF preview UI
@@ -41,6 +42,7 @@ Components in `src/components` are not responsible for:
 - conversion-related UI state
 - edit-time interaction checks tied to this screen
 - processing, success, and failure messaging shown during GIF editing
+- preset-filter preview and apply interactions for video workflows
 
 **Not responsible for**
 - upload validation already handled earlier in the flow
@@ -135,7 +137,7 @@ Top-level container for editor screen flow.
 - low-level media-processing logic
 - file-admission decision rules (type, size, format support)
 - UI behavior that belongs entirely to a child component
-- direct backend service imports or endpoint calls
+- broad endpoint orchestration logic beyond media-bridging helpers used to adapt backend results into local editor media
 
 **Notes**
 - Keep this component focused on orchestration.
@@ -226,6 +228,24 @@ Editing screen for video-to-GIF workflows.
 
 **Notes**
 - Watch for overlap with image-editing patterns if shared behavior grows.
+
+---
+
+### `VideoPresetFilters.jsx`
+
+**Purpose**
+Preset filter selection screen for video workflows.
+
+**Responsible for**
+- rendering video preset options
+- requesting filtered preview variants
+- surfacing apply and preview errors for preset interactions
+- emitting the selected filtered result back to parent orchestration
+
+**Not responsible for**
+- GIF trim controls
+- overall editor screen orchestration
+- backend transport implementation details
 
 ---
 

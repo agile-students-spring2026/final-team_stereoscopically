@@ -48,7 +48,7 @@ function EditorContainer() {
     applyTransformedImage,
   } = useMediaSelection()
 
-  const { createGif, exportGif, isProcessing: isGifProcessing } = useGifConversion()
+  const { createGif, exportGif } = useGifConversion()
 
   const {
     letterboxColor,
@@ -197,6 +197,33 @@ function EditorContainer() {
   const handleOpenSizes = () => {
     setScreen(SCREENS.PRESET_SIZES)
   }
+
+  const handleVideoPresetApply = useCallback(
+    async (result) => {
+      if (!result?.url) {
+        setScreen(SCREENS.EDITOR)
+        return
+      }
+
+      const response = await fetch(result.url)
+      if (!response.ok) {
+        throw new Error('Failed to load filtered video.')
+      }
+
+      const blob = await response.blob()
+      const mimeType = result?.mimeType || blob.type || 'video/mp4'
+      const fileName = `filtered-${result?.preset || 'video'}.mp4`
+      const filteredFile = new File([blob], fileName, { type: mimeType })
+
+      const selection = await selectVideo(filteredFile)
+      if (selection?.code !== MEDIA_SELECTION_CODES.OK) {
+        throw new Error('Filtered video could not be loaded in editor.')
+      }
+
+      setScreen(SCREENS.EDITOR)
+    },
+    [selectVideo]
+  )
 
   const handlePresetSizeSelect = async (size) => {
     await handleSizeSelect(size)
@@ -373,7 +400,7 @@ function EditorContainer() {
         return (
           <VideoPresetFilters
             videoFile={selectedMedia}
-            onApply={() => setScreen(SCREENS.EDITOR)}
+            onApply={handleVideoPresetApply}
             onCancel={() => setScreen(SCREENS.EDITOR)}
           />
         )
