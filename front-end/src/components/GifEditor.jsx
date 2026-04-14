@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useRef, useState } from 'react'
 import { applyVideoFilter } from '../services/backendGifService'
 
 
-const GifEditor = ({ videoFile, onCancel, onConverted, onCreateGif, onOpenFilters }) => {
+const GifEditor = ({ videoFile, onCancel, onConverted, onCreateGif, onOpenFilters, onExportGif }) => {
     const [isProcessing, setIsProcessing] = useState(false)
     const [statusMessage, setStatusMessage] = useState(null)
     const [backendResult, setBackendResult] = useState(null)
@@ -82,24 +82,29 @@ const GifEditor = ({ videoFile, onCancel, onConverted, onCreateGif, onOpenFilter
             setIsApplyingFilter(false)
         }
     }
-    const handleConvertToGif = async () => {
+        const handleConvertToGif = async () => {
         if (isProcessing) return
         if (!videoFile || !videoUrl) {
-            setStatusMessage(null)
             setConversionError('Video is not ready for conversion. Please re-upload and try again.')
             return
         }
+
+        // If trimEnd is still 0, video metadata hasn't loaded yet
+        const effectiveTrimEnd = trimEnd > 0 ? trimEnd : duration
+        if (effectiveTrimEnd <= trimStart) {
+            setConversionError('Invalid trim range. Please wait for the video to load.')
+            return
+        }
+
         setIsProcessing(true)
         setConversionError(null)
         setStatusMessage('Converting clip to GIF…')
 
         try {
-            if (!onCreateGif) {
-                throw new Error('GIF conversion is not available right now. Please try again.')
-            }
-            const result = await onCreateGif(videoFile, trimStart, trimEnd)
+            if (!onCreateGif) throw new Error('GIF conversion is not available right now.')
+            const result = await onCreateGif(videoFile, trimStart, effectiveTrimEnd)
             setBackendResult(result)
-            setStatusMessage('GIF created. Download support is coming soon.')
+            setStatusMessage('GIF created successfully.')
         } catch (error) {
             setBackendResult(null)
             setConversionError(error?.message || 'GIF conversion failed. Please try again.')
@@ -108,7 +113,6 @@ const GifEditor = ({ videoFile, onCancel, onConverted, onCreateGif, onOpenFilter
             setIsProcessing(false)
         }
     }
-
     // No longer need to check support here; handled in EditorContainer
 
     return (
@@ -218,16 +222,15 @@ const GifEditor = ({ videoFile, onCancel, onConverted, onCreateGif, onOpenFilter
                 </p>
             )}
 
-            {backendResult?.url && (
-                <div className="card" style={{ marginTop: '1rem' }}>
-                    <h3 style={{ marginBottom: '0.5rem' }}>Your GIF is ready</h3>
-                    <p className="preview-label" style={{ margin: 0 }}>
-                        ID: {backendResult.id || 'pending'}
-                    </p>
-                    <p className="preview-label" style={{ margin: 0 }}>
-                        URL: {backendResult.url}
-                    </p>
-                </div>
+            {backendResult?.id && (
+            <button
+                type="button"
+                className="btn-primary"
+                onClick={() => onExportGif(backendResult.id)}
+                disabled={isProcessing}
+            >
+                Download GIF
+            </button>
             )}
 
         </div>

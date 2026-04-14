@@ -1,0 +1,30 @@
+const chai = require('chai');
+const chaiHttp = require('chai-http');
+const server = require('../../server');
+const expect = chai.expect;
+
+chai.use(chaiHttp);
+
+describe('Color Adjustment Routes', () => {
+    it('should adjust color correctly', (done) => {
+        chai.request(server)
+            .post('/api/color-adjustment')
+            .send({ imageId: '123', adjustment: { brightness: 10 } })
+            .end((err, res) => {
+                expect(res).to.have.status(200);
+                expect(res.body).to.have.property('success', true);
+                done();
+            });
+    });
+
+    it('should return an error for invalid imageId', (done) => {
+        chai.request(server)
+            .post('/api/color-adjustment')
+            .send({ imageId: 'invalid', adjustment: { brightness: 10 } })
+            .end((err, res) => {
+                expect(res).to.have.status(400);
+                expect(res.body).to.have.property('error');
+                done();
+            });
+    });
+});

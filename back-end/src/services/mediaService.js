@@ -2,6 +2,9 @@ import sharp from 'sharp'
 import ffmpeg from 'fluent-ffmpeg'
 import ffmpegInstaller from '@ffmpeg-installer/ffmpeg'
 import { Readable } from 'stream'
+import os from 'os'
+import fs from 'fs'
+import path from 'path'
 ffmpeg.setFfmpegPath(ffmpegInstaller.path)
 import { writeFileSync, unlinkSync } from 'fs'
 import { tmpdir } from 'os'
@@ -570,7 +573,6 @@ export const getExportDownloadContent = (id) => {
 		},
 	}
 }
-
 export const trimVideo = async (req) => {
     const { trimStart, trimEnd } = req.body ?? {}
 
@@ -591,36 +593,48 @@ export const trimVideo = async (req) => {
 
     try {
         const duration = trimEndNum - trimStartNum
-        const inputStream = Readable.from(req.file.buffer)
 
-        const outputBuffer = await new Promise((resolve, reject) => {
-            const chunks = []
-            const passthrough = ffmpeg(inputStream)
+        const tmpInput = path.join(os.tmpdir(), `input_${Date.now()}.mp4`)
+        const tmpOutput = path.join(os.tmpdir(), `output_${Date.now()}.gif`)
+
+        await fs.promises.writeFile(tmpInput, req.file.buffer)
+
+        await new Promise((resolve, reject) => {
+            ffmpeg(tmpInput)
                 .setStartTime(trimStartNum)
                 .setDuration(duration)
-                .outputFormat('mp4')
-                .outputOptions(['-movflags frag_keyframe+empty_moov'])
-                .pipe()
-            passthrough.on('data', (chunk) => chunks.push(chunk))
-            passthrough.on('end', () => resolve(Buffer.concat(chunks)))
-            passthrough.on('error', reject)
+                .complexFilter([
+                    'fps=10,scale=320:-1:flags=lanczos,split[s0][s1]',
+                    '[s0]palettegen[p]',
+                    '[s1][p]paletteuse[out]',
+                ])
+                .outputOptions(['-map [out]', '-loop 0'])
+                .outputFormat('gif')
+                .on('error', (err) => reject(err))
+                .on('end', resolve)
+                .save(tmpOutput)
         })
 
-        const trimId = createMediaId('vid')
+        const outputBuffer = await fs.promises.readFile(tmpOutput)
+
+        await fs.promises.unlink(tmpInput).catch(() => {})
+        await fs.promises.unlink(tmpOutput).catch(() => {})
+
+        const trimId = createMediaId('gif')
         createMedia(trimId, {
             buffer: outputBuffer,
-            mimeType: 'video/mp4',
+            mimeType: 'image/gif',
             size: outputBuffer.length,
-            fileName: 'trimmed.mp4',
+            fileName: 'output.gif',
         })
 
         return {
             status: 200,
             data: {
                 id: trimId,
-                type: 'video',
+                type: 'gif',
                 url: buildMediaUrl(req, trimId),
-                mimeType: 'video/mp4',
+                mimeType: 'image/gif',
                 size: outputBuffer.length,
             },
         }
@@ -695,4 +709,26 @@ export const applyPresetVideoFilter = async (req) => {
         console.error('Video Filter Error:', error)
         return { error: { status: 500, error: 'Failed to apply video filter.', code: 'VIDEO_FILTER_FAILED' } }
     }
+}
+
+export const exportGifService = (req) => {
+  const { mediaId } = req.body ?? {}
+
+  if (!mediaId) {
+    return { error: { status: 400, error: 'Missing mediaId.', code: 'MISSING_MEDIA_ID' } }
+  }
+
+  const media = getActiveMediaOrDeleteExpired(mediaId)
+  if (!media) {
+    return { error: { status: 404, error: 'Media not found or expired.', code: 'MEDIA_NOT_FOUND' } }
+  }
+
+  return {
+    status: 200,
+    data: {
+      id: mediaId,
+      url: buildMediaUrl(req, mediaId),
+      downloadUrl: buildExportDownloadUrl(req, mediaId),
+    },
+  }
 }
