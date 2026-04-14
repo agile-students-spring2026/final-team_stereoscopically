@@ -188,7 +188,7 @@ Shared runtime constants.
 
 Responsible for:
 - `PORT`
-- `MAX_IMAGE_SIZE_BYTES`
+- `MAX_UPLOAD_SIZE_BYTES`
 - `MAX_EXPORT_DIMENSION`
 - `MEDIA_TTL_MS`
 - `MEDIA_PURGE_INTERVAL_MS`
