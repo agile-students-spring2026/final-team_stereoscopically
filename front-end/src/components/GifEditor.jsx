@@ -1,5 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react'
-import { applyVideoFilter } from '../services/backendGifService'
+import { useEffect, useMemo, useRef, useState } from 'react'
 
 
 const GifEditor = ({ videoFile, onCancel, onConverted, onCreateGif, onOpenFilters, onExportGif }) => {
@@ -12,9 +11,6 @@ const GifEditor = ({ videoFile, onCancel, onConverted, onCreateGif, onOpenFilter
     const [trimStart, setTrimStart] = useState(0)
     const [trimEnd, setTrimEnd] = useState(0)
     const [showTrim, setShowTrim] = useState(false)
-
-    const [selectedFilter, setSelectedFilter] = useState('none')
-    const [isApplyingFilter, setIsApplyingFilter] = useState(false)
 
     const videoRef = useRef(null)
 
@@ -69,20 +65,7 @@ const GifEditor = ({ videoFile, onCancel, onConverted, onCreateGif, onOpenFilter
 
     const formatTime = (s) => `${s.toFixed(1)}s`
     
-    const handleApplyFilter = async (preset) => {
-        if (!videoFile || preset === 'none') return
-        setIsApplyingFilter(true)
-        try {
-            const result = await applyVideoFilter(videoFile, preset)
-            setBackendResult(result)
-            setStatusMessage(`Filter "${preset}" applied!`)
-        } catch (error) {
-            setConversionError(error?.message || 'Filter failed.')
-        } finally {
-            setIsApplyingFilter(false)
-        }
-    }
-        const handleConvertToGif = async () => {
+    const handleConvertToGif = async () => {
         if (isProcessing) return
         if (!videoFile || !videoUrl) {
             setConversionError('Video is not ready for conversion. Please re-upload and try again.')

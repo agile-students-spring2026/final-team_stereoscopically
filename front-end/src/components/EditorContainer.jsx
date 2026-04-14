@@ -48,7 +48,7 @@ function EditorContainer() {
     applyTransformedImage,
   } = useMediaSelection()
 
-  const { createGif, exportGif, isProcessing: isGifProcessing } = useGifConversion()
+  const { createGif, exportGif } = useGifConversion()
 
   const {
     letterboxColor,
