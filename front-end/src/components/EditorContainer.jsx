@@ -47,7 +47,8 @@ function EditorContainer() {
     resetSelection,
     applyTransformedImage,
   } = useMediaSelection()
-  const { createGif } = useGifConversion()
+
+  const { createGif, exportGif, isProcessing: isGifProcessing } = useGifConversion()
 
   const {
     letterboxColor,
@@ -300,6 +301,7 @@ function EditorContainer() {
           videoFile={selectedMedia}
           onCancel={handleBackToUpload}
           onCreateGif={createGif}
+          onExportGif={exportGif}
           onOpenFilters={() => setScreen(SCREENS.GIF_FILTERS)}
       />
     )
