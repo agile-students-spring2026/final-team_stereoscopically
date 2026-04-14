@@ -12,6 +12,7 @@ import {
 	uploadImageHandler,
 	trimVideoHandler,
 	applyPresetVideoFilterHandler,
+	exportGifHandler,
 } from '../controllers/mediaController.js'
 import { imageUpload, videoUpload } from '../middleware/uploadMiddleware.js'
 
@@ -28,6 +29,6 @@ router.get('/api/media/:id', getMediaHandler)
 router.get('/api/export/:id/download', downloadExportHandler)
 router.post('/api/trim/video', videoUpload.single('video'), trimVideoHandler)
 router.post('/api/filter/video', videoUpload.single('video'), applyPresetVideoFilterHandler)
-
+router.post('/api/export/gif', exportGifHandler)
 
 export default router

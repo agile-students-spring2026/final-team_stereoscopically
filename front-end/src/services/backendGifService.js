@@ -89,3 +89,31 @@ export const applyVideoFilter = async (videoFile, preset) => {
     preset: payload?.preset ?? null,
   }
 }
+
+export const exportGifToBackend = async (mediaId) => {
+  if (!mediaId) throw new Error('Missing media ID for export')
+
+  let response
+  try {
+    response = await fetch('http://localhost:4000/api/export/gif', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ mediaId }),
+    })
+  } catch {
+    throw new Error('Unable to reach backend. Please make sure the backend server is running.')
+  }
+
+  if (!response.ok) {
+    const data = await response.json().catch(() => ({}))
+    throw new Error(data?.error || 'GIF export failed')
+  }
+
+  const payload = await response.json()
+  const result = payload?.data ?? payload
+  return {
+    id: result?.id ?? null,
+    url: result?.url ?? null,
+    downloadUrl: result?.downloadUrl ?? null,
+  }
+}

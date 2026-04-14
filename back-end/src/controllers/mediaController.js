@@ -9,6 +9,7 @@ import {
 	uploadImage,
 	trimVideo,
 	applyPresetVideoFilter,
+	exportGifService,
 } from '../services/mediaService.js'
 
 const sendResult = (res, result) => {
@@ -96,4 +97,14 @@ export const trimVideoHandler = async (req, res) => {
 export const applyPresetVideoFilterHandler = async (req, res) => {
     const result = await applyPresetVideoFilter(req)
     return sendResult(res, result)
+}
+
+export const exportGifHandler = async (req, res, next) => {
+  try {
+    const result = await exportGifService(req)
+    if (result.error) return res.status(result.error.status).json(result.error)
+    res.json({ data: result.data })
+  } catch (err) {
+    next(err)
+  }
 }
