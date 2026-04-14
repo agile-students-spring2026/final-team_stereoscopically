@@ -1,0 +1,67 @@
+{
+  "scripts": {
+    "test": "c8 mocha --require test/setup.js 'test/**/*.test.js'"
+  },
+  "devDependencies": {
+    "mocha": "^10.0.0",
+    "chai": "^4.3.4",
+    "c8": "^7.10.0"
+  }
+}
+
+{
+  "spec": {
+    "recursive": true,
+    "reporter": "spec",
+    "timeout": 5000,
+    "require": ["chai/register-assert"],
+    "extension": ["js"],
+    "file": ["test/setup.js"]
+  }
+}
+
+const express = require('express');
+const app = express();
+module.exports = app;
+
+const assert = require('chai').assert;
+
+describe('Hello Route', () => {
+  it('should return hello world', () => {
+    assert.strictEqual('hello world', 'hello world');
+  });
+});
+
+module.exports = async () => {
+  // Setup code, e.g., connect to a test database
+};
+
+const request = require('supertest');
+const app = require('../../server');
+
+describe('Image Reframe Routes', () => {
+  it('should reframe an image', async () => {
+    const response = await request(app).post('/image/reframe').send({ /* test data */ });
+    assert.equal(response.status, 200);
+  });
+});
+
+const request = require('supertest');
+const app = require('../../server');
+
+describe('Preset Filter Routes', () => {
+  it('should apply a preset filter', async () => {
+    const response = await request(app).post('/filter/preset').send({ /* test data */ });
+    assert.equal(response.status, 200);
+  });
+});
+
+const request = require('supertest');
+const app = require('../../server');
+
+describe('Color Adjustment Routes', () => {
+  it('should adjust color', async () => {
+    const response = await request(app).post('/color/adjust').send({ /* test data */ });
+    assert.equal(response.status, 200);
+  });
+});

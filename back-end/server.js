@@ -1,5 +1,6 @@
 import cors from 'cors'
 import express from 'express'
+import { fileURLToPath } from 'url'
 
 import { MEDIA_PURGE_INTERVAL_MS, PORT } from './src/config/constants.js'
 import { errorHandler, notFoundHandler } from './src/middleware/errorMiddleware.js'
@@ -14,9 +15,16 @@ app.use(mediaRoutes)
 app.use(notFoundHandler)
 app.use(errorHandler)
 
-setInterval(purgeExpiredMedia, MEDIA_PURGE_INTERVAL_MS).unref()
+if (process.env.NODE_ENV !== 'test') {
+	setInterval(purgeExpiredMedia, MEDIA_PURGE_INTERVAL_MS).unref()
+}
 
-app.listen(PORT, () => {
-	console.log(`[backend] server running on http://localhost:${PORT}`)
-})
+const isDirectRun = process.argv[1] === fileURLToPath(import.meta.url)
+if (isDirectRun) {
+	app.listen(PORT, () => {
+		console.log(`[backend] server running on http://localhost:${PORT}`)
+	})
+}
+
+export default app
 
