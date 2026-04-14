@@ -657,12 +657,13 @@ export const applyPresetVideoFilter = async (req) => {
         return { error: { status: 400, error: 'Invalid or unsupported preset.', code: 'INVALID_PRESET' } }
     }
 
-    const ffmpegFilters = {
-        noir: 'hue=s=0,eq=contrast=1.4:brightness=-0.05',
-        sepia: 'colorchannelmixer=.393:.769:.189:0:.349:.686:.168:0:.272:.534:.131',
-        vivid: 'eq=saturation=1.4:contrast=1.2:brightness=0.1',
-        fade: 'eq=contrast=0.8:brightness=0.1:saturation=0.8',
-    }
+	const ffmpegFilters = {
+		noir: 'hue=s=0,eq=contrast=1.4:brightness=-0.05',
+		// Use named coefficients for broader FFmpeg compatibility across builds.
+		sepia: 'colorchannelmixer=rr=0.393:rg=0.769:rb=0.189:gr=0.349:gg=0.686:gb=0.168:br=0.272:bg=0.534:bb=0.131',
+		vivid: 'eq=saturation=1.4:contrast=1.2:brightness=0.1',
+		fade: 'eq=contrast=0.8:brightness=0.1:saturation=0.8',
+	}
 
     const tmpInput = join(tmpdir(), `input_${Date.now()}.mp4`)
     writeFileSync(tmpInput, req.file.buffer)
@@ -673,7 +674,7 @@ export const applyPresetVideoFilter = async (req) => {
             const command = ffmpeg(tmpInput)
                 .videoFilters(ffmpegFilters[key])
                 .outputFormat('mp4')
-                .outputOptions(['-movflags frag_keyframe+empty_moov'])
+				.outputOptions(['-movflags frag_keyframe+empty_moov', '-pix_fmt yuv420p'])
 
             command.on('error', reject)
 
