@@ -37,17 +37,11 @@ const GifEditor = ({ videoFile, onCancel, onConverted, onCreateGif, onOpenFilter
         // Not a File: do not preview, show error/placeholder
     }, [videoFile])
 
-
-    // Only revoke blob URLs in production to avoid dev Hot Reload revoking active URLs
     useEffect(() => {
-        let prevUrl = null
-        if (videoFile instanceof File && videoUrl) {
-            prevUrl = videoUrl
-        }
+        if (!(videoFile instanceof File) || !videoUrl) return
+
         return () => {
-            if (prevUrl && !import.meta.env.DEV) {
-                URL.revokeObjectURL(prevUrl)
-            }
+            URL.revokeObjectURL(videoUrl)
         }
     }, [videoFile, videoUrl])
 
