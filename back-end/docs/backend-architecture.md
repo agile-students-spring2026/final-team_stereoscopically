@@ -18,6 +18,7 @@ It covers:
 - Runtime: Node.js + Express (JavaScript)
 - Upload handling: Multer
 - Image processing: Sharp
+- Video processing: fluent-ffmpeg (+ @ffmpeg-installer/ffmpeg)
 - Storage model: in-memory media store with TTL expiration
 
 ---
@@ -103,9 +104,14 @@ Frontend preflight checks are optional UX helpers and do not replace backend enf
 
 - `GET /health`
 - `POST /api/upload/image`
+- `POST /api/adjust/image`
+- `POST /api/filter/image`
 - `POST /api/crop/image`
 - `POST /api/export/image`
 - `POST /api/text/image`
+- `POST /api/trim/video`
+- `POST /api/filter/video`
+- `POST /api/export/gif`
 - `GET /api/media/:id`
 - `GET /api/export/:id/download`
 
@@ -135,11 +141,15 @@ Examples of current validation/service codes include:
 - `INVALID_TYPE`
 - `MAX_SIZE_EXCEEDED`
 - `MISSING_MEDIA_ID`
+- `INVALID_ADJUST_PARAMS`
+- `INVALID_PRESET`
 - `INVALID_CROP_BOUNDS`
 - `INVALID_CROP_SIZE`
 - `INVALID_CROP_UNIT`
 - `INVALID_CROP_SCALE`
 - `INVALID_CROP_RATIO`
+- `INVALID_TRIM_VALUES`
+- `INVALID_TRIM_RANGE`
 - `INVALID_DIMENSIONS`
 - `INVALID_LETTERBOX_COLOR`
 - `INVALID_TEXT_PAYLOAD`
@@ -149,6 +159,10 @@ Examples of current validation/service codes include:
 - `MEDIA_NOT_FOUND`
 - `CROP_FAILED`
 - `EXPORT_FAILED`
+- `ADJUST_FAILED`
+- `PRESET_FILTER_FAILED`
+- `TRIM_FAILED`
+- `VIDEO_FILTER_FAILED`
 - `TEXT_RENDER_FAILED`
 
 ---
@@ -204,8 +218,11 @@ Core media workflow service layer.
 
 Responsible for:
 - upload flow result shaping
+- image adjustment and preset-filter orchestration
 - crop flow processing and validation
 - export flow processing and validation
+- video trim and preset-filter orchestration
+- GIF export metadata response shaping
 - add-text endpoint orchestration and media result shaping
 - media and export download payload assembly
 

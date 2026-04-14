@@ -1,7 +1,6 @@
 import sharp from 'sharp'
 import ffmpeg from 'fluent-ffmpeg'
 import ffmpegInstaller from '@ffmpeg-installer/ffmpeg'
-import { Readable } from 'stream'
 import os from 'os'
 import fs from 'fs'
 import path from 'path'
