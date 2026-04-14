@@ -58,3 +58,19 @@ Ensure you have Node.js and npm installed
 
 - Run: `npm run coverage` in `back-end`
 - This generates a terminal coverage summary and an HTML report.
+
+## Continuous Integration (CI)
+
+This repository uses GitHub Actions to run automated checks on every:
+- push
+- pull request
+
+Workflow file:
+- `.github/workflows/ci.yml`
+
+Current CI jobs:
+- **Front-end build**: installs dependencies in `front-end` and runs `npm run build`
+- **Back-end tests**: installs dependencies in `back-end` and runs `npm test`
+
+If a CI run fails, GitHub shows a red check on the commit/PR with the exact failing job and step.
+Open the failed run to view full logs and error output.
