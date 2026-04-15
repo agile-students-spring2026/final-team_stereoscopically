@@ -1,7 +1,9 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { DEFAULT_GIF_SPEED_PLAYBACK_RATE } from './gifSpeedOptions'
 
 const GifEditor = ({
     videoFile,
+    selectedSpeedPlaybackRate = DEFAULT_GIF_SPEED_PLAYBACK_RATE,
     onCancel,
     onCreateGif,
     onOpenResize,
@@ -67,6 +69,12 @@ const GifEditor = ({
         }
     }, [videoFile])
 
+    useEffect(() => {
+        const video = videoRef.current
+        if (!video) return
+        video.playbackRate = selectedSpeedPlaybackRate
+    }, [selectedSpeedPlaybackRate])
+
     const formatTime = (s) => `${s.toFixed(1)}s`
 
     const resetTransientEditorState = useCallback((nextTrimEnd = duration, closeTrimPanel = true) => {
@@ -130,6 +138,9 @@ const GifEditor = ({
                             setDuration(total)
                             setTrimStart(0)
                             setTrimEnd(total)
+                            if (videoRef.current) {
+                                videoRef.current.playbackRate = selectedSpeedPlaybackRate
+                            }
                         }}
                         onTimeUpdate={() => {
                             if (trimEnd > 0 && videoRef.current && videoRef.current.currentTime >= trimEnd) {

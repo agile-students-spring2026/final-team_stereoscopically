@@ -351,6 +351,7 @@ function EditorContainer() {
       <GifEditor
           key={videoKey}
           videoFile={selectedMedia}
+          selectedSpeedPlaybackRate={gifFlowState.selectedSpeedPlaybackRate}
           onCancel={handleBackToUpload}
           onCreateGif={createGif}
           onExportGif={exportGif}
