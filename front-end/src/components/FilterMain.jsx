@@ -1,6 +1,6 @@
 function FilterMain({ onPresetFilters, onAddText, onColorFilters }) {
   return (
-    <div className="preset-sizes-screen">
+    <div className="editor-tool-screen preset-sizes-screen">
       <div className="screen-header screen-header-column">
         <h2 className="screen-title">Filters</h2>
       </div>

@@ -22,6 +22,10 @@ Use these classes for all editor-focused screens going forward:
   - bottom action row (Cancel + Export/Apply)
 - `editor-tool-screen`
   - shared wrapper for sub-tool pages
+- `editor-tool-screen-actions`
+  - semantic action-row class for sub-tool pages (compat alias: `preset-sizes-screen-actions`)
+- `editor-tool-cancel`
+  - semantic cancel-button class for sub-tool pages (compat alias: `preset-sizes-cancel`)
 - `editor-actions`
   - shared action-row base for editor and tool controls
 - `editor-actions--stack`

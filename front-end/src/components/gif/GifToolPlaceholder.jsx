@@ -2,7 +2,7 @@ import EditorStatus from '../EditorStatus'
 
 function GifToolPlaceholder({ title, description, onBack, onCancel }) {
   return (
-    <div className="preset-sizes-screen">
+    <div className="editor-tool-screen preset-sizes-screen">
       <div className="screen-header screen-header-column">
         <h2 className="screen-title">{title}</h2>
         {description ? <p className="screen-subtitle">{description}</p> : null}
@@ -14,7 +14,7 @@ function GifToolPlaceholder({ title, description, onBack, onCancel }) {
         </EditorStatus>
       </div>
 
-      <div className="card-actions editor-actions editor-actions--inline preset-sizes-screen-actions">
+      <div className="card-actions editor-actions editor-actions--inline editor-tool-screen-actions preset-sizes-screen-actions">
         <button type="button" className="btn-secondary" onClick={onBack}>
           Back
         </button>

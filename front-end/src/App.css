@@ -567,7 +567,8 @@
   margin-top: 0.75rem;
 }
 
-.preset-sizes-screen-actions {
+.preset-sizes-screen-actions,
+.editor-tool-screen-actions {
   margin-top: 1.5rem;
 }
 
@@ -583,23 +584,27 @@
   box-sizing: border-box;
 }
 
-.preset-sizes-screen .screen-header-column {
+.preset-sizes-screen .screen-header-column,
+.editor-tool-screen .screen-header-column {
   align-items: center;
 }
 
-.preset-sizes-screen .screen-title {
+.preset-sizes-screen .screen-title,
+.editor-tool-screen .screen-title {
   width: 100%;
   text-align: center;
 }
 
-.preset-sizes-screen > .card {
+.preset-sizes-screen > .card,
+.editor-tool-screen > .card {
   align-self: stretch;
   width: 100%;
   min-width: 0;
   box-sizing: border-box;
 }
 
-.preset-sizes-cancel {
+.preset-sizes-cancel,
+.editor-tool-cancel {
   margin-top: 1rem;
   width: 100%;
   box-sizing: border-box;

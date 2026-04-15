@@ -173,7 +173,7 @@ function GifTextOverlayEditor({ videoFile, initialSettings, onBack, onCancel, on
   const hasTextContent = Boolean(draft.text?.trim())
 
   return (
-    <div className="preset-sizes-screen">
+  <div className="editor-tool-screen preset-sizes-screen">
       <div className="screen-header screen-header-column">
         <h2 className="screen-title">Add Text</h2>
       </div>
@@ -294,7 +294,7 @@ function GifTextOverlayEditor({ videoFile, initialSettings, onBack, onCancel, on
         </div>
       </div>
 
-      <div className="card-actions editor-actions editor-actions--inline preset-sizes-screen-actions">
+      <div className="card-actions editor-actions editor-actions--inline editor-tool-screen-actions preset-sizes-screen-actions">
         <button type="button" className="btn-secondary" onClick={onBack}>
           Back
         </button>
