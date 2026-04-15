@@ -86,3 +86,35 @@ export const exportGifToBackend = async (mediaId) => {
     downloadUrl: result?.downloadUrl ?? null,
   }
 }
+
+export const convertBackendVideoResultToLocalMedia = async (
+  result,
+  {
+    fallbackFileName = 'filtered-video.mp4',
+    fallbackMimeType = 'video/mp4',
+    fetchErrorMessage = 'Failed to load filtered video.',
+  } = {}
+) => {
+  const sourceUrl = result?.url
+  if (!sourceUrl) {
+    throw new Error(fetchErrorMessage)
+  }
+
+  const response = await fetch(sourceUrl)
+  if (!response.ok) {
+    throw new Error(fetchErrorMessage)
+  }
+
+  const blob = await response.blob()
+  const fileName = result?.fileName || fallbackFileName
+  const mimeType = result?.mimeType || blob.type || fallbackMimeType
+  const file = new File([blob], fileName, { type: mimeType })
+  const objectUrl = URL.createObjectURL(blob)
+
+  return {
+    file,
+    objectUrl,
+    fileName,
+    mimeType,
+  }
+}

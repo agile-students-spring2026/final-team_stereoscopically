@@ -11,6 +11,7 @@ import useMediaSelection, { MEDIA_SELECTION_CODES } from '../hooks/useMediaSelec
 import useGifConversion from '../hooks/useGifConversion'
 import useImageEditingSession from '../hooks/useImageEditingSession'
 import { convertBackendImageResultToLocalMedia } from '../services/backendImageService'
+import { convertBackendVideoResultToLocalMedia } from '../services/backendGifService'
 import CameraCapture from './CameraCapture'
 import PhotoPreview from './PhotoPreview'
 import VideoPresetFilters from './gif/VideoPresetFilters'
@@ -236,15 +237,11 @@ function EditorContainer() {
         return
       }
 
-      const response = await fetch(result.url)
-      if (!response.ok) {
-        throw new Error('Failed to load filtered video.')
-      }
-
-      const blob = await response.blob()
-      const mimeType = result?.mimeType || blob.type || 'video/mp4'
-      const fileName = `filtered-${result?.preset || 'video'}.mp4`
-      const filteredFile = new File([blob], fileName, { type: mimeType })
+      const { file: filteredFile } = await convertBackendVideoResultToLocalMedia(result, {
+        fallbackFileName: `filtered-${result?.preset || 'video'}.mp4`,
+        fallbackMimeType: 'video/mp4',
+        fetchErrorMessage: 'Failed to load filtered video.',
+      })
 
       const selection = await selectVideo(filteredFile)
       if (selection?.code !== MEDIA_SELECTION_CODES.OK) {

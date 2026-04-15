@@ -19,7 +19,6 @@ const GifEditor = ({
     const [duration, setDuration] = useState(0)
     const [trimStart, setTrimStart] = useState(0)
     const [trimEnd, setTrimEnd] = useState(0)
-    const [showTrim, setShowTrim] = useState(false)
 
     const videoRef = useRef(null)
 
@@ -62,15 +61,12 @@ const GifEditor = ({
         setDuration(0)
         setTrimStart(0)
         setTrimEnd(0)
-        setShowTrim(false)
 
         if (videoRef.current) {
             videoRef.current.pause()
             videoRef.current.currentTime = 0
         }
     }, [videoFile])
-
-    const formatTime = (s) => `${s.toFixed(1)}s`
 
     const resolveCommittedTrim = useCallback((totalDuration) => {
         const safeStart = Math.min(Math.max(committedTrimStart, 0), totalDuration)
@@ -83,12 +79,7 @@ const GifEditor = ({
         }
     }, [committedTrimEnd, committedTrimStart])
 
-    const resetTransientEditorState = useCallback((nextTrimEnd = duration, closeTrimPanel = true) => {
-        setTrimStart(0)
-        setTrimEnd(nextTrimEnd)
-        if (closeTrimPanel) {
-            setShowTrim(false)
-        }
+    const resetTransientEditorState = useCallback(() => {
         setBackendResult(null)
         setStatusMessage(null)
         setConversionError(null)
@@ -97,7 +88,7 @@ const GifEditor = ({
             videoRef.current.pause()
             videoRef.current.currentTime = 0
         }
-    }, [duration])
+    }, [])
     
     const handleConvertToGif = async () => {
         if (isProcessing) return
@@ -107,7 +98,7 @@ const GifEditor = ({
         }
 
         if (duration <= 0 || trimEnd <= trimStart) {
-            setConversionError('Trim controls are not ready yet. Please wait for the video metadata to load.')
+            setConversionError('Trim range is not ready yet. Please wait for the video to load.')
             return
         }
 
@@ -158,54 +149,6 @@ const GifEditor = ({
                 )}
             </div>
 
-            {showTrim && (
-                <div className="card" style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                    {duration > 0 ? (
-                        <>
-                            <div style={{ display: 'flex', justifyContent: 'center', gap: '60px' }}>
-                                <div style={{ textAlign: 'center' }}>
-                                    <div style={{ fontSize: '0.7rem', color: '#8e8e93', textTransform: 'uppercase' }}>
-                                        Start
-                                    </div>
-                                    <div style={{ fontSize: '1.1rem', fontWeight: '600' }}>{formatTime(trimStart)}</div>
-                                </div>
-                                <div style={{ textAlign: 'center' }}>
-                                    <div style={{ fontSize: '0.7rem', color: '#8e8e93', textTransform: 'uppercase' }}>
-                                        End
-                                    </div>
-                                    <div style={{ fontSize: '1.1rem', fontWeight: '600' }}>{formatTime(trimEnd)}</div>
-                                </div>
-                            </div>
-                            <label style={{ display: 'flex', flexDirection: 'column', gap: '4px', fontSize: '0.9rem' }}>
-                                Start
-                                <input type="range" min={0} max={trimEnd} step={0.1} value={trimStart}
-                                    onChange={(e) => {
-                                        const val = Number(e.target.value)
-                                        setTrimStart(val)
-                                        if (videoRef.current) videoRef.current.currentTime = val
-                                    }}
-                                    style={{ width: '100%', accentColor: '#ffd60a' }} />
-                            </label>
-                            <label style={{ display: 'flex', flexDirection: 'column', gap: '4px', fontSize: '0.9rem' }}>
-                                End
-                                <input type="range" min={trimStart} max={duration} step={0.1} value={trimEnd}
-                                    onChange={(e) => setTrimEnd(Number(e.target.value))}
-                                    style={{ width: '100%', accentColor: '#ffd60a' }} />
-                            </label>
-                            <button type="button"
-                                style={{ background: 'none', border: 'none', color: '#007aff', fontSize: '0.9rem', fontWeight: '500', cursor: 'pointer' }}
-                                onClick={() => resetTransientEditorState(duration, false)}>
-                                Reset
-                            </button>
-                        </>
-                    ) : (
-                        <p className="preview-label" style={{ margin: 0 }}>
-                            Loading trim controls…
-                        </p>
-                    )}
-                </div>
-            )}
-
             <div className="card video-editor-actions">
                 <button type="button" className="btn-primary" onClick={onOpenTrim}>
                     Trim
@@ -220,7 +163,7 @@ const GifEditor = ({
 
             <div className="card-actions card-actions-spaced">
                 <button type="button" className="btn-secondary" onClick={() => {
-                    resetTransientEditorState(duration)
+                    resetTransientEditorState()
                     onCancel?.()
                 }}>
                     Cancel
