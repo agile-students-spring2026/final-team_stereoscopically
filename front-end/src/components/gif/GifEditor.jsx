@@ -3,12 +3,20 @@ import { DEFAULT_GIF_SPEED_PLAYBACK_RATE } from './gifSpeedOptions'
 import { resolveGifTrimRange } from '../../hooks/useGifEditingSession'
 
 const DEFAULT_GIF_RESIZE_PRESET = 'square'
+const DEFAULT_GIF_TEXT_OVERLAY_SETTINGS = {
+    text: '',
+    size: 32,
+    color: '#FFFFFF',
+    position: { x: 50, y: 50 },
+}
+const GIF_TEXT_COLOR_REGEX = /^#[0-9A-Fa-f]{6}$/
 const GIF_RESIZE_PRESET_FRAME_CLASSES = {
     square: 'gif-preview-frame--square',
     landscape: 'gif-preview-frame--landscape',
     portrait: 'gif-preview-frame--portrait',
 }
 const DEFAULT_GIF_RESIZE_BORDER_COLOR = '#000000'
+const clamp = (value, min, max) => Math.min(Math.max(value, min), max)
 
 const GifEditor = ({
     videoFile,
@@ -24,7 +32,31 @@ const GifEditor = ({
         resizePreset = DEFAULT_GIF_RESIZE_PRESET,
         resizeBorderColor = DEFAULT_GIF_RESIZE_BORDER_COLOR,
         selectedSpeedPlaybackRate = DEFAULT_GIF_SPEED_PLAYBACK_RATE,
+        textOverlaySettings = DEFAULT_GIF_TEXT_OVERLAY_SETTINGS,
     } = gifSessionState || {}
+
+    const previewText = typeof textOverlaySettings?.text === 'string'
+        ? textOverlaySettings.text
+        : DEFAULT_GIF_TEXT_OVERLAY_SETTINGS.text
+    const previewTextSize = clamp(
+        Number(textOverlaySettings?.size) || DEFAULT_GIF_TEXT_OVERLAY_SETTINGS.size,
+        8,
+        120,
+    )
+    const previewTextColor =
+        typeof textOverlaySettings?.color === 'string' && GIF_TEXT_COLOR_REGEX.test(textOverlaySettings.color)
+            ? textOverlaySettings.color
+            : DEFAULT_GIF_TEXT_OVERLAY_SETTINGS.color
+    const previewTextPositionX = clamp(
+        Number(textOverlaySettings?.position?.x) || DEFAULT_GIF_TEXT_OVERLAY_SETTINGS.position.x,
+        0,
+        100,
+    )
+    const previewTextPositionY = clamp(
+        Number(textOverlaySettings?.position?.y) || DEFAULT_GIF_TEXT_OVERLAY_SETTINGS.position.y,
+        0,
+        100,
+    )
 
     const previewFrameClassName = GIF_RESIZE_PRESET_FRAME_CLASSES[resizePreset] || GIF_RESIZE_PRESET_FRAME_CLASSES[DEFAULT_GIF_RESIZE_PRESET]
 
@@ -155,6 +187,21 @@ const GifEditor = ({
                                 }
                             }}
                         />
+                        {previewText.trim() ? (
+                            <div className="gif-text-overlay-preview" aria-hidden="true">
+                                <span
+                                    className="gif-text-overlay-preview-content"
+                                    style={{
+                                        left: `${previewTextPositionX}%`,
+                                        top: `${previewTextPositionY}%`,
+                                        color: previewTextColor,
+                                        fontSize: `${previewTextSize}px`,
+                                    }}
+                                >
+                                    {previewText}
+                                </span>
+                            </div>
+                        ) : null}
                     </div>
                 ) : (
                     <p className="preview-label">Upload a video to start editing.</p>

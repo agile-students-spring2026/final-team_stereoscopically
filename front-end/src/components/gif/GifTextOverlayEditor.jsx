@@ -48,7 +48,6 @@ function GifTextOverlayEditor({ initialSettings, onBack, onCancel, onApply, onCh
     <div className="preset-sizes-screen">
       <div className="screen-header screen-header-column">
         <h2 className="screen-title">Text</h2>
-        <p className="screen-subtitle">Add simple text for this GIF. Changes stay synced with the active flow.</p>
       </div>
 
       <div className="card" style={{ display: 'grid', gap: '0.75rem' }}>
