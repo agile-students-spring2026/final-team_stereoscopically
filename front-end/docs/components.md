@@ -26,6 +26,32 @@ Components in `src/components` are not responsible for:
 - duplicated validation already handled upstream
 - large helper logic not directly tied to rendering or interaction
 
+## Mode-based folder layout
+
+Components are organized by media mode:
+
+- `src/components/image/`
+	- `ImageEditor.jsx`
+	- `ImageCropper.jsx`
+	- `PresetSizes.jsx`
+	- `PresetFilters.jsx`
+	- `ColorFilters.jsx`
+	- `AddText.jsx`
+- `src/components/gif/`
+	- `GifEditor.jsx`
+	- `GifResizePresets.jsx`
+	- `GifTrimEditor.jsx`
+	- `VideoPresetFilters.jsx`
+	- `GifFilterMain.jsx`
+	- `GifToolPlaceholder.jsx`
+- `src/components/` (shared / orchestration)
+	- `EditorContainer.jsx`
+	- `MediaEntry.jsx`
+	- `FilterMain.jsx`
+	- `FilterScreen.jsx`
+	- `CameraCapture.jsx`
+	- `PhotoPreview.jsx`
+
 ---
 
 ## Workflow boundaries
@@ -33,29 +59,40 @@ Components in `src/components` are not responsible for:
 ### GIF workflow
 
 **Components**
-- `GifEditor.jsx`
+- `gif/GifEditor.jsx`
+- `gif/GifResizePresets.jsx`
+- `gif/GifTrimEditor.jsx`
+- `gif/VideoPresetFilters.jsx`
+- `gif/GifFilterMain.jsx`
+- `gif/GifToolPlaceholder.jsx`
 
 **Responsible for**
 - video and GIF preview UI
-- trim controls
+- resize preset draft selection UI with apply/cancel/reset interactions
+- draft trim editing flow with explicit apply/cancel/reset actions
 - conversion-related UI state
 - edit-time interaction checks tied to this screen
 - processing, success, and failure messaging shown during GIF editing
+- preset-filter preview and apply interactions for video workflows
 
 **Not responsible for**
 - upload validation already handled earlier in the flow
 - admission checks performed during media selection
 - shared non-UI helper logic
 - backend conversion implementation
+- persisting committed resize state across tools (owned by container orchestration)
 
 ---
 
 ### Image workflow
 
 **Components**
-- `ImageEditor.jsx`
-- `ImageCropper.jsx`
-- `PresetSizes.jsx`
+- `image/ImageEditor.jsx`
+- `image/ImageCropper.jsx`
+- `image/PresetSizes.jsx`
+- `image/PresetFilters.jsx`
+- `image/ColorFilters.jsx`
+- `image/AddText.jsx`
 
 **Responsible for**
 - image editing UI and interaction behavior
@@ -77,9 +114,6 @@ Components in `src/components` are not responsible for:
 - `MediaEntry.jsx`
 - `FilterMain.jsx`
 - `FilterScreen.jsx`
-- `AddText.jsx`
-- `PresetFilters.jsx`
-- `ColorFilters.jsx`
 
 **Responsible for**
 - screen transitions and editor flow coordination
@@ -135,11 +169,12 @@ Top-level container for editor screen flow.
 - low-level media-processing logic
 - file-admission decision rules (type, size, format support)
 - UI behavior that belongs entirely to a child component
-- direct backend service imports or endpoint calls
+- broad endpoint orchestration logic beyond media-bridging helpers used to adapt backend results into local editor media
 
 **Notes**
 - Keep this component focused on orchestration.
 - Extract non-UI helpers if they continue to grow here.
+- Backend media adaptation helpers (for example image/video backend-result to local `File`) should stay in service modules, not inside this container.
 
 ---
 
@@ -213,7 +248,7 @@ Editing screen for video-to-GIF workflows.
 
 **Responsible for**
 - video and GIF preview state shown on this screen
-- trim controls
+- using the committed trim range provided by orchestration
 - conversion-related UI state
 - processing feedback for the user
 - emitting conversion intent through callback props
@@ -226,6 +261,42 @@ Editing screen for video-to-GIF workflows.
 
 **Notes**
 - Watch for overlap with image-editing patterns if shared behavior grows.
+
+---
+
+### `GifTrimEditor.jsx`
+
+**Purpose**
+Dedicated trim screen for GIF workflows.
+
+**Responsible for**
+- trim draft UI and slider interactions
+- previewing the selected trim interval
+- reset-to-full-duration behavior
+- explicit apply/cancel actions that emit trim intent to orchestration
+
+**Not responsible for**
+- final commit of trim state across editor screens
+- GIF conversion execution
+- upload/media admission checks
+
+---
+
+### `VideoPresetFilters.jsx`
+
+**Purpose**
+Preset filter selection screen for video workflows.
+
+**Responsible for**
+- rendering video preset options
+- requesting filtered preview variants
+- surfacing apply and preview errors for preset interactions
+- emitting the selected filtered result back to parent orchestration
+
+**Not responsible for**
+- GIF trim controls
+- overall editor screen orchestration
+- backend transport implementation details
 
 ---
 

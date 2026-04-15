@@ -10,6 +10,7 @@ This backend provides image-processing endpoints for the StickerCreate app. It i
 - Express
 - Multer (multipart upload handling)
 - Sharp (image processing)
+- Fluent-ffmpeg + @ffmpeg-installer/ffmpeg (video trim/filter processing)
 
 ## Setup
 
@@ -21,6 +22,8 @@ npm install
 
 - `npm run dev` - start the API server
 - `npm run start` - start the API server
+- `npm test` - run backend tests (Mocha)
+- `npm run coverage` - run tests with coverage (c8)
 
 Default server URL: `http://localhost:4000`
 
@@ -111,6 +114,60 @@ Default server URL: `http://localhost:4000`
 - `400 { "error": "Ratio crop values must be between 0 and 1.", "code": "INVALID_CROP_RATIO" }`
 - `404 { "error": "Media not found or expired.", "code": "MEDIA_NOT_FOUND" }`
 - `500 { "error": "Failed to process image crop.", "code": "CROP_FAILED" }`
+
+### Adjust image
+
+- **Method:** `POST`
+- **Path:** `/api/adjust/image`
+- **Content-Type:** `application/json`
+
+**Request body**
+
+```json
+{
+  "mediaId": "img_...",
+  "brightness": 1,
+  "contrast": 1,
+  "saturation": 1,
+  "hue": 0,
+  "grayscale": 0,
+  "sepia": 0,
+  "sharpness": 1
+}
+```
+
+**Validation/error responses**
+
+- `400 { "error": "Missing mediaId.", "code": "MISSING_MEDIA_ID" }`
+- `400 { "error": "Adjustment values must be finite numbers.", "code": "INVALID_ADJUST_PARAMS" }`
+- `400 { "error": "Only static images are supported (not GIF).", "code": "UNSUPPORTED_MEDIA_TYPE" }`
+- `404 { "error": "Media not found or expired.", "code": "MEDIA_NOT_FOUND" }`
+- `500 { "error": "Failed to adjust image.", "code": "ADJUST_FAILED" }`
+
+### Apply preset image filter
+
+- **Method:** `POST`
+- **Path:** `/api/filter/image`
+- **Content-Type:** `application/json`
+
+**Request body**
+
+```json
+{
+  "mediaId": "img_...",
+  "preset": "sepia"
+}
+```
+
+Supported presets: `noir`, `sepia`, `vivid`, `fade`.
+
+**Validation/error responses**
+
+- `400 { "error": "Missing mediaId.", "code": "MISSING_MEDIA_ID" }`
+- `400 { "error": "Invalid or unsupported preset.", "code": "INVALID_PRESET" }`
+- `400 { "error": "Only static images are supported (not GIF).", "code": "UNSUPPORTED_MEDIA_TYPE" }`
+- `404 { "error": "Media not found or expired.", "code": "MEDIA_NOT_FOUND" }`
+- `500 { "error": "Failed to apply preset filter.", "code": "PRESET_FILTER_FAILED" }`
 
 ### Export image
 
@@ -234,6 +291,61 @@ Notes:
 
 **Error response**
 
+- `404 { "error": "Media not found or expired.", "code": "MEDIA_NOT_FOUND" }`
+
+### Trim video
+
+- **Method:** `POST`
+- **Path:** `/api/trim/video`
+- **Content-Type:** `multipart/form-data`
+- **Field:** `video` (required)
+
+**Form fields**
+
+- `trimStart` (seconds)
+- `trimEnd` (seconds)
+
+**Validation/error responses**
+
+- `400 { "error": "No video file uploaded.", "code": "MISSING_FILE" }`
+- `400 { "error": "Invalid trim values.", "code": "INVALID_TRIM_VALUES" }`
+- `400 { "error": "trimEnd must be greater than trimStart.", "code": "INVALID_TRIM_RANGE" }`
+- `500 { "error": "Failed to trim video.", "code": "TRIM_FAILED" }`
+
+### Apply preset video filter
+
+- **Method:** `POST`
+- **Path:** `/api/filter/video`
+- **Content-Type:** `multipart/form-data`
+- **Field:** `video` (required)
+
+**Form fields**
+
+- `preset` (`noir`, `sepia`, `vivid`, `fade`)
+
+**Validation/error responses**
+
+- `400 { "error": "No video file uploaded.", "code": "MISSING_FILE" }`
+- `400 { "error": "Invalid or unsupported preset.", "code": "INVALID_PRESET" }`
+- `500 { "error": "Failed to apply video filter.", "code": "VIDEO_FILTER_FAILED" }`
+
+### Export GIF metadata
+
+- **Method:** `POST`
+- **Path:** `/api/export/gif`
+- **Content-Type:** `application/json`
+
+**Request body**
+
+```json
+{
+  "mediaId": "gif_..."
+}
+```
+
+**Validation/error responses**
+
+- `400 { "error": "Missing mediaId.", "code": "MISSING_MEDIA_ID" }`
 - `404 { "error": "Media not found or expired.", "code": "MEDIA_NOT_FOUND" }`
 
 ## Error response shape

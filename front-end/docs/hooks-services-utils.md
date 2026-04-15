@@ -83,6 +83,10 @@ Hooks may call services directly.
 
 Components should generally consume hooks and callbacks rather than importing backend services directly.
 
+Current exceptions in this codebase:
+- filter-focused components that call backend services for immediate interactive preview or apply actions
+- container-level media-bridging helpers that adapt backend result URLs into local `File` or object URL data for downstream editor state
+
 ---
 
 ### Validation boundary
@@ -210,7 +214,8 @@ Shared hook for GIF conversion orchestration actions used by editor components.
 
 **Responsible for**
 - exposing conversion actions to components through a hook API
-- delegating conversion requests to `convertVideoToGif`
+- delegating trim-to-GIF conversion requests to `trimVideoService`, including committed `resizePreset`
+- delegating GIF export requests to `exportGifToBackend`
 
 **Not responsible for**
 - GIF editor UI state and rendering
@@ -251,6 +256,20 @@ Shared low-level backend HTTP client abstraction.
 - workflow orchestration
 - React state management
 
+### `services/backendGifService.js`
+
+**Purpose**
+GIF/video backend API contract layer for trim, filter, conversion, and export workflows.
+
+**Responsible for**
+- shaping `trimVideoService` multipart payload fields (`trimStart`, `trimEnd`, `resizePreset`)
+- normalizing backend responses for GIF/video flows
+- preserving API-level constraints as request contracts (without owning UI state)
+
+**Not responsible for**
+- editor screen transitions
+- draft-versus-committed UI state decisions
+
 ---
 
 ### `services/backendImageService.js`
@@ -275,8 +294,10 @@ Image-specific backend API contract layer.
 GIF conversion backend API contract layer.
 
 **Responsible for**
-- video-to-GIF conversion requests
-- GIF result normalization
+- trim-to-GIF conversion requests
+- video preset filter requests
+- GIF export requests
+- normalizing GIF and video API responses for front-end consumption
 
 **Not responsible for**
 - trim UI behavior

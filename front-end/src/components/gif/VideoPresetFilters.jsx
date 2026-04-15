@@ -1,6 +1,6 @@
-import { useMemo, useState } from 'react'
-import FilterScreen from './FilterScreen'
-import { applyVideoFilter } from '../services/backendGifService'
+import { useEffect, useMemo, useRef, useState } from 'react'
+import FilterScreen from '../FilterScreen'
+import { applyVideoFilter } from '../../services/backendGifService'
 
 const PRESETS = [
   { id: 'default', label: 'Original' },
@@ -15,7 +15,9 @@ function VideoPresetFilters({ videoFile, onApply, onCancel }) {
   const [isApplying, setIsApplying] = useState(false)
   const [isLoadingPreview, setIsLoadingPreview] = useState(false)
   const [applyError, setApplyError] = useState(null)
-  const [previewUrl, setPreviewUrl] = useState(null)  
+  const [previewUrl, setPreviewUrl] = useState(null)
+  const [previewResult, setPreviewResult] = useState(null)
+  const previewRequestIdRef = useRef(0)
 
   const videoUrl = useMemo(() => {
     if (!videoFile) return null
@@ -23,21 +25,49 @@ function VideoPresetFilters({ videoFile, onApply, onCancel }) {
     return videoFile?.url || null
   }, [videoFile])
 
-  const handleSelectStyle = async (id) => {  
+  useEffect(() => {
+    if (!(videoFile instanceof File) || !videoUrl) return
+    return () => {
+      if (import.meta.env.PROD) {
+        URL.revokeObjectURL(videoUrl)
+      }
+    }
+  }, [videoFile, videoUrl])
+
+  useEffect(() => {
+    previewRequestIdRef.current += 1
+    setSelectedStyle('default')
+    setIsApplying(false)
+    setIsLoadingPreview(false)
+    setApplyError(null)
+    setPreviewUrl(null)
+    setPreviewResult(null)
+  }, [videoFile])
+
+  const handleSelectStyle = async (id) => {
+    const requestId = ++previewRequestIdRef.current
     setSelectedStyle(id)
+    setApplyError(null)
     if (id === 'default') {
       setPreviewUrl(null)
+      setPreviewResult(null)
       return
     }
     if (!videoFile) return
     try {
-      setIsLoadingPreview(true)  
+      setIsLoadingPreview(true)
       const result = await applyVideoFilter(videoFile, id)
+      if (requestId !== previewRequestIdRef.current) return
       setPreviewUrl(result?.url || null)
+      setPreviewResult(result || null)
     } catch (err) {
+      if (requestId !== previewRequestIdRef.current) return
       setApplyError(err?.message || 'Preview failed.')
+      setPreviewResult(null)
     } finally {
-      setIsLoadingPreview(false) 
+      if (requestId === previewRequestIdRef.current) {
+        setIsLoadingPreview(false)
+      }
     }
   }
 
@@ -49,7 +79,10 @@ function VideoPresetFilters({ videoFile, onApply, onCancel }) {
       }
       if (!videoFile) return
       setIsApplying(true)
-      const result = await applyVideoFilter(videoFile, selectedStyle)
+      const result =
+        previewResult?.preset === selectedStyle && previewResult?.url
+          ? previewResult
+          : await applyVideoFilter(videoFile, selectedStyle)
       await onApply?.(result)
     } catch (err) {
       setApplyError(err?.message || 'Could not apply preset.')
@@ -62,10 +95,10 @@ function VideoPresetFilters({ videoFile, onApply, onCancel }) {
     <FilterScreen
       title="Preset Filters"
       imageSrc={null}
-      videoSrc={previewUrl || videoUrl}  
+      videoSrc={previewUrl || videoUrl}
       onApply={handleApply}
       onCancel={onCancel}
-      previewOverlay={isLoadingPreview ? (    
+      previewOverlay={isLoadingPreview ? (
         <div style={{
           position: 'absolute',
           inset: 0,
@@ -86,7 +119,7 @@ function VideoPresetFilters({ videoFile, onApply, onCancel }) {
           key={id}
           type="button"
           className={`btn-secondary preset-filters-button ${selectedStyle === id ? 'active' : ''}`}
-          onClick={() => handleSelectStyle(id)}  
+          onClick={() => handleSelectStyle(id)}
           disabled={isApplying || isLoadingPreview}
         >
           {label}

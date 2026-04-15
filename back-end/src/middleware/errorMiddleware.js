@@ -16,10 +16,10 @@ export const errorHandler = (error, _req, res, next) => {
 	}
 
 	if (error) {
-		return res.status(500).json({
-			error: 'Unexpected server error while handling image upload.',
-			code: 'UPLOAD_FAILED',
-		})
+		   return res.status(500).json({
+			   error: 'Unexpected server error occurred.',
+			   code: 'INTERNAL_SERVER_ERROR',
+		   })
 	}
 
 	return next()

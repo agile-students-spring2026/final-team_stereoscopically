@@ -1,4 +1,4 @@
-import { postMultipart } from './backendMediaClient'
+import { postJson, postMultipart } from './backendMediaClient'
 
 export const convertVideoToGif = async (videoFile) => {
   if (!videoFile) {
@@ -23,32 +23,32 @@ export const convertVideoToGif = async (videoFile) => {
   }
 }
 
-export const trimVideoService = async (videoFile, trimStart, trimEnd) => {
+export const trimVideoService = async (videoFile, trimStart, trimEnd, resizePreset, resizeBorderColor) => {
   if (!videoFile) {
     throw new Error('No video file provided for trimming')
   }
 
-  const formData = new FormData()
-  formData.append('video', videoFile)
-  formData.append('trimStart', String(trimStart))
-  formData.append('trimEnd', String(trimEnd))
-
-  let response
-  try {
-    response = await fetch('http://localhost:4000/api/trim/video', {
-      method: 'POST',
-      body: formData,
-    })
-  } catch {
-    throw new Error('Unable to reach backend. Please make sure the backend server is running.')
+  const fields = {
+    trimStart,
+    trimEnd,
   }
 
-  if (!response.ok) {
-    const data = await response.json().catch(() => ({}))
-    throw new Error(data?.error || 'Video trim failed')
+  if (typeof resizePreset === 'string' && resizePreset.trim().length > 0) {
+    fields.resizePreset = resizePreset
   }
 
-  const payload = await response.json()
+  if (typeof resizeBorderColor === 'string' && resizeBorderColor.trim().length > 0) {
+    fields.resizeBorderColor = resizeBorderColor
+  }
+
+  const payload = await postMultipart({
+    path: '/api/trim/video',
+    fileField: 'video',
+    file: videoFile,
+    fields,
+    fallbackErrorMessage: 'Video trim failed',
+  })
+
   return {
     id: payload?.id ?? null,
     type: payload?.type ?? 'video',
@@ -62,26 +62,16 @@ export const applyVideoFilter = async (videoFile, preset) => {
     throw new Error('No video file provided')
   }
 
-  const formData = new FormData()
-  formData.append('video', videoFile)
-  formData.append('preset', preset)
+  const payload = await postMultipart({
+    path: '/api/filter/video',
+    fileField: 'video',
+    file: videoFile,
+    fields: {
+      preset,
+    },
+    fallbackErrorMessage: 'Video filter failed',
+  })
 
-  let response
-  try {
-    response = await fetch('http://localhost:4000/api/filter/video', {
-      method: 'POST',
-      body: formData,
-    })
-  } catch {
-    throw new Error('Unable to reach backend. Please make sure the backend server is running.')
-  }
-
-  if (!response.ok) {
-    const data = await response.json().catch(() => ({}))
-    throw new Error(data?.error || 'Video filter failed')
-  }
-
-  const payload = await response.json()
   return {
     id: payload?.id ?? null,
     type: payload?.type ?? 'video',
@@ -93,27 +83,48 @@ export const applyVideoFilter = async (videoFile, preset) => {
 export const exportGifToBackend = async (mediaId) => {
   if (!mediaId) throw new Error('Missing media ID for export')
 
-  let response
-  try {
-    response = await fetch('http://localhost:4000/api/export/gif', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ mediaId }),
-    })
-  } catch {
-    throw new Error('Unable to reach backend. Please make sure the backend server is running.')
-  }
+  const payload = await postJson({
+    path: '/api/export/gif',
+    payload: { mediaId },
+    fallbackErrorMessage: 'GIF export failed',
+  })
 
-  if (!response.ok) {
-    const data = await response.json().catch(() => ({}))
-    throw new Error(data?.error || 'GIF export failed')
-  }
-
-  const payload = await response.json()
   const result = payload?.data ?? payload
   return {
     id: result?.id ?? null,
     url: result?.url ?? null,
     downloadUrl: result?.downloadUrl ?? null,
+  }
+}
+
+export const convertBackendVideoResultToLocalMedia = async (
+  result,
+  {
+    fallbackFileName = 'filtered-video.mp4',
+    fallbackMimeType = 'video/mp4',
+    fetchErrorMessage = 'Failed to load filtered video.',
+  } = {}
+) => {
+  const sourceUrl = result?.url
+  if (!sourceUrl) {
+    throw new Error(fetchErrorMessage)
+  }
+
+  const response = await fetch(sourceUrl)
+  if (!response.ok) {
+    throw new Error(fetchErrorMessage)
+  }
+
+  const blob = await response.blob()
+  const fileName = result?.fileName || fallbackFileName
+  const mimeType = result?.mimeType || blob.type || fallbackMimeType
+  const file = new File([blob], fileName, { type: mimeType })
+  const objectUrl = URL.createObjectURL(blob)
+
+  return {
+    file,
+    objectUrl,
+    fileName,
+    mimeType,
   }
 }
