@@ -6,7 +6,7 @@ This document defines shared naming and styling conventions for image and GIF ed
 
 - keep image and GIF flows visually coherent
 - reduce one-off styling and duplicated semantics
-- enable safe incremental migration without breaking existing classes
+- keep shared naming semantic and stable across tools
 
 ## Shared class contract
 
@@ -23,9 +23,9 @@ Use these classes for all editor-focused screens going forward:
 - `editor-tool-screen`
   - shared wrapper for sub-tool pages
 - `editor-tool-screen-actions`
-  - semantic action-row class for sub-tool pages (compat alias: `preset-sizes-screen-actions`)
+  - semantic action-row class for sub-tool pages
 - `editor-tool-cancel`
-  - semantic cancel-button class for sub-tool pages (compat alias: `preset-sizes-cancel`)
+  - semantic cancel-button class for sub-tool pages
 - `editor-actions`
   - shared action-row base for editor and tool controls
 - `editor-actions--stack`
@@ -100,7 +100,5 @@ Use CSS custom properties from `src/index.css` (Phase 1 added):
 
 ## Migration strategy
 
-1. Keep existing selectors in place.
-2. Add `editor-*` classes in parallel.
-3. Move one feature/screen at a time to `editor-*` classes.
-4. Remove legacy aliases only after all usages are migrated.
+Legacy `preset-sizes-*` aliases have been fully migrated to semantic `editor-*` classes.
+Going forward, add and use only the `editor-*` contract for shared editor UI patterns.

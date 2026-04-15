@@ -9,7 +9,7 @@ function EditorToolScreen({
   actions = null,
   className = '',
 }) {
-  const rootClassName = ['editor-tool-screen', 'preset-sizes-screen', className]
+  const rootClassName = ['editor-tool-screen', className]
     .filter(Boolean)
     .join(' ')
 
@@ -24,9 +24,9 @@ function EditorToolScreen({
       {controls}
 
       {actions ? (
-        <div className="card-actions editor-actions editor-actions--inline editor-tool-screen-actions preset-sizes-screen-actions">{actions}</div>
+        <div className="card-actions editor-actions editor-actions--inline editor-tool-screen-actions">{actions}</div>
       ) : (
-        <div className="card-actions editor-actions editor-actions--inline editor-tool-screen-actions preset-sizes-screen-actions">
+        <div className="card-actions editor-actions editor-actions--inline editor-tool-screen-actions">
           <button type="button" className="btn-secondary" onClick={onCancel}>
             {cancelLabel}
           </button>

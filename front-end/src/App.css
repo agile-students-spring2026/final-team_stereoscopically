@@ -567,35 +567,19 @@
   margin-top: 0.75rem;
 }
 
-.preset-sizes-screen-actions,
 .editor-tool-screen-actions {
   margin-top: 1.5rem;
 }
 
-.preset-sizes-screen,
-.editor-tool-screen {
-  width: 100%;
-  max-width: var(--editor-max-width);
-  margin: 0 auto;
-  display: flex;
-  flex-direction: column;
-  align-items: stretch;
-  gap: var(--editor-space-sm);
-  box-sizing: border-box;
-}
-
-.preset-sizes-screen .screen-header-column,
 .editor-tool-screen .screen-header-column {
   align-items: center;
 }
 
-.preset-sizes-screen .screen-title,
 .editor-tool-screen .screen-title {
   width: 100%;
   text-align: center;
 }
 
-.preset-sizes-screen > .card,
 .editor-tool-screen > .card {
   align-self: stretch;
   width: 100%;
@@ -603,7 +587,6 @@
   box-sizing: border-box;
 }
 
-.preset-sizes-cancel,
 .editor-tool-cancel {
   margin-top: 1rem;
   width: 100%;

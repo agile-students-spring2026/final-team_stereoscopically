@@ -13,7 +13,7 @@ const LETTERBOX_SWATCHES = [
 
 function PresetSizes({ letterboxColor, onLetterboxColorChange, onSelect, onCancel, isBusy = false }) {
   return (
-    <div className="editor-tool-screen preset-sizes-screen">
+    <div className="editor-tool-screen">
       <div className="screen-header screen-header-column">
         <h2 className="screen-title">Platform output (pixels)</h2>
       </div>
@@ -59,7 +59,7 @@ function PresetSizes({ letterboxColor, onLetterboxColorChange, onSelect, onCance
             {label} ({width} × {height} px)
           </button>
         ))}
-        <button type="button" className="btn-secondary editor-tool-cancel preset-sizes-cancel" onClick={onCancel}>
+        <button type="button" className="btn-secondary editor-tool-cancel" onClick={onCancel}>
           Cancel
         </button>
       </div>

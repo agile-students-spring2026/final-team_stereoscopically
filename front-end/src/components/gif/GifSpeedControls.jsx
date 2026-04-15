@@ -14,7 +14,7 @@ function GifSpeedControls({ videoFile, selectedSpeedPlaybackRate, onSelectSpeed,
   }
 
   return (
-    <div className="editor-tool-screen preset-sizes-screen">
+    <div className="editor-tool-screen">
       <div className="screen-header screen-header-column">
         <h2 className="screen-title">Speed</h2>
         <p className="screen-subtitle">Choose playback speed for this GIF.</p>
@@ -53,7 +53,7 @@ function GifSpeedControls({ videoFile, selectedSpeedPlaybackRate, onSelectSpeed,
         })}
       </div>
 
-      <div className="card-actions editor-actions editor-actions--inline editor-tool-screen-actions preset-sizes-screen-actions">
+      <div className="card-actions editor-actions editor-actions--inline editor-tool-screen-actions">
         <button type="button" className="btn-primary" onClick={() => onApplySpeed?.(selectedSpeedPlaybackRate)}>
           Apply
         </button>
