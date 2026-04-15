@@ -1,6 +1,6 @@
-import { useEffect, useMemo, useState } from 'react'
-import FilterScreen from './FilterScreen'
-import { applyVideoFilter } from '../services/backendGifService'
+import { useEffect, useMemo, useRef, useState } from 'react'
+import FilterScreen from '../FilterScreen'
+import { applyVideoFilter } from '../../services/backendGifService'
 
 const PRESETS = [
   { id: 'default', label: 'Original' },
@@ -17,6 +17,7 @@ function VideoPresetFilters({ videoFile, onApply, onCancel }) {
   const [applyError, setApplyError] = useState(null)
   const [previewUrl, setPreviewUrl] = useState(null)
   const [previewResult, setPreviewResult] = useState(null)
+  const previewRequestIdRef = useRef(0)
 
   const videoUrl = useMemo(() => {
     if (!videoFile) return null
@@ -26,13 +27,25 @@ function VideoPresetFilters({ videoFile, onApply, onCancel }) {
 
   useEffect(() => {
     if (!(videoFile instanceof File) || !videoUrl) return
-
     return () => {
-      URL.revokeObjectURL(videoUrl)
+      if (import.meta.env.PROD) {
+        URL.revokeObjectURL(videoUrl)
+      }
     }
   }, [videoFile, videoUrl])
 
+  useEffect(() => {
+    previewRequestIdRef.current += 1
+    setSelectedStyle('default')
+    setIsApplying(false)
+    setIsLoadingPreview(false)
+    setApplyError(null)
+    setPreviewUrl(null)
+    setPreviewResult(null)
+  }, [videoFile])
+
   const handleSelectStyle = async (id) => {
+    const requestId = ++previewRequestIdRef.current
     setSelectedStyle(id)
     setApplyError(null)
     if (id === 'default') {
@@ -44,13 +57,17 @@ function VideoPresetFilters({ videoFile, onApply, onCancel }) {
     try {
       setIsLoadingPreview(true)
       const result = await applyVideoFilter(videoFile, id)
+      if (requestId !== previewRequestIdRef.current) return
       setPreviewUrl(result?.url || null)
       setPreviewResult(result || null)
     } catch (err) {
+      if (requestId !== previewRequestIdRef.current) return
       setApplyError(err?.message || 'Preview failed.')
       setPreviewResult(null)
     } finally {
-      setIsLoadingPreview(false)
+      if (requestId === previewRequestIdRef.current) {
+        setIsLoadingPreview(false)
+      }
     }
   }
 

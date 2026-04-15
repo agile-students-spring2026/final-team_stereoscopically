@@ -9,8 +9,13 @@ function PhotoPreview({ file, onRetake, onConfirm, onBack }) {
     useEffect(() => {
         if (!previewUrl) return
 
-        // Cleanup to prevent memory leaks
-        return () => URL.revokeObjectURL(previewUrl)
+        // In dev/StrictMode, immediate revoke can cause noisy blob ERR_FILE_NOT_FOUND
+        // while video elements are still resolving the previous URL.
+        return () => {
+            if (import.meta.env.PROD) {
+                URL.revokeObjectURL(previewUrl)
+            }
+        }
     }, [previewUrl])
 
     const isVideo = file?.type.startsWith('video/')

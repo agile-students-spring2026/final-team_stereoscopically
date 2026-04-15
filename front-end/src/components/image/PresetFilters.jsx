@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
-import FilterScreen from './FilterScreen'
-import { applyPresetImageFilterFromBackend } from '../services/backendImageService'
+import FilterScreen from '../FilterScreen'
+import { applyPresetImageFilterFromBackend } from '../../services/backendImageService'
 
 const PRESETS = [
   { id: 'default', label: 'Original' },

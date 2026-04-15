@@ -1,11 +1,17 @@
 import sharp from 'sharp'
 import ffmpeg from 'fluent-ffmpeg'
 import ffmpegInstaller from '@ffmpeg-installer/ffmpeg'
-import os from 'os'
-import fs from 'fs'
-import path from 'path'
+import { tmpdir } from 'os'
+import { writeFileSync, unlinkSync } from 'fs'
+import { readFile, unlink, writeFile } from 'fs/promises'
+import { join } from 'path'
 ffmpeg.setFfmpegPath(ffmpegInstaller.path)
-import { MAX_EXPORT_DIMENSION } from '../config/constants.js'
+import {
+	DEFAULT_GIF_RESIZE_BORDER_COLOR,
+	DEFAULT_GIF_RESIZE_PRESET,
+	GIF_RESIZE_PRESET_DIMENSIONS,
+	MAX_EXPORT_DIMENSION,
+} from '../config/constants.js'
 import { createMedia, getActiveMediaOrDeleteExpired } from './mediaStore.js'
 import { applyImageAdjustments, PRESET_ADJUSTMENTS } from './imageAdjustService.js'
 import { normalizeTextOverlayRequest, renderTextOverlayBuffer } from './textOverlayService.js'
@@ -78,6 +84,64 @@ const parseCropParams = ({ x, y, width, height, unit = 'pixel', scaleX = 1, scal
 			sy,
 		},
 	}
+}
+
+const resolveGifResizePreset = (rawPreset) => {
+	if (rawPreset == null || rawPreset === '') {
+		return { preset: DEFAULT_GIF_RESIZE_PRESET }
+	}
+
+	if (typeof rawPreset !== 'string') {
+		return {
+			error: {
+				status: 400,
+				error: 'Invalid resize preset.',
+				code: 'INVALID_RESIZE_PRESET',
+			},
+		}
+	}
+
+	const preset = rawPreset.toLowerCase().trim()
+	if (!GIF_RESIZE_PRESET_DIMENSIONS[preset]) {
+		return {
+			error: {
+				status: 400,
+				error: 'Invalid resize preset. Use square, landscape, or portrait.',
+				code: 'INVALID_RESIZE_PRESET',
+			},
+		}
+	}
+
+	return { preset }
+}
+
+const resolveGifResizeBorderColor = (rawColor) => {
+	if (rawColor == null || rawColor === '') {
+		return { borderColor: DEFAULT_GIF_RESIZE_BORDER_COLOR }
+	}
+
+	if (typeof rawColor !== 'string') {
+		return {
+			error: {
+				status: 400,
+				error: 'Invalid resize border color.',
+				code: 'INVALID_RESIZE_BORDER_COLOR',
+			},
+		}
+	}
+
+	const color = rawColor.trim()
+	if (!/^#[0-9A-Fa-f]{6}$/.test(color)) {
+		return {
+			error: {
+				status: 400,
+				error: 'Invalid resize border color. Use a #RRGGBB hex value.',
+				code: 'INVALID_RESIZE_BORDER_COLOR',
+			},
+		}
+	}
+
+	return { borderColor: color.toLowerCase() }
 }
 
 export const uploadImage = (req) => {
@@ -570,7 +634,7 @@ export const getExportDownloadContent = (id) => {
 	}
 }
 export const trimVideo = async (req) => {
-    const { trimStart, trimEnd } = req.body ?? {}
+	const { trimStart, trimEnd, resizePreset, resizeBorderColor } = req.body ?? {}
 
     if (!req.file) {
         return { error: { status: 400, error: 'No video file uploaded.', code: 'MISSING_FILE' } }
@@ -587,20 +651,33 @@ export const trimVideo = async (req) => {
         return { error: { status: 400, error: 'trimEnd must be greater than trimStart.', code: 'INVALID_TRIM_RANGE' } }
     }
 
+	const parsedResizePreset = resolveGifResizePreset(resizePreset)
+	if (parsedResizePreset.error) {
+		return { error: parsedResizePreset.error }
+	}
+
+	const parsedResizeBorderColor = resolveGifResizeBorderColor(resizeBorderColor)
+	if (parsedResizeBorderColor.error) {
+		return { error: parsedResizeBorderColor.error }
+	}
+
     try {
         const duration = trimEndNum - trimStartNum
+		const targetSize = GIF_RESIZE_PRESET_DIMENSIONS[parsedResizePreset.preset]
+		const ffmpegPadColor = `0x${parsedResizeBorderColor.borderColor.slice(1)}`
+		const scaleAndPadFilter = `fps=10,scale=${targetSize.width}:${targetSize.height}:force_original_aspect_ratio=decrease:flags=lanczos,pad=${targetSize.width}:${targetSize.height}:(ow-iw)/2:(oh-ih)/2:color=${ffmpegPadColor},split[s0][s1]`
 
-        const tmpInput = path.join(os.tmpdir(), `input_${Date.now()}.mp4`)
-        const tmpOutput = path.join(os.tmpdir(), `output_${Date.now()}.gif`)
+		const tmpInput = join(tmpdir(), `input_${Date.now()}.mp4`)
+		const tmpOutput = join(tmpdir(), `output_${Date.now()}.gif`)
 
-        await fs.promises.writeFile(tmpInput, req.file.buffer)
+		await writeFile(tmpInput, req.file.buffer)
 
         await new Promise((resolve, reject) => {
             ffmpeg(tmpInput)
                 .setStartTime(trimStartNum)
                 .setDuration(duration)
                 .complexFilter([
-                    'fps=10,scale=320:-1:flags=lanczos,split[s0][s1]',
+					scaleAndPadFilter,
                     '[s0]palettegen[p]',
                     '[s1][p]paletteuse[out]',
                 ])
@@ -611,10 +688,10 @@ export const trimVideo = async (req) => {
                 .save(tmpOutput)
         })
 
-        const outputBuffer = await fs.promises.readFile(tmpOutput)
+	const outputBuffer = await readFile(tmpOutput)
 
-        await fs.promises.unlink(tmpInput).catch(() => {})
-        await fs.promises.unlink(tmpOutput).catch(() => {})
+	await unlink(tmpInput).catch(() => {})
+	await unlink(tmpOutput).catch(() => {})
 
         const trimId = createMediaId('gif')
         createMedia(trimId, {
@@ -632,6 +709,8 @@ export const trimVideo = async (req) => {
                 url: buildMediaUrl(req, trimId),
                 mimeType: 'image/gif',
                 size: outputBuffer.length,
+				resizePreset: parsedResizePreset.preset,
+				resizeBorderColor: parsedResizeBorderColor.borderColor,
             },
         }
     } catch (error) {

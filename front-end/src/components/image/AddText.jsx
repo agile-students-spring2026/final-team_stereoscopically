@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import FilterScreen from './FilterScreen'
+import FilterScreen from '../FilterScreen'
 
 const clamp = (value, min, max) => Math.min(max, Math.max(min, value))
 

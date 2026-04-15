@@ -23,19 +23,29 @@ export const convertVideoToGif = async (videoFile) => {
   }
 }
 
-export const trimVideoService = async (videoFile, trimStart, trimEnd) => {
+export const trimVideoService = async (videoFile, trimStart, trimEnd, resizePreset, resizeBorderColor) => {
   if (!videoFile) {
     throw new Error('No video file provided for trimming')
+  }
+
+  const fields = {
+    trimStart,
+    trimEnd,
+  }
+
+  if (typeof resizePreset === 'string' && resizePreset.trim().length > 0) {
+    fields.resizePreset = resizePreset
+  }
+
+  if (typeof resizeBorderColor === 'string' && resizeBorderColor.trim().length > 0) {
+    fields.resizeBorderColor = resizeBorderColor
   }
 
   const payload = await postMultipart({
     path: '/api/trim/video',
     fileField: 'video',
     file: videoFile,
-    fields: {
-      trimStart,
-      trimEnd,
-    },
+    fields,
     fallbackErrorMessage: 'Video trim failed',
   })
 
@@ -84,5 +94,37 @@ export const exportGifToBackend = async (mediaId) => {
     id: result?.id ?? null,
     url: result?.url ?? null,
     downloadUrl: result?.downloadUrl ?? null,
+  }
+}
+
+export const convertBackendVideoResultToLocalMedia = async (
+  result,
+  {
+    fallbackFileName = 'filtered-video.mp4',
+    fallbackMimeType = 'video/mp4',
+    fetchErrorMessage = 'Failed to load filtered video.',
+  } = {}
+) => {
+  const sourceUrl = result?.url
+  if (!sourceUrl) {
+    throw new Error(fetchErrorMessage)
+  }
+
+  const response = await fetch(sourceUrl)
+  if (!response.ok) {
+    throw new Error(fetchErrorMessage)
+  }
+
+  const blob = await response.blob()
+  const fileName = result?.fileName || fallbackFileName
+  const mimeType = result?.mimeType || blob.type || fallbackMimeType
+  const file = new File([blob], fileName, { type: mimeType })
+  const objectUrl = URL.createObjectURL(blob)
+
+  return {
+    file,
+    objectUrl,
+    fileName,
+    mimeType,
   }
 }

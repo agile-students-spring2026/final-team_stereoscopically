@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
-import FilterScreen from './FilterScreen'
-import { adjustImageFromBackend } from '../services/backendImageService'
+import FilterScreen from '../FilterScreen'
+import { adjustImageFromBackend } from '../../services/backendImageService'
 
 const pctToFactor = (pct) => Math.min(2, Math.max(0, pct / 100))
 

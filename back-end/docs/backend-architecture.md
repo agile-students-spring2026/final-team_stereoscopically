@@ -150,6 +150,7 @@ Examples of current validation/service codes include:
 - `INVALID_CROP_RATIO`
 - `INVALID_TRIM_VALUES`
 - `INVALID_TRIM_RANGE`
+- `INVALID_RESIZE_PRESET`
 - `INVALID_DIMENSIONS`
 - `INVALID_LETTERBOX_COLOR`
 - `INVALID_TEXT_PAYLOAD`
@@ -192,6 +193,8 @@ Responsible for:
 - `MAX_EXPORT_DIMENSION`
 - `MEDIA_TTL_MS`
 - `MEDIA_PURGE_INTERVAL_MS`
+- `DEFAULT_GIF_RESIZE_PRESET`
+- `GIF_RESIZE_PRESET_DIMENSIONS`
 
 ### `src/routes/mediaRoutes.js`
 
@@ -222,6 +225,7 @@ Responsible for:
 - crop flow processing and validation
 - export flow processing and validation
 - video trim and preset-filter orchestration
+- resize-preset validation and GIF output-shape mapping for trim-to-GIF flow
 - GIF export metadata response shaping
 - add-text endpoint orchestration and media result shaping
 - media and export download payload assembly
