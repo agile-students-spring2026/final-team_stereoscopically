@@ -433,9 +433,32 @@ function EditorContainer() {
         return (
           <VideoPresetFilters
             videoFile={selectedMedia}
-            onApply={handleVideoPresetApply}
+            selectedFilter={gifSession.selectedFilterPreset}
+            onSelectFilter={(presetId) => gifSession.selectFilterPreset(selectedMedia, presetId)}
+            onApply={async () => {
+              if (gifSession.selectedFilterPreset === 'default') {
+                await handleVideoPresetApply(null)
+                return
+              }
+
+              const preset = gifSession.selectedFilterPreset
+              const existingResult = gifSession.filterPreviewResult
+
+              try {
+                const result =
+                  existingResult?.preset === preset && existingResult?.url
+                    ? existingResult
+                    : await gifSession.applyVideoFilterAndReturn(selectedMedia, preset, existingResult)
+
+                await handleVideoPresetApply(result)
+              } catch (error) {
+                // Errors are already surfaced via gifSession.exportError or previewError; no-op here
+              }
+            }}
             onCancel={() => gifSession.openGifTool(gifSession.GIF_FLOW_TOOLS.FILTERS_MAIN)}
-            onLoadPreview={gifSession.loadFilterPreview}
+            isLoadingPreview={gifSession.isLoadingFilterPreview}
+            previewError={gifSession.filterPreviewError}
+            previewUrl={gifSession.filterPreviewUrl}
           />
         )
       }

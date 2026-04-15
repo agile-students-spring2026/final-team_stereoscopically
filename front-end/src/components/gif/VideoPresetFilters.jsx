@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import FilterScreen from '../FilterScreen'
 
 const PRESETS = [
@@ -9,14 +9,19 @@ const PRESETS = [
   { id: 'fade', label: 'Fade' },
 ]
 
-function VideoPresetFilters({ videoFile, onApply, onCancel, onLoadPreview }) {
+function VideoPresetFilters({
+  videoFile,
+  selectedFilter,
+  onSelectFilter,
+  onApply,
+  onCancel,
+  isLoadingPreview,
+  previewError,
+  previewUrl,
+}) {
   const [selectedStyle, setSelectedStyle] = useState('default')
   const [isApplying, setIsApplying] = useState(false)
-  const [isLoadingPreview, setIsLoadingPreview] = useState(false)
   const [applyError, setApplyError] = useState(null)
-  const [previewUrl, setPreviewUrl] = useState(null)
-  const [previewResult, setPreviewResult] = useState(null)
-  const previewRequestIdRef = useRef(0)
 
   const videoUrl = useMemo(() => {
     if (!videoFile) return null
@@ -34,55 +39,26 @@ function VideoPresetFilters({ videoFile, onApply, onCancel, onLoadPreview }) {
   }, [videoFile, videoUrl])
 
   useEffect(() => {
-    previewRequestIdRef.current += 1
     setSelectedStyle('default')
     setIsApplying(false)
-    setIsLoadingPreview(false)
     setApplyError(null)
-    setPreviewUrl(null)
-    setPreviewResult(null)
   }, [videoFile])
 
-  const handleSelectStyle = async (id) => {
-    const requestId = ++previewRequestIdRef.current
-    setSelectedStyle(id)
+  useEffect(() => {
+    // Keep local selectedStyle in sync with external session state
+    setSelectedStyle(selectedFilter || 'default')
+  }, [selectedFilter])
+
+  const handleSelectStyle = (id) => {
     setApplyError(null)
-    if (id === 'default') {
-      setPreviewUrl(null)
-      setPreviewResult(null)
-      return
-    }
-    if (!videoFile || !onLoadPreview) return
-    try {
-      setIsLoadingPreview(true)
-      const result = await onLoadPreview(videoFile, id)
-      if (requestId !== previewRequestIdRef.current) return
-      setPreviewUrl(result?.url || null)
-      setPreviewResult(result || null)
-    } catch (err) {
-      if (requestId !== previewRequestIdRef.current) return
-      setApplyError(err?.message || 'Preview failed.')
-      setPreviewResult(null)
-    } finally {
-      if (requestId === previewRequestIdRef.current) {
-        setIsLoadingPreview(false)
-      }
-    }
+    setSelectedStyle(id)
+    onSelectFilter?.(id)
   }
 
   const handleApply = async () => {
     try {
-      if (selectedStyle === 'default') {
-        await onApply?.(null)
-        return
-      }
-      if (!videoFile || !onLoadPreview) return
       setIsApplying(true)
-      const result =
-        previewResult?.preset === selectedStyle && previewResult?.url
-          ? previewResult
-          : await onLoadPreview(videoFile, selectedStyle)
-      await onApply?.(result)
+      await onApply?.()
     } catch (err) {
       setApplyError(err?.message || 'Could not apply preset.')
     } finally {
@@ -98,17 +74,19 @@ function VideoPresetFilters({ videoFile, onApply, onCancel, onLoadPreview }) {
       onApply={handleApply}
       onCancel={onCancel}
       previewOverlay={isLoadingPreview ? (
-        <div style={{
-          position: 'absolute',
-          inset: 0,
-          background: 'rgba(0,0,0,0.5)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          color: '#fff',
-          fontSize: '1rem',
-          fontWeight: '600',
-        }}>
+        <div
+          style={{
+            position: 'absolute',
+            inset: 0,
+            background: 'rgba(0,0,0,0.5)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            color: '#fff',
+            fontSize: '1rem',
+            fontWeight: '600',
+          }}
+        >
           Applying filter…
         </div>
       ) : null}
@@ -124,9 +102,9 @@ function VideoPresetFilters({ videoFile, onApply, onCancel, onLoadPreview }) {
           {label}
         </button>
       ))}
-      {applyError && (
+      {(previewError || applyError) && (
         <p className="validation-error" role="alert">
-          {applyError}
+          {applyError || previewError}
         </p>
       )}
     </FilterScreen>

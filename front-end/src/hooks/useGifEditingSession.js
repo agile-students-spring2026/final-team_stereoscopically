@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react'
+import { useCallback, useRef, useState } from 'react'
 import { trimVideoService, applyVideoFilter, exportGifToBackend } from '../services/backendGifService'
 import { GIF_SPEED_PLAYBACK_RATES, DEFAULT_GIF_SPEED_PLAYBACK_RATE } from '../components/gif/gifSpeedOptions'
 import { downloadFile } from '../utils/downloadFile'
@@ -69,11 +69,16 @@ const useGifEditingSession = () => {
   // Tool navigation state
   const [activeTool, setActiveTool] = useState(GIF_FLOW_TOOLS.EDITOR)
 
+  // Filter selection state (for video preset filters)
+  const [selectedFilterPreset, setSelectedFilterPreset] = useState('default')
+
   // Filter preview state
   const [filterPreviewUrl, setFilterPreviewUrl] = useState(null)
   const [filterPreviewResult, setFilterPreviewResult] = useState(null)
   const [isLoadingFilterPreview, setIsLoadingFilterPreview] = useState(false)
   const [filterPreviewError, setFilterPreviewError] = useState(null)
+
+  const previewRequestIdRef = useRef(0)
 
   // Export/conversion state
   const [isProcessing, setIsProcessing] = useState(false)
@@ -146,6 +151,7 @@ const useGifEditingSession = () => {
    */
   const loadFilterPreview = useCallback(async (videoFile, preset) => {
     setFilterPreviewError(null)
+    const requestId = ++previewRequestIdRef.current
 
     if (!videoFile || preset === 'default') {
       setFilterPreviewUrl(null)
@@ -156,18 +162,48 @@ const useGifEditingSession = () => {
     try {
       setIsLoadingFilterPreview(true)
       const result = await applyVideoFilter(videoFile, preset)
+
+      if (requestId !== previewRequestIdRef.current) {
+        // A newer request has been started; ignore this result
+        return null
+      }
+
       setFilterPreviewUrl(result?.url || null)
       setFilterPreviewResult(result || null)
       return result
     } catch (err) {
+      if (requestId !== previewRequestIdRef.current) {
+        // Swallow errors from stale requests
+        return null
+      }
+
       setFilterPreviewError(err?.message || 'Preview failed.')
       setFilterPreviewResult(null)
       setFilterPreviewUrl(null)
       throw err
     } finally {
-      setIsLoadingFilterPreview(false)
+      if (requestId === previewRequestIdRef.current) {
+        setIsLoadingFilterPreview(false)
+      }
     }
   }, [])
+
+  /**
+   * Select a filter preset for video and trigger preview loading
+   */
+  const selectFilterPreset = useCallback(
+    async (videoFile, preset) => {
+      const nextPreset = preset || 'default'
+      setSelectedFilterPreset(nextPreset)
+
+      if (!videoFile) {
+        return null
+      }
+
+      return loadFilterPreview(videoFile, nextPreset)
+    },
+    [loadFilterPreview]
+  )
 
   /**
    * Apply a video filter and return to editor
@@ -270,6 +306,7 @@ const useGifEditingSession = () => {
     setFilterPreviewResult(null)
     setIsLoadingFilterPreview(false)
     setFilterPreviewError(null)
+  setSelectedFilterPreset('default')
 
     if (!preserveSelectedSpeed) {
       setSelectedSpeedPlaybackRate(DEFAULT_GIF_SPEED_PLAYBACK_RATE)
@@ -295,6 +332,10 @@ const useGifEditingSession = () => {
     activeTool,
     openGifTool,
     GIF_FLOW_TOOLS,
+
+  // Filter selection state/actions
+  selectedFilterPreset,
+  selectFilterPreset,
 
     // Filter preview state and actions
     filterPreviewUrl,
