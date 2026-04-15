@@ -238,75 +238,77 @@ function GifTextOverlayEditor({ videoFile, initialSettings, onBack, onCancel, on
         </div>
       )}
       controls={(
-        <div className="card add-text-form">
-          <div className="add-text-field add-text-field--grid">
-            <span className="add-text-label">Move</span>
-            <EditorStatus>Click or drag the preview.</EditorStatus>
-          </div>
-
-          <div className="add-text-field add-text-field--stack">
-            <label htmlFor="gif-text-content" className="add-text-label">Text</label>
-            <textarea
-              id="gif-text-content"
-              rows={3}
-              className="text-input add-text-input"
-              placeholder="Type GIF text"
-              value={draft.text}
-              onChange={(event) => updateDraft({ text: event.target.value })}
-            />
-          </div>
-
-          <div className="add-text-field add-text-field--grid">
-            <span className="add-text-label">Font</span>
-            <select
-              id="gif-text-font-family"
-              value={draft.fontFamily || 'Arial'}
-              onChange={(event) => updateDraft({ fontFamily: event.target.value })}
-              className="form-select add-text-select"
-            >
-              {GIF_TEXT_FONT_FAMILIES.map((family) => (
-                <option key={family} value={family}>
-                  {family}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <div className="add-text-field add-text-field--grid">
-            <span className="add-text-label">Color</span>
-            <div className="add-text-color-controls">
-              <input
-                id="gif-text-color"
-                type="color"
-                className="add-text-color-input"
-                value={draft.color}
-                onChange={(event) => updateDraft({ color: event.target.value })}
-              />
-              <span className="add-text-color-value">{String(draft.color || '').toUpperCase()}</span>
+        <div className="card filter-main-buttons">
+          <div className="add-text-form">
+            <div className="add-text-field add-text-field--grid">
+              <span className="add-text-label">Move</span>
+              <EditorStatus>Click or drag the preview.</EditorStatus>
             </div>
-          </div>
 
-          <div className="add-text-field add-text-field--grid">
-            <span className="add-text-label">Size</span>
-            <div className="add-text-size-controls">
-              <input
-                id="gif-text-size"
-                type="number"
-                min={MIN_UI_TEXT_SIZE}
-                max={MAX_UI_TEXT_SIZE}
-                className="text-input editor-number-input add-text-size-input"
-                value={safeTextSize}
-                onChange={(event) => updateDraft({ size: asNumberOrFallback(event.target.value, safeTextSize) })}
+            <div className="add-text-field add-text-field--stack">
+              <label htmlFor="gif-text-content" className="add-text-label">Text</label>
+              <textarea
+                id="gif-text-content"
+                rows={3}
+                className="text-input add-text-input"
+                placeholder="Type GIF text"
+                value={draft.text}
+                onChange={(event) => updateDraft({ text: event.target.value })}
               />
-              <input
-                type="range"
-                min={MIN_UI_TEXT_SIZE}
-                max={MAX_UI_TEXT_SIZE}
-                step={1}
-                value={safeTextSize}
-                onChange={(event) => updateDraft({ size: asNumberOrFallback(event.target.value, safeTextSize) })}
-                className="add-text-size-slider editor-slider"
-              />
+            </div>
+
+            <div className="add-text-field add-text-field--grid">
+              <span className="add-text-label">Font</span>
+              <select
+                id="gif-text-font-family"
+                value={draft.fontFamily || 'Arial'}
+                onChange={(event) => updateDraft({ fontFamily: event.target.value })}
+                className="form-select add-text-select"
+              >
+                {GIF_TEXT_FONT_FAMILIES.map((family) => (
+                  <option key={family} value={family}>
+                    {family}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className="add-text-field add-text-field--grid">
+              <span className="add-text-label">Color</span>
+              <div className="add-text-color-controls">
+                <input
+                  id="gif-text-color"
+                  type="color"
+                  className="add-text-color-input"
+                  value={draft.color}
+                  onChange={(event) => updateDraft({ color: event.target.value })}
+                />
+                <span className="add-text-color-value">{String(draft.color || '').toUpperCase()}</span>
+              </div>
+            </div>
+
+            <div className="add-text-field add-text-field--grid">
+              <span className="add-text-label">Size</span>
+              <div className="add-text-size-controls">
+                <input
+                  id="gif-text-size"
+                  type="number"
+                  min={MIN_UI_TEXT_SIZE}
+                  max={MAX_UI_TEXT_SIZE}
+                  className="text-input editor-number-input add-text-size-input"
+                  value={safeTextSize}
+                  onChange={(event) => updateDraft({ size: asNumberOrFallback(event.target.value, safeTextSize) })}
+                />
+                <input
+                  type="range"
+                  min={MIN_UI_TEXT_SIZE}
+                  max={MAX_UI_TEXT_SIZE}
+                  step={1}
+                  value={safeTextSize}
+                  onChange={(event) => updateDraft({ size: asNumberOrFallback(event.target.value, safeTextSize) })}
+                  className="add-text-size-slider editor-slider"
+                />
+              </div>
             </div>
           </div>
         </div>

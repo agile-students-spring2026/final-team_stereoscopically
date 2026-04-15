@@ -132,7 +132,7 @@ describe('editor consistency contracts', () => {
     cleanup()
   })
 
-  it('renders image filter hub with Text label and Cancel action', async () => {
+  it('renders image filter hub with Text label and Back action', async () => {
     const onCancel = vi.fn()
 
     const { container, cleanup } = await renderComponentToDom(
@@ -146,12 +146,12 @@ describe('editor consistency contracts', () => {
 
     const labels = Array.from(container.querySelectorAll('button')).map((button) => button.textContent?.trim())
     expect(labels).toContain('Text')
-    expect(labels).toContain('Cancel')
+  expect(labels).toContain('Back')
 
-    const cancelButton = Array.from(container.querySelectorAll('button')).find((button) => button.textContent?.trim() === 'Cancel')
-    expect(cancelButton).toBeTruthy()
+  const backButton = Array.from(container.querySelectorAll('button')).find((button) => button.textContent?.trim() === 'Back')
+  expect(backButton).toBeTruthy()
 
-    cancelButton.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+  backButton.dispatchEvent(new MouseEvent('click', { bubbles: true }))
     expect(onCancel).toHaveBeenCalledTimes(1)
 
     cleanup()
