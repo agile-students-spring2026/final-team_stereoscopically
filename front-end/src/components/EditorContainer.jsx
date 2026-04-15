@@ -467,6 +467,7 @@ function EditorContainer() {
       if (gifSession.activeTool === gifSession.GIF_FLOW_TOOLS.TEXT) {
         return (
           <GifTextOverlayEditor
+            videoFile={selectedMedia}
             initialSettings={gifSession.textOverlaySettings}
             onChange={gifSession.updateGifTextOverlaySettings}
             onApply={gifSession.applyGifTextOverlaySettings}
