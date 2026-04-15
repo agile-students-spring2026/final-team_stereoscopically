@@ -47,7 +47,7 @@ Components are organized by media mode:
   - `GifEditor.jsx`
   - `VideoPresetFilters.jsx`
   - `GifFilterMain.jsx`
-  - `GifToolPlaceholder.jsx`
+  - `GifTextOverlayEditor.jsx`
 - `src/components/` (shared / orchestration)
   - `EditorContainer.jsx`
   - `MediaEntry.jsx`
@@ -66,11 +66,12 @@ Components are organized by media mode:
 - `gif/GifEditor.jsx`
 - `gif/VideoPresetFilters.jsx`
 - `gif/GifFilterMain.jsx`
-- `gif/GifToolPlaceholder.jsx`
+- `gif/GifTextOverlayEditor.jsx`
 
 **Responsible for**
 - video and GIF preview UI
 - trim and edit controls shown on the GIF screens
+- live text overlay preview rendering in the GIF editor based on active text settings
 - local interaction state tied to the rendered GIF editing screen
 - processing, success, and failure messaging shown during GIF editing
 - emitting user edit intent through props and callbacks

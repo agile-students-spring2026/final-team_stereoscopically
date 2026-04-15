@@ -257,6 +257,25 @@ const parseGifTextOverlay = (rawTextOverlay) => {
 	}
 }
 
+const escapeGifDrawtextValue = (value) =>
+	String(value)
+		.replaceAll('\\', '\\\\')
+		.replaceAll(':', '\\:')
+		.replaceAll("'", "\\'")
+		.replaceAll(',', '\\,')
+		.replaceAll('%', '\\%')
+		.replaceAll('\r', '')
+		.replaceAll('\n', '\\n')
+
+const buildGifDrawtextFilter = (textOverlay) => {
+	const xRatio = textOverlay.position.x / 100
+	const yRatio = textOverlay.position.y / 100
+	const fontColor = `0x${textOverlay.color.slice(1)}`
+	const escapedText = escapeGifDrawtextValue(textOverlay.text)
+
+	return `drawtext=text='${escapedText}':fontsize=${textOverlay.size}:fontcolor=${fontColor}:x=(w*${xRatio.toFixed(6)})-(text_w/2):y=(h*${yRatio.toFixed(6)})-(text_h/2)`
+}
+
 export const uploadImage = (req) => {
 	if (!req.file) {
 		return { error: { status: 400, error: 'No image file uploaded.', code: 'MISSING_FILE' } }
@@ -783,7 +802,15 @@ export const trimVideo = async (req) => {
         const duration = trimEndNum - trimStartNum
 		const targetSize = GIF_RESIZE_PRESET_DIMENSIONS[parsedResizePreset.preset]
 		const ffmpegPadColor = `0x${parsedResizeBorderColor.borderColor.slice(1)}`
-		const scaleAndPadFilter = `fps=10,scale=${targetSize.width}:${targetSize.height}:force_original_aspect_ratio=decrease:flags=lanczos,pad=${targetSize.width}:${targetSize.height}:(ow-iw)/2:(oh-ih)/2:color=${ffmpegPadColor},split[s0][s1]`
+		const filterChain = [
+			`fps=10,scale=${targetSize.width}:${targetSize.height}:force_original_aspect_ratio=decrease:flags=lanczos,pad=${targetSize.width}:${targetSize.height}:(ow-iw)/2:(oh-ih)/2:color=${ffmpegPadColor}`,
+		]
+
+		if (parsedTextOverlay.value) {
+			filterChain.push(buildGifDrawtextFilter(parsedTextOverlay.value))
+		}
+
+		const filterGraph = `${filterChain.join(',')},split[s0][s1]`
 
 		const tmpInput = join(tmpdir(), `input_${Date.now()}.mp4`)
 		const tmpOutput = join(tmpdir(), `output_${Date.now()}.gif`)
@@ -795,7 +822,7 @@ export const trimVideo = async (req) => {
                 .setStartTime(trimStartNum)
                 .setDuration(duration)
                 .complexFilter([
-					scaleAndPadFilter,
+					filterGraph,
                     '[s0]palettegen[p]',
                     '[s1][p]paletteuse[out]',
                 ])
