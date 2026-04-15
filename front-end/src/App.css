@@ -708,16 +708,6 @@ input[type='range']::-moz-range-thumb {
   box-shadow: 0 0 0 2px rgba(100, 108, 255, 0.25);
 }
 
-.gif-preset-option.is-selected::after {
-  content: '✓';
-  position: absolute;
-  right: 0.7rem;
-  top: 50%;
-  transform: translateY(-50%);
-  font-size: 0.9rem;
-  font-weight: 700;
-}
-
 /* ============================================================================
    IMAGE CROPPER
    ============================================================================ */
