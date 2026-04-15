@@ -116,7 +116,7 @@ const GifEditor = ({
 
         try {
             if (!onCreateGif) throw new Error('GIF conversion is not available right now.')
-            await onCreateGif(videoFile)
+            await onCreateGif(videoFile, { trimStart, trimEnd })
             setStatusMessage(null)
         } catch (error) {
             setConversionError(error?.message || 'GIF conversion failed. Please try again.')

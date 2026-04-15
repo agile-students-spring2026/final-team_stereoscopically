@@ -241,7 +241,7 @@ const useGifEditingSession = () => {
    * Orchestrates the sequence: trim → export → download
    */
   const createAndExportGif = useCallback(
-    async (videoFile) => {
+    async (videoFile, overrideTrimRange) => {
       if (!videoFile) {
         setExportError('Video file not ready for conversion.')
         return null
@@ -252,11 +252,27 @@ const useGifEditingSession = () => {
       setExportError(null)
 
       try {
+        const effectiveTrimStart = Number.isFinite(overrideTrimRange?.trimStart)
+          ? overrideTrimRange.trimStart
+          : trimRange.start
+        const effectiveTrimEnd = Number.isFinite(overrideTrimRange?.trimEnd)
+          ? overrideTrimRange.trimEnd
+          : trimRange.end
+
+        if (
+          !Number.isFinite(effectiveTrimStart) ||
+          !Number.isFinite(effectiveTrimEnd) ||
+          effectiveTrimStart < 0 ||
+          effectiveTrimEnd <= effectiveTrimStart
+        ) {
+          throw new Error('GIF trim range is invalid. Please adjust trim and try again.')
+        }
+
         // Step 1: Trim the video
         const trimmed = await trimVideoService(
           videoFile,
-          trimRange.start,
-          trimRange.end,
+          effectiveTrimStart,
+          effectiveTrimEnd,
           resizePreset,
           resizeBorderColor
         )

@@ -39,7 +39,6 @@ function GifSpeedControls({ videoFile, selectedSpeedPlaybackRate, onSelectSpeed,
             src={videoUrl}
             controls
             className="preview-video"
-            playbackRate={selectedSpeedPlaybackRate}
             onLoadedMetadata={() => {
               if (previewVideoRef.current) {
                 previewVideoRef.current.playbackRate = selectedSpeedPlaybackRate

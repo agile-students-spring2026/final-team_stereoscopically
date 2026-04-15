@@ -348,7 +348,7 @@ function EditorContainer() {
 			selectedSpeedPlaybackRate: gifSession.selectedSpeedPlaybackRate,
 		}}
         onCancel={handleBackToUpload}
-        onCreateGif={(videoFile) => gifSession.createAndExportGif(videoFile)}
+		onCreateGif={(videoFile, trimOverrides) => gifSession.createAndExportGif(videoFile, trimOverrides)}
         onOpenTrim={() => gifSession.openGifTool(gifSession.GIF_FLOW_TOOLS.TRIM)}
         onOpenResize={() => gifSession.openGifTool(gifSession.GIF_FLOW_TOOLS.RESIZE)}
         onOpenFilters={() => gifSession.openGifTool(gifSession.GIF_FLOW_TOOLS.FILTERS_MAIN)}
