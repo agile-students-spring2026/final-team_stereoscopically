@@ -45,6 +45,8 @@ const FILE_TOO_LARGE_MESSAGE = 'File is too large (max 50 MB).'
 const HEIC_UNSUPPORTED_MESSAGE = 'HEIC/HEIF files are not supported in this browser yet. Please upload JPG or PNG.'
 const DEFAULT_GIF_RESIZE_PRESET = 'square'
 const VALID_GIF_RESIZE_PRESETS = new Set(['square', 'landscape', 'portrait'])
+const DEFAULT_GIF_RESIZE_BORDER_COLOR = '#000000'
+const GIF_BORDER_COLOR_REGEX = /^#[0-9A-Fa-f]{6}$/
 
 function EditorContainer() {
   const {
@@ -97,6 +99,7 @@ function EditorContainer() {
   const [activeGifTool, setActiveGifTool] = useState(GIF_TOOLS.EDITOR)
   const [gifTrimRange, setGifTrimRange] = useState({ start: 0, end: 0 })
   const [gifResizePreset, setGifResizePreset] = useState(DEFAULT_GIF_RESIZE_PRESET)
+  const [gifResizeBorderColor, setGifResizeBorderColor] = useState(DEFAULT_GIF_RESIZE_BORDER_COLOR)
   const [fileTooLargeMessage, setFileTooLargeMessage] = useState(null)
   const [unsupportedImageMessage, setUnsupportedImageMessage] = useState(null)
   const [lastRejectedUploadType, setLastRejectedUploadType] = useState(null)
@@ -108,6 +111,10 @@ function EditorContainer() {
 
   const resetGifResizePreset = useCallback(() => {
     setGifResizePreset(DEFAULT_GIF_RESIZE_PRESET)
+  }, [])
+
+  const resetGifResizeBorderColor = useCallback(() => {
+    setGifResizeBorderColor(DEFAULT_GIF_RESIZE_BORDER_COLOR)
   }, [])
 
   const resetGifToolState = useCallback(() => {
@@ -145,6 +152,7 @@ function EditorContainer() {
     setFileTooLargeMessage(null)
     resetImageEditingSessionState()
     resetGifResizePreset()
+    resetGifResizeBorderColor()
     if (result?.applied) {
       setScreen(SCREENS.EDITOR)
     }
@@ -178,6 +186,7 @@ function EditorContainer() {
     setUnsupportedVideo(null)
     resetGifTrimRange()
     resetGifResizePreset()
+  resetGifResizeBorderColor()
     clearCropSession()
     if (result?.applied) {
       resetGifToolState()
@@ -194,6 +203,7 @@ function EditorContainer() {
     resetImageEditingSessionState()
     resetGifTrimRange()
     resetGifResizePreset()
+    resetGifResizeBorderColor()
     resetGifToolState()
     setScreen(SCREENS.EDITOR)
   }
@@ -261,10 +271,11 @@ function EditorContainer() {
 
       resetGifTrimRange()
       resetGifResizePreset()
+      resetGifResizeBorderColor()
       resetGifToolState()
       setScreen(SCREENS.EDITOR)
     },
-    [resetGifResizePreset, resetGifToolState, resetGifTrimRange, selectVideo]
+    [resetGifResizeBorderColor, resetGifResizePreset, resetGifToolState, resetGifTrimRange, selectVideo]
   )
 
   const handleGifTrimApply = useCallback((nextRange) => {
@@ -276,14 +287,26 @@ function EditorContainer() {
     resetGifToolState()
   }, [resetGifToolState])
 
-  const handleGifResizeApply = useCallback((nextPreset) => {
-    const safePreset = VALID_GIF_RESIZE_PRESETS.has(nextPreset)
-      ? nextPreset
+  const handleGifResizeApply = useCallback((nextResizeSettings) => {
+    const rawPreset = typeof nextResizeSettings === 'string'
+      ? nextResizeSettings
+      : nextResizeSettings?.preset
+    const rawBorderColor = typeof nextResizeSettings === 'string'
+      ? gifResizeBorderColor
+      : nextResizeSettings?.borderColor
+
+    const safePreset = VALID_GIF_RESIZE_PRESETS.has(rawPreset)
+      ? rawPreset
       : DEFAULT_GIF_RESIZE_PRESET
+    const safeBorderColor =
+      typeof rawBorderColor === 'string' && GIF_BORDER_COLOR_REGEX.test(rawBorderColor)
+        ? rawBorderColor
+        : DEFAULT_GIF_RESIZE_BORDER_COLOR
 
     setGifResizePreset(safePreset)
+    setGifResizeBorderColor(safeBorderColor)
     resetGifToolState()
-  }, [resetGifToolState])
+  }, [gifResizeBorderColor, resetGifToolState])
 
   const handlePresetSizeSelect = async (size) => {
     await handleSizeSelect(size)
@@ -389,6 +412,7 @@ function EditorContainer() {
       committedTrimStart={gifTrimRange.start}
       committedTrimEnd={gifTrimRange.end}
       committedResizePreset={gifResizePreset}
+    committedResizeBorderColor={gifResizeBorderColor}
           onCancel={handleBackToUpload}
           onCreateGif={createGif}
           onExportGif={exportGif}
@@ -508,6 +532,8 @@ function EditorContainer() {
         return (
           <GifResizePresets
             initialPreset={gifResizePreset}
+            initialBorderColor={gifResizeBorderColor}
+            videoFile={selectedMedia}
             onApply={handleGifResizeApply}
             onBack={resetGifToolState}
             onCancel={resetGifToolState}

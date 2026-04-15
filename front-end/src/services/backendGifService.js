@@ -23,7 +23,7 @@ export const convertVideoToGif = async (videoFile) => {
   }
 }
 
-export const trimVideoService = async (videoFile, trimStart, trimEnd, resizePreset) => {
+export const trimVideoService = async (videoFile, trimStart, trimEnd, resizePreset, resizeBorderColor) => {
   if (!videoFile) {
     throw new Error('No video file provided for trimming')
   }
@@ -35,6 +35,10 @@ export const trimVideoService = async (videoFile, trimStart, trimEnd, resizePres
 
   if (typeof resizePreset === 'string' && resizePreset.trim().length > 0) {
     fields.resizePreset = resizePreset
+  }
+
+  if (typeof resizeBorderColor === 'string' && resizeBorderColor.trim().length > 0) {
+    fields.resizeBorderColor = resizeBorderColor
   }
 
   const payload = await postMultipart({

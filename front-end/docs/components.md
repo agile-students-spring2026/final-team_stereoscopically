@@ -39,6 +39,7 @@ Components are organized by media mode:
 	- `AddText.jsx`
 - `src/components/gif/`
 	- `GifEditor.jsx`
+	- `GifResizePresets.jsx`
 	- `GifTrimEditor.jsx`
 	- `VideoPresetFilters.jsx`
 	- `GifFilterMain.jsx`
@@ -59,6 +60,7 @@ Components are organized by media mode:
 
 **Components**
 - `gif/GifEditor.jsx`
+- `gif/GifResizePresets.jsx`
 - `gif/GifTrimEditor.jsx`
 - `gif/VideoPresetFilters.jsx`
 - `gif/GifFilterMain.jsx`
@@ -66,6 +68,7 @@ Components are organized by media mode:
 
 **Responsible for**
 - video and GIF preview UI
+- resize preset draft selection UI with apply/cancel/reset interactions
 - draft trim editing flow with explicit apply/cancel/reset actions
 - conversion-related UI state
 - edit-time interaction checks tied to this screen
@@ -77,6 +80,7 @@ Components are organized by media mode:
 - admission checks performed during media selection
 - shared non-UI helper logic
 - backend conversion implementation
+- persisting committed resize state across tools (owned by container orchestration)
 
 ---
 

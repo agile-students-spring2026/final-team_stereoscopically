@@ -1,22 +1,19 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 
 const DEFAULT_GIF_RESIZE_PRESET = 'square'
-const GIF_RESIZE_PRESET_LABELS = {
-    square: 'Square',
-    landscape: 'Landscape',
-    portrait: 'Portrait',
-}
 const GIF_RESIZE_PRESET_FRAME_CLASSES = {
     square: 'gif-preview-frame--square',
     landscape: 'gif-preview-frame--landscape',
     portrait: 'gif-preview-frame--portrait',
 }
+const DEFAULT_GIF_RESIZE_BORDER_COLOR = '#000000'
 
 const GifEditor = ({
     videoFile,
     committedTrimStart = 0,
     committedTrimEnd = 0,
     committedResizePreset = DEFAULT_GIF_RESIZE_PRESET,
+    committedResizeBorderColor = DEFAULT_GIF_RESIZE_BORDER_COLOR,
     onCancel,
     onCreateGif,
     onOpenTrim,
@@ -24,12 +21,10 @@ const GifEditor = ({
     onOpenFilters,
     onExportGif,
 }) => {
-    const resizeLabel = GIF_RESIZE_PRESET_LABELS[committedResizePreset] || GIF_RESIZE_PRESET_LABELS[DEFAULT_GIF_RESIZE_PRESET]
     const previewFrameClassName = GIF_RESIZE_PRESET_FRAME_CLASSES[committedResizePreset] || GIF_RESIZE_PRESET_FRAME_CLASSES[DEFAULT_GIF_RESIZE_PRESET]
 
     const [isProcessing, setIsProcessing] = useState(false)
     const [statusMessage, setStatusMessage] = useState(null)
-    const [backendResult, setBackendResult] = useState(null)
     const [conversionError, setConversionError] = useState(null)
 
     const [duration, setDuration] = useState(0)
@@ -70,7 +65,6 @@ const GifEditor = ({
     }, [videoFile, videoUrl])
 
     useEffect(() => {
-        setBackendResult(null)
         setStatusMessage(null)
         setConversionError(null)
         setDuration(0)
@@ -95,7 +89,6 @@ const GifEditor = ({
     }, [committedTrimEnd, committedTrimStart])
 
     const resetTransientEditorState = useCallback(() => {
-        setBackendResult(null)
         setStatusMessage(null)
         setConversionError(null)
 
@@ -119,15 +112,23 @@ const GifEditor = ({
 
         setIsProcessing(true)
         setConversionError(null)
-        setStatusMessage('Converting clip to GIF…')
+        setStatusMessage('Preparing GIF download…')
 
         try {
             if (!onCreateGif) throw new Error('GIF conversion is not available right now.')
-            const result = await onCreateGif(videoFile, trimStart, trimEnd, committedResizePreset)
-            setBackendResult(result)
-            setStatusMessage('GIF created successfully.')
+            const result = await onCreateGif(videoFile, trimStart, trimEnd, committedResizePreset, committedResizeBorderColor)
+
+            if (!result?.id) {
+                throw new Error('GIF conversion did not return a downloadable result.')
+            }
+
+            if (!onExportGif) {
+                throw new Error('GIF export is not available right now.')
+            }
+
+            await onExportGif(result.id)
+            setStatusMessage('Download started.')
         } catch (error) {
-            setBackendResult(null)
             setConversionError(error?.message || 'GIF conversion failed. Please try again.')
             setStatusMessage(null)
         } finally {
@@ -142,7 +143,7 @@ const GifEditor = ({
 
             <div className="preview-box preview-box-video-resize preview-box-checkered">
                 {videoUrl ? (
-                    <div className={`gif-preview-frame ${previewFrameClassName}`}>
+                    <div className={`gif-preview-frame ${previewFrameClassName}`} style={{ backgroundColor: committedResizeBorderColor }}>
                         <video ref={videoRef} src={videoUrl} controls className="preview-video gif-preview-video"
                             onLoadedMetadata={() => {
                                 const total = Number.isFinite(videoRef.current?.duration)
@@ -179,9 +180,6 @@ const GifEditor = ({
                 <button type="button" className="btn-primary" onClick={onOpenFilters}>
                     Filters
                 </button>
-                <p className="preview-label" style={{ marginBottom: 0, marginTop: '0.75rem', textAlign: 'center' }}>
-                    Resize preset: {resizeLabel}
-                </p>
             </div>
 
             <div className="card-actions card-actions-spaced">
@@ -197,7 +195,7 @@ const GifEditor = ({
                     onClick={handleConvertToGif}
                     disabled={isProcessing || !videoUrl || duration <= 0}
                 >
-                    {isProcessing ? 'Processing...' : 'Create GIF'}
+                    {isProcessing ? 'Downloading...' : 'Download GIF'}
                 </button>
             </div>
 
@@ -211,17 +209,6 @@ const GifEditor = ({
                 <p className="preview-label" style={{ marginTop: '0.75rem', color: '#ff3b30' }}>
                     {conversionError}
                 </p>
-            )}
-
-            {backendResult?.id && (
-            <button
-                type="button"
-                className="btn-primary"
-                onClick={() => onExportGif(backendResult.id)}
-                disabled={isProcessing}
-            >
-                Download GIF
-            </button>
             )}
 
         </div>

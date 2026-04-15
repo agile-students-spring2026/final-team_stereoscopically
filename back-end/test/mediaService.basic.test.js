@@ -52,6 +52,27 @@ describe('mediaService basic flows', () => {
 		})
 	})
 
+	it('returns INVALID_RESIZE_BORDER_COLOR for unsupported border color values', async () => {
+		const result = await trimVideo({
+			body: {
+				trimStart: 0,
+				trimEnd: 1,
+				resizePreset: 'square',
+				resizeBorderColor: 'red',
+			},
+			file: {
+				buffer: Buffer.from('fake-video-bytes'),
+				mimetype: 'video/mp4',
+				size: 16,
+			},
+		})
+
+		expect(result.error).to.include({
+			status: 400,
+			code: 'INVALID_RESIZE_BORDER_COLOR',
+		})
+	})
+
 	it('uses trim validation path when resize preset is omitted', async () => {
 		const result = await trimVideo({
 			body: {

@@ -5,6 +5,7 @@ export const MEDIA_TTL_MS = 10 * 60 * 1000
 export const MEDIA_PURGE_INTERVAL_MS = 60 * 1000
 
 export const DEFAULT_GIF_RESIZE_PRESET = 'square'
+export const DEFAULT_GIF_RESIZE_BORDER_COLOR = '#000000'
 export const GIF_RESIZE_PRESET_DIMENSIONS = {
 	square: { width: 320, height: 320 },
 	landscape: { width: 320, height: 180 },

@@ -669,6 +669,18 @@ input[type='range']::-moz-range-thumb {
   object-fit: contain;
 }
 
+.gif-resize-preview-card {
+  min-height: 220px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.75rem;
+}
+
+.gif-resize-preview-card .gif-preview-frame {
+  max-width: 100%;
+}
+
 /* ============================================================================
    IMAGE CROPPER
    ============================================================================ */
