@@ -1,31 +1,27 @@
 import { useEffect, useState } from 'react'
 
-const GIF_RESIZE_PRESETS = {
-  SQUARE: 'square',
-  LANDSCAPE: 'landscape',
-  PORTRAIT: 'portrait',
-}
+const DEFAULT_GIF_RESIZE_PRESET = 'square'
 
-const PRESET_OPTIONS = [
+const GIF_RESIZE_PRESET_OPTIONS = [
   {
-    key: GIF_RESIZE_PRESETS.SQUARE,
+    key: 'square',
     label: 'Square',
     subtitle: '1:1',
   },
   {
-    key: GIF_RESIZE_PRESETS.LANDSCAPE,
+    key: 'landscape',
     label: 'Landscape',
     subtitle: '16:9',
   },
   {
-    key: GIF_RESIZE_PRESETS.PORTRAIT,
+    key: 'portrait',
     label: 'Portrait',
     subtitle: '9:16',
   },
 ]
 
 function GifResizePresets({
-  initialPreset = GIF_RESIZE_PRESETS.SQUARE,
+  initialPreset = DEFAULT_GIF_RESIZE_PRESET,
   onApply,
   onBack,
   onCancel,
@@ -40,6 +36,10 @@ function GifResizePresets({
     onApply?.(selectedPreset)
   }
 
+  const handleReset = () => {
+    setSelectedPreset(DEFAULT_GIF_RESIZE_PRESET)
+  }
+
   return (
     <div className="preset-sizes-screen">
       <div className="screen-header screen-header-column">
@@ -48,7 +48,7 @@ function GifResizePresets({
       </div>
 
       <div className="card filter-main-buttons">
-        {PRESET_OPTIONS.map((option) => {
+        {GIF_RESIZE_PRESET_OPTIONS.map((option) => {
           const isActive = selectedPreset === option.key
           return (
             <button
@@ -69,6 +69,9 @@ function GifResizePresets({
         </button>
         <button type="button" className="btn-secondary" onClick={onCancel}>
           Cancel
+        </button>
+        <button type="button" className="btn-secondary" onClick={handleReset}>
+          Reset
         </button>
         <button type="button" className="btn-primary" onClick={handleApply}>
           Apply

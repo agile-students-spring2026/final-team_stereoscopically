@@ -43,6 +43,8 @@ const GIF_TOOLS = {
 
 const FILE_TOO_LARGE_MESSAGE = 'File is too large (max 50 MB).'
 const HEIC_UNSUPPORTED_MESSAGE = 'HEIC/HEIF files are not supported in this browser yet. Please upload JPG or PNG.'
+const DEFAULT_GIF_RESIZE_PRESET = 'square'
+const VALID_GIF_RESIZE_PRESETS = new Set(['square', 'landscape', 'portrait'])
 
 function EditorContainer() {
   const {
@@ -94,6 +96,7 @@ function EditorContainer() {
   const [screen, setScreen] = useState(SCREENS.EDITOR)
   const [activeGifTool, setActiveGifTool] = useState(GIF_TOOLS.EDITOR)
   const [gifTrimRange, setGifTrimRange] = useState({ start: 0, end: 0 })
+  const [gifResizePreset, setGifResizePreset] = useState(DEFAULT_GIF_RESIZE_PRESET)
   const [fileTooLargeMessage, setFileTooLargeMessage] = useState(null)
   const [unsupportedImageMessage, setUnsupportedImageMessage] = useState(null)
   const [lastRejectedUploadType, setLastRejectedUploadType] = useState(null)
@@ -101,6 +104,10 @@ function EditorContainer() {
 
   const resetGifTrimRange = useCallback(() => {
     setGifTrimRange({ start: 0, end: 0 })
+  }, [])
+
+  const resetGifResizePreset = useCallback(() => {
+    setGifResizePreset(DEFAULT_GIF_RESIZE_PRESET)
   }, [])
 
   const resetGifToolState = useCallback(() => {
@@ -137,6 +144,7 @@ function EditorContainer() {
     setUnsupportedImageMessage(null)
     setFileTooLargeMessage(null)
     resetImageEditingSessionState()
+    resetGifResizePreset()
     if (result?.applied) {
       setScreen(SCREENS.EDITOR)
     }
@@ -169,6 +177,7 @@ function EditorContainer() {
     setFileTooLargeMessage(null)
     setUnsupportedVideo(null)
     resetGifTrimRange()
+    resetGifResizePreset()
     clearCropSession()
     if (result?.applied) {
       resetGifToolState()
@@ -184,6 +193,7 @@ function EditorContainer() {
     resetSelection()
     resetImageEditingSessionState()
     resetGifTrimRange()
+    resetGifResizePreset()
     resetGifToolState()
     setScreen(SCREENS.EDITOR)
   }
@@ -250,10 +260,11 @@ function EditorContainer() {
       }
 
       resetGifTrimRange()
+      resetGifResizePreset()
       resetGifToolState()
       setScreen(SCREENS.EDITOR)
     },
-    [resetGifToolState, resetGifTrimRange, selectVideo]
+    [resetGifResizePreset, resetGifToolState, resetGifTrimRange, selectVideo]
   )
 
   const handleGifTrimApply = useCallback((nextRange) => {
@@ -262,6 +273,15 @@ function EditorContainer() {
     const safeEnd = Number.isFinite(rawEnd) ? Math.max(safeStart, rawEnd) : safeStart
 
     setGifTrimRange({ start: safeStart, end: safeEnd })
+    resetGifToolState()
+  }, [resetGifToolState])
+
+  const handleGifResizeApply = useCallback((nextPreset) => {
+    const safePreset = VALID_GIF_RESIZE_PRESETS.has(nextPreset)
+      ? nextPreset
+      : DEFAULT_GIF_RESIZE_PRESET
+
+    setGifResizePreset(safePreset)
     resetGifToolState()
   }, [resetGifToolState])
 
@@ -368,6 +388,7 @@ function EditorContainer() {
           videoFile={selectedMedia}
       committedTrimStart={gifTrimRange.start}
       committedTrimEnd={gifTrimRange.end}
+      committedResizePreset={gifResizePreset}
           onCancel={handleBackToUpload}
           onCreateGif={createGif}
           onExportGif={exportGif}
@@ -486,7 +507,8 @@ function EditorContainer() {
       if (activeGifTool === GIF_TOOLS.RESIZE) {
         return (
           <GifResizePresets
-            onApply={resetGifToolState}
+            initialPreset={gifResizePreset}
+            onApply={handleGifResizeApply}
             onBack={resetGifToolState}
             onCancel={resetGifToolState}
           />

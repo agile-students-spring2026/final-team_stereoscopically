@@ -1,9 +1,17 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 
+const DEFAULT_GIF_RESIZE_PRESET = 'square'
+const GIF_RESIZE_PRESET_LABELS = {
+    square: 'Square',
+    landscape: 'Landscape',
+    portrait: 'Portrait',
+}
+
 const GifEditor = ({
     videoFile,
     committedTrimStart = 0,
     committedTrimEnd = 0,
+    committedResizePreset = DEFAULT_GIF_RESIZE_PRESET,
     onCancel,
     onCreateGif,
     onOpenTrim,
@@ -11,6 +19,8 @@ const GifEditor = ({
     onOpenFilters,
     onExportGif,
 }) => {
+    const resizeLabel = GIF_RESIZE_PRESET_LABELS[committedResizePreset] || GIF_RESIZE_PRESET_LABELS[DEFAULT_GIF_RESIZE_PRESET]
+
     const [isProcessing, setIsProcessing] = useState(false)
     const [statusMessage, setStatusMessage] = useState(null)
     const [backendResult, setBackendResult] = useState(null)
@@ -161,6 +171,9 @@ const GifEditor = ({
                 <button type="button" className="btn-primary" onClick={onOpenFilters}>
                     Filters
                 </button>
+                <p className="preview-label" style={{ marginBottom: 0, marginTop: '0.75rem', textAlign: 'center' }}>
+                    Resize preset: {resizeLabel}
+                </p>
             </div>
 
             <div className="card-actions card-actions-spaced">
