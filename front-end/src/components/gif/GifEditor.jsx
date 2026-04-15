@@ -6,6 +6,11 @@ const GIF_RESIZE_PRESET_LABELS = {
     landscape: 'Landscape',
     portrait: 'Portrait',
 }
+const GIF_RESIZE_PRESET_FRAME_CLASSES = {
+    square: 'gif-preview-frame--square',
+    landscape: 'gif-preview-frame--landscape',
+    portrait: 'gif-preview-frame--portrait',
+}
 
 const GifEditor = ({
     videoFile,
@@ -20,6 +25,7 @@ const GifEditor = ({
     onExportGif,
 }) => {
     const resizeLabel = GIF_RESIZE_PRESET_LABELS[committedResizePreset] || GIF_RESIZE_PRESET_LABELS[DEFAULT_GIF_RESIZE_PRESET]
+    const previewFrameClassName = GIF_RESIZE_PRESET_FRAME_CLASSES[committedResizePreset] || GIF_RESIZE_PRESET_FRAME_CLASSES[DEFAULT_GIF_RESIZE_PRESET]
 
     const [isProcessing, setIsProcessing] = useState(false)
     const [statusMessage, setStatusMessage] = useState(null)
@@ -117,7 +123,7 @@ const GifEditor = ({
 
         try {
             if (!onCreateGif) throw new Error('GIF conversion is not available right now.')
-            const result = await onCreateGif(videoFile, trimStart, trimEnd)
+            const result = await onCreateGif(videoFile, trimStart, trimEnd, committedResizePreset)
             setBackendResult(result)
             setStatusMessage('GIF created successfully.')
         } catch (error) {
@@ -134,28 +140,30 @@ const GifEditor = ({
         <div className="video-editor-container">
             <h2 className="video-editor-title">GIF Editor</h2>
 
-            <div className="preview-box">
+            <div className="preview-box preview-box-video-resize preview-box-checkered">
                 {videoUrl ? (
-                    <video ref={videoRef} src={videoUrl} controls className="preview-video"
-                        onLoadedMetadata={() => {
-                            const total = Number.isFinite(videoRef.current?.duration)
-                                ? videoRef.current.duration
-                                : 0
-                            const nextTrim = resolveCommittedTrim(total)
-                            setDuration(total)
-                            setTrimStart(nextTrim.start)
-                            setTrimEnd(nextTrim.end)
-                            if (videoRef.current) {
-                                videoRef.current.currentTime = nextTrim.start
-                            }
-                        }}
-                        onTimeUpdate={() => {
-                            if (trimEnd > 0 && videoRef.current && videoRef.current.currentTime >= trimEnd) {
-                                videoRef.current.pause()
-                                videoRef.current.currentTime = trimStart
-                            }
-                        }}
-                    />
+                    <div className={`gif-preview-frame ${previewFrameClassName}`}>
+                        <video ref={videoRef} src={videoUrl} controls className="preview-video gif-preview-video"
+                            onLoadedMetadata={() => {
+                                const total = Number.isFinite(videoRef.current?.duration)
+                                    ? videoRef.current.duration
+                                    : 0
+                                const nextTrim = resolveCommittedTrim(total)
+                                setDuration(total)
+                                setTrimStart(nextTrim.start)
+                                setTrimEnd(nextTrim.end)
+                                if (videoRef.current) {
+                                    videoRef.current.currentTime = nextTrim.start
+                                }
+                            }}
+                            onTimeUpdate={() => {
+                                if (trimEnd > 0 && videoRef.current && videoRef.current.currentTime >= trimEnd) {
+                                    videoRef.current.pause()
+                                    videoRef.current.currentTime = trimStart
+                                }
+                            }}
+                        />
+                    </div>
                 ) : (
                     <p className="preview-label">Upload a video to start editing.</p>
                 )}

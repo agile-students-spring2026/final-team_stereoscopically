@@ -23,19 +23,25 @@ export const convertVideoToGif = async (videoFile) => {
   }
 }
 
-export const trimVideoService = async (videoFile, trimStart, trimEnd) => {
+export const trimVideoService = async (videoFile, trimStart, trimEnd, resizePreset) => {
   if (!videoFile) {
     throw new Error('No video file provided for trimming')
+  }
+
+  const fields = {
+    trimStart,
+    trimEnd,
+  }
+
+  if (typeof resizePreset === 'string' && resizePreset.trim().length > 0) {
+    fields.resizePreset = resizePreset
   }
 
   const payload = await postMultipart({
     path: '/api/trim/video',
     fileField: 'video',
     file: videoFile,
-    fields: {
-      trimStart,
-      trimEnd,
-    },
+    fields,
     fallbackErrorMessage: 'Video trim failed',
   })
 

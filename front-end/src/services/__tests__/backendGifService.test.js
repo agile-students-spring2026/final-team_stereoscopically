@@ -5,6 +5,7 @@ import {
   convertBackendVideoResultToLocalMedia,
   convertVideoToGif,
   exportGifToBackend,
+  trimVideoService,
 } from '../backendGifService'
 import { postJson, postMultipart } from '../backendMediaClient'
 
@@ -46,6 +47,37 @@ describe('backendGifService', () => {
       type: 'video',
       url: 'https://cdn.example.com/filtered.mp4',
       preset: 'noir',
+    })
+  })
+
+  it('sends trim range and resize preset when trimming a video', async () => {
+    const fakeFile = new File(['video'], 'clip.mp4', { type: 'video/mp4' })
+    postMultipart.mockResolvedValue({
+      id: 'vid_trim_1',
+      type: 'video',
+      url: 'https://cdn.example.com/trimmed.mp4',
+      size: 1024,
+    })
+
+    const result = await trimVideoService(fakeFile, 1.2, 3.4, 'portrait')
+
+    expect(postMultipart).toHaveBeenCalledWith({
+      path: '/api/trim/video',
+      fileField: 'video',
+      file: fakeFile,
+      fields: {
+        trimStart: 1.2,
+        trimEnd: 3.4,
+        resizePreset: 'portrait',
+      },
+      fallbackErrorMessage: 'Video trim failed',
+    })
+
+    expect(result).toEqual({
+      id: 'vid_trim_1',
+      type: 'video',
+      url: 'https://cdn.example.com/trimmed.mp4',
+      size: 1024,
     })
   })
 

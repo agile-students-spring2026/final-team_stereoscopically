@@ -6,7 +6,11 @@ import { writeFileSync, unlinkSync } from 'fs'
 import { readFile, unlink, writeFile } from 'fs/promises'
 import { join } from 'path'
 ffmpeg.setFfmpegPath(ffmpegInstaller.path)
-import { MAX_EXPORT_DIMENSION } from '../config/constants.js'
+import {
+	DEFAULT_GIF_RESIZE_PRESET,
+	GIF_RESIZE_PRESET_DIMENSIONS,
+	MAX_EXPORT_DIMENSION,
+} from '../config/constants.js'
 import { createMedia, getActiveMediaOrDeleteExpired } from './mediaStore.js'
 import { applyImageAdjustments, PRESET_ADJUSTMENTS } from './imageAdjustService.js'
 import { normalizeTextOverlayRequest, renderTextOverlayBuffer } from './textOverlayService.js'
@@ -79,6 +83,35 @@ const parseCropParams = ({ x, y, width, height, unit = 'pixel', scaleX = 1, scal
 			sy,
 		},
 	}
+}
+
+const resolveGifResizePreset = (rawPreset) => {
+	if (rawPreset == null || rawPreset === '') {
+		return { preset: DEFAULT_GIF_RESIZE_PRESET }
+	}
+
+	if (typeof rawPreset !== 'string') {
+		return {
+			error: {
+				status: 400,
+				error: 'Invalid resize preset.',
+				code: 'INVALID_RESIZE_PRESET',
+			},
+		}
+	}
+
+	const preset = rawPreset.toLowerCase().trim()
+	if (!GIF_RESIZE_PRESET_DIMENSIONS[preset]) {
+		return {
+			error: {
+				status: 400,
+				error: 'Invalid resize preset. Use square, landscape, or portrait.',
+				code: 'INVALID_RESIZE_PRESET',
+			},
+		}
+	}
+
+	return { preset }
 }
 
 export const uploadImage = (req) => {
@@ -571,7 +604,7 @@ export const getExportDownloadContent = (id) => {
 	}
 }
 export const trimVideo = async (req) => {
-    const { trimStart, trimEnd } = req.body ?? {}
+	const { trimStart, trimEnd, resizePreset } = req.body ?? {}
 
     if (!req.file) {
         return { error: { status: 400, error: 'No video file uploaded.', code: 'MISSING_FILE' } }
@@ -588,8 +621,15 @@ export const trimVideo = async (req) => {
         return { error: { status: 400, error: 'trimEnd must be greater than trimStart.', code: 'INVALID_TRIM_RANGE' } }
     }
 
+	const parsedResizePreset = resolveGifResizePreset(resizePreset)
+	if (parsedResizePreset.error) {
+		return { error: parsedResizePreset.error }
+	}
+
     try {
         const duration = trimEndNum - trimStartNum
+		const targetSize = GIF_RESIZE_PRESET_DIMENSIONS[parsedResizePreset.preset]
+		const scaleAndPadFilter = `fps=10,scale=${targetSize.width}:${targetSize.height}:force_original_aspect_ratio=decrease:flags=lanczos,pad=${targetSize.width}:${targetSize.height}:(ow-iw)/2:(oh-ih)/2:color=black,split[s0][s1]`
 
 		const tmpInput = join(tmpdir(), `input_${Date.now()}.mp4`)
 		const tmpOutput = join(tmpdir(), `output_${Date.now()}.gif`)
@@ -601,7 +641,7 @@ export const trimVideo = async (req) => {
                 .setStartTime(trimStartNum)
                 .setDuration(duration)
                 .complexFilter([
-                    'fps=10,scale=320:-1:flags=lanczos,split[s0][s1]',
+					scaleAndPadFilter,
                     '[s0]palettegen[p]',
                     '[s1][p]paletteuse[out]',
                 ])
@@ -633,6 +673,7 @@ export const trimVideo = async (req) => {
                 url: buildMediaUrl(req, trimId),
                 mimeType: 'image/gif',
                 size: outputBuffer.length,
+				resizePreset: parsedResizePreset.preset,
             },
         }
     } catch (error) {
