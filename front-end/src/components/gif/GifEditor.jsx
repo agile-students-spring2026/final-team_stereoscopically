@@ -134,7 +134,7 @@ const GifEditor = ({
                 throw new Error('GIF export is not available right now.')
             }
 
-            await onExportGif(result.id)
+            await onExportGif(result.id, selectedSpeedPlaybackRate)
             setStatusMessage(null)
         } catch (error) {
             setConversionError(error?.message || 'GIF conversion failed. Please try again.')

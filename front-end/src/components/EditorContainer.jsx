@@ -127,6 +127,10 @@ function EditorContainer() {
     setGifFlowState((prev) => setGifFlowSelectedSpeed(prev, nextSpeedPlaybackRate))
   }, [])
 
+  const handleGifSpeedApply = useCallback((appliedSpeedPlaybackRate) => {
+    resetGifToolState()
+  }, [resetGifToolState])
+
   const handleGifExport = useCallback(
     async (mediaId, selectedSpeedPlaybackRate) => {
       return exportGif(mediaId, selectedSpeedPlaybackRate)
@@ -528,10 +532,10 @@ function EditorContainer() {
       if (gifFlowState.activeTool === GIF_FLOW_TOOLS.SPEED) {
         return (
           <GifSpeedControls
+            videoFile={selectedMedia}
             selectedSpeedPlaybackRate={gifFlowState.selectedSpeedPlaybackRate}
             onSelectSpeed={handleGifSpeedSelect}
-            onBack={() => openGifTool(GIF_FLOW_TOOLS.FILTERS_MAIN)}
-            onCancel={resetGifToolState}
+            onApplySpeed={handleGifSpeedApply}
           />
         )
       }
