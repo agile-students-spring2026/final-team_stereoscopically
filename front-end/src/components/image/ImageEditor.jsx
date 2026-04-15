@@ -116,14 +116,14 @@ const ImageEditor = ({
       )}
 
       <div
-        className="preview-box preview-box-checkered"
+        className="preview-box editor-preview preview-box-checkered editor-preview--checkered"
         style={{ opacity: isUploading ? 0.75 : 1, transition: 'opacity 150ms ease' }}
       >
         {!imageLoadError && (
           <img
             src={imageSrc}
             alt="Preview"
-            className="preview-image"
+            className="preview-image editor-preview-media"
             onError={handleImageError}
           />
         )}

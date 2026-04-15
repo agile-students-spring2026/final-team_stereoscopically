@@ -33,12 +33,12 @@ function GifSpeedControls({ videoFile, selectedSpeedPlaybackRate, onSelectSpeed,
       </div>
 
       {videoUrl && (
-        <div className="preview-box preview-box-checkered">
+        <div className="preview-box editor-preview preview-box-checkered editor-preview--checkered">
           <video
             ref={previewVideoRef}
             src={videoUrl}
             controls
-            className="preview-video"
+            className="preview-video editor-preview-media"
             onLoadedMetadata={() => {
               if (previewVideoRef.current) {
                 previewVideoRef.current.playbackRate = selectedSpeedPlaybackRate

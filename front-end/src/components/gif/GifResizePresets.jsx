@@ -95,13 +95,13 @@ function GifResizePresets({
     <EditorToolScreen
       title="Resize"
       preview={(
-        <div className="card gif-resize-preview-card preview-box-checkered">
+        <div className="card gif-resize-preview-card preview-box-checkered editor-preview--checkered">
           {videoUrl ? (
             <div
               className={`gif-preview-frame ${previewFrameClassName}`}
               style={{ backgroundColor: selectedBorderColor }}
             >
-              <video src={videoUrl} controls className="preview-video gif-preview-video" />
+              <video src={videoUrl} controls className="preview-video editor-preview-media gif-preview-video" />
             </div>
           ) : (
             <p className="preview-label" style={{ margin: 0, textAlign: 'center' }}>

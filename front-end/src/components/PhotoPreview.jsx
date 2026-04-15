@@ -26,18 +26,18 @@ function PhotoPreview({ file, onRetake, onConfirm, onBack }) {
                 Preview {isVideo ? 'Video' : 'Photo'}
             </h2>
 
-            <div className="preview-box">
+            <div className="preview-box editor-preview">
                 {isVideo ? (
                     <video 
                         src={previewUrl} 
                         controls 
-                        className="preview-video" 
+                        className="preview-video editor-preview-media" 
                     />
                 ) : (
                     <img 
                         src={previewUrl} 
                         alt="Captured" 
-                        className="preview-video" 
+                        className="preview-video editor-preview-media" 
                     />
                 )}
             </div>

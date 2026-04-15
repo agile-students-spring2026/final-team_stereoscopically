@@ -30,6 +30,10 @@ Use these classes for all editor-focused screens going forward:
   - preview that supports pointer interaction (drag/place/select)
 - `editor-preview--video`
   - taller preview variant for video/GIF flows
+- `editor-preview--resize`
+  - resize-preview variant that uses adaptive height with inner frame/padding
+- `editor-preview-media`
+  - standardized class for image/video media elements inside preview containers
 - `editor-status`
   - base messaging style for info/loading/empty/error text
 - `editor-status--error`
