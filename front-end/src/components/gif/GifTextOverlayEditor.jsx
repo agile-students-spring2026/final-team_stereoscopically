@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import EditorStatus from '../EditorStatus'
 
 const DEFAULT_TEXT_OVERLAY_SETTINGS = {
   text: '',
@@ -6,6 +7,9 @@ const DEFAULT_TEXT_OVERLAY_SETTINGS = {
   color: '#FFFFFF',
   position: { x: 50, y: 50 },
 }
+
+const MIN_UI_TEXT_SIZE = 8
+const MAX_UI_TEXT_SIZE = 120
 
 const clamp = (value, min, max) => Math.min(max, Math.max(min, value))
 
@@ -238,7 +242,7 @@ function GifTextOverlayEditor({ videoFile, initialSettings, onBack, onCancel, on
   return (
     <div className="preset-sizes-screen">
       <div className="screen-header screen-header-column">
-        <h2 className="screen-title">Text</h2>
+        <h2 className="screen-title">Add Text</h2>
       </div>
 
       <div
@@ -261,7 +265,7 @@ function GifTextOverlayEditor({ videoFile, initialSettings, onBack, onCancel, on
             playsInline
           />
         ) : (
-          <span className="preview-label">Upload a video to preview text placement.</span>
+          <EditorStatus centered>Upload a video to preview text placement.</EditorStatus>
         )}
 
         <div className="filter-screen-preview-overlay" aria-hidden="true">
@@ -298,42 +302,62 @@ function GifTextOverlayEditor({ videoFile, initialSettings, onBack, onCancel, on
         </div>
       </div>
 
-      <div className="card" style={{ display: 'grid', gap: '0.75rem' }}>
+      <div className="card add-text-form">
         <p className="add-text-placement-hint add-text-placement-hint--top">
-          Click or drag the preview to place your text.
+          Click or drag the preview to move the text.
         </p>
 
-        <label htmlFor="gif-text-content" className="add-text-label">Text content</label>
-        <textarea
-          id="gif-text-content"
-          rows={3}
-          className="text-input add-text-input"
-          placeholder="Type GIF text"
-          value={draft.text}
-          onChange={(event) => updateDraft({ text: event.target.value })}
-        />
-
-        <label htmlFor="gif-text-size" className="add-text-label">Size</label>
-        <input
-          id="gif-text-size"
-          type="number"
-          min={8}
-          max={120}
-          className="text-input editor-number-input add-text-size-input"
-          value={draft.size}
-          onChange={(event) => updateDraft({ size: asNumberOrFallback(event.target.value, draft.size) })}
-        />
-
-        <label htmlFor="gif-text-color" className="add-text-label">Color</label>
-        <div className="add-text-color-controls">
-          <input
-            id="gif-text-color"
-            type="color"
-            className="add-text-color-input"
-            value={draft.color}
-            onChange={(event) => updateDraft({ color: event.target.value })}
+        <div className="add-text-field add-text-field--stack">
+          <label htmlFor="gif-text-content" className="add-text-label">Text</label>
+          <textarea
+            id="gif-text-content"
+            rows={3}
+            className="text-input add-text-input"
+            placeholder="Type GIF text"
+            value={draft.text}
+            onChange={(event) => updateDraft({ text: event.target.value })}
           />
-          <span className="add-text-color-value">{String(draft.color || '').toUpperCase()}</span>
+        </div>
+
+        <div className="add-text-field add-text-field--grid">
+          <span className="add-text-label">Color</span>
+          <div className="add-text-color-controls">
+            <input
+              id="gif-text-color"
+              type="color"
+              className="add-text-color-input"
+              value={draft.color}
+              onChange={(event) => updateDraft({ color: event.target.value })}
+            />
+            <span className="add-text-color-value">{String(draft.color || '').toUpperCase()}</span>
+          </div>
+        </div>
+
+        <div className="add-text-field add-text-field--grid">
+          <span className="add-text-label">Size</span>
+          <div className="add-text-size-controls">
+            <input
+              id="gif-text-size"
+              type="number"
+              min={MIN_UI_TEXT_SIZE}
+              max={MAX_UI_TEXT_SIZE}
+              className="text-input editor-number-input add-text-size-input"
+              value={safeTextSize}
+              onChange={(event) => updateDraft({ size: asNumberOrFallback(event.target.value, safeTextSize) })}
+            />
+            <input
+              type="range"
+              min={MIN_UI_TEXT_SIZE}
+              max={MAX_UI_TEXT_SIZE}
+              step={1}
+              value={safeTextSize}
+              onChange={(event) => updateDraft({ size: asNumberOrFallback(event.target.value, safeTextSize) })}
+              className="add-text-size-slider editor-slider"
+            />
+            <p className="add-text-size-help">
+              Size {safeTextSize}px (preview matches export).
+            </p>
+          </div>
         </div>
       </div>
 

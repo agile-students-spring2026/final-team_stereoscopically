@@ -71,6 +71,17 @@ For equivalent actions, use consistent wording:
 - Secondary exit action: `Cancel`
 - Sub-tool actions: `Apply` + `Cancel`
 
+## Text tool consistency guidance
+
+For image and GIF text overlays, keep these controls in the same order when possible:
+
+1. placement hint
+2. text content
+3. color
+4. size (number + slider)
+
+If a media type lacks a field (for example, font family), keep the remaining order stable.
+
 ## Spacing and token guidance
 
 Use CSS custom properties from `src/index.css` (Phase 1 added):
