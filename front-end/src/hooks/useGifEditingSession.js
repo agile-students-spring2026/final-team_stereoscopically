@@ -1,6 +1,7 @@
 import { useCallback, useState } from 'react'
 import { trimVideoService, applyVideoFilter, exportGifToBackend } from '../services/backendGifService'
 import { GIF_SPEED_PLAYBACK_RATES, DEFAULT_GIF_SPEED_PLAYBACK_RATE } from '../components/gif/gifSpeedOptions'
+import { downloadFile } from '../utils/downloadFile'
 
 /**
  * GIF flow tool states
@@ -220,12 +221,7 @@ const useGifEditingSession = () => {
         }
 
         // Step 3: Trigger download
-        const a = document.createElement('a')
-        a.href = exported.downloadUrl
-        a.download = 'output.gif'
-        document.body.appendChild(a)
-        a.click()
-        document.body.removeChild(a)
+        downloadFile(exported.downloadUrl, 'output.gif')
 
         setStatusMessage(null)
         return exported

@@ -347,10 +347,8 @@ function EditorContainer() {
         committedResizePreset={gifSession.resizePreset}
         committedResizeBorderColor={gifSession.resizeBorderColor}
         onCancel={handleBackToUpload}
-        onCreateGif={(videoFile, trimStart, trimEnd, resizePreset, resizeBorderColor) =>
-          gifSession.createAndExportGif(videoFile)
-        }
-        onExportGif={(mediaId, selectedSpeedPlaybackRate) => Promise.resolve()}
+        onCreateGif={(videoFile) => gifSession.createAndExportGif(videoFile)}
+        onOpenTrim={() => gifSession.openGifTool(gifSession.GIF_FLOW_TOOLS.TRIM)}
         onOpenResize={() => gifSession.openGifTool(gifSession.GIF_FLOW_TOOLS.RESIZE)}
         onOpenFilters={() => gifSession.openGifTool(gifSession.GIF_FLOW_TOOLS.FILTERS_MAIN)}
       />
@@ -436,6 +434,7 @@ function EditorContainer() {
             videoFile={selectedMedia}
             onApply={handleVideoPresetApply}
             onCancel={() => gifSession.openGifTool(gifSession.GIF_FLOW_TOOLS.FILTERS_MAIN)}
+            onLoadPreview={gifSession.loadFilterPreview}
           />
         )
       }

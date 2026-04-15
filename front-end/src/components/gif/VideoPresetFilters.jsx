@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import FilterScreen from '../FilterScreen'
-import { applyVideoFilter } from '../../services/backendGifService'
 
 const PRESETS = [
   { id: 'default', label: 'Original' },
@@ -10,7 +9,7 @@ const PRESETS = [
   { id: 'fade', label: 'Fade' },
 ]
 
-function VideoPresetFilters({ videoFile, onApply, onCancel }) {
+function VideoPresetFilters({ videoFile, onApply, onCancel, onLoadPreview }) {
   const [selectedStyle, setSelectedStyle] = useState('default')
   const [isApplying, setIsApplying] = useState(false)
   const [isLoadingPreview, setIsLoadingPreview] = useState(false)
@@ -53,10 +52,10 @@ function VideoPresetFilters({ videoFile, onApply, onCancel }) {
       setPreviewResult(null)
       return
     }
-    if (!videoFile) return
+    if (!videoFile || !onLoadPreview) return
     try {
       setIsLoadingPreview(true)
-      const result = await applyVideoFilter(videoFile, id)
+      const result = await onLoadPreview(videoFile, id)
       if (requestId !== previewRequestIdRef.current) return
       setPreviewUrl(result?.url || null)
       setPreviewResult(result || null)
@@ -77,12 +76,12 @@ function VideoPresetFilters({ videoFile, onApply, onCancel }) {
         await onApply?.(null)
         return
       }
-      if (!videoFile) return
+      if (!videoFile || !onLoadPreview) return
       setIsApplying(true)
       const result =
         previewResult?.preset === selectedStyle && previewResult?.url
           ? previewResult
-          : await applyVideoFilter(videoFile, selectedStyle)
+          : await onLoadPreview(videoFile, selectedStyle)
       await onApply?.(result)
     } catch (err) {
       setApplyError(err?.message || 'Could not apply preset.')

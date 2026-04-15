@@ -21,7 +21,6 @@ const GifEditor = ({
     onOpenTrim,
     onOpenResize,
     onOpenFilters,
-    onExportGif,
 }) => {
     const previewFrameClassName = GIF_RESIZE_PRESET_FRAME_CLASSES[committedResizePreset] || GIF_RESIZE_PRESET_FRAME_CLASSES[DEFAULT_GIF_RESIZE_PRESET]
 
@@ -124,17 +123,7 @@ const GifEditor = ({
 
         try {
             if (!onCreateGif) throw new Error('GIF conversion is not available right now.')
-            const result = await onCreateGif(videoFile, trimStart, trimEnd, committedResizePreset, committedResizeBorderColor)
-
-            if (!result?.id) {
-                throw new Error('GIF conversion did not return a downloadable result.')
-            }
-
-            if (!onExportGif) {
-                throw new Error('GIF export is not available right now.')
-            }
-
-            await onExportGif(result.id, selectedSpeedPlaybackRate)
+            await onCreateGif(videoFile)
             setStatusMessage(null)
         } catch (error) {
             setConversionError(error?.message || 'GIF conversion failed. Please try again.')
