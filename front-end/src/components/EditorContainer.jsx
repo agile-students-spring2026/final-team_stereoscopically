@@ -16,6 +16,7 @@ import PhotoPreview from './PhotoPreview'
 import VideoPresetFilters from './gif/VideoPresetFilters'
 import GifFilterMain from './gif/GifFilterMain'
 import GifToolPlaceholder from './gif/GifToolPlaceholder'
+import GifTrimEditor from './gif/GifTrimEditor'
 
 const SCREENS = {
   EDITOR: 'editor',
@@ -478,10 +479,9 @@ function EditorContainer() {
 
       if (activeGifTool === GIF_TOOLS.TRIM) {
         return (
-          <GifToolPlaceholder
-            title="Trim"
-            description="Trim controls for GIFs will be added in the next step."
-            onBack={resetGifToolState}
+          <GifTrimEditor
+            videoFile={selectedMedia}
+            onApply={() => resetGifToolState()}
             onCancel={resetGifToolState}
           />
         )
