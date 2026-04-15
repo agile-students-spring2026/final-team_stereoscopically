@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
-import FilterScreen from './FilterScreen'
-import { applyVideoFilter } from '../services/backendGifService'
+import FilterScreen from '../FilterScreen'
+import { applyVideoFilter } from '../../services/backendGifService'
 
 const PRESETS = [
   { id: 'default', label: 'Original' },

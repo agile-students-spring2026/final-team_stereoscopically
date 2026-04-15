@@ -26,6 +26,30 @@ Components in `src/components` are not responsible for:
 - duplicated validation already handled upstream
 - large helper logic not directly tied to rendering or interaction
 
+## Mode-based folder layout
+
+Components are organized by media mode:
+
+- `src/components/image/`
+	- `ImageEditor.jsx`
+	- `ImageCropper.jsx`
+	- `PresetSizes.jsx`
+	- `PresetFilters.jsx`
+	- `ColorFilters.jsx`
+	- `AddText.jsx`
+- `src/components/gif/`
+	- `GifEditor.jsx`
+	- `VideoPresetFilters.jsx`
+	- `GifFilterMain.jsx`
+	- `GifToolPlaceholder.jsx`
+- `src/components/` (shared / orchestration)
+	- `EditorContainer.jsx`
+	- `MediaEntry.jsx`
+	- `FilterMain.jsx`
+	- `FilterScreen.jsx`
+	- `CameraCapture.jsx`
+	- `PhotoPreview.jsx`
+
 ---
 
 ## Workflow boundaries
@@ -33,8 +57,10 @@ Components in `src/components` are not responsible for:
 ### GIF workflow
 
 **Components**
-- `GifEditor.jsx`
-- `VideoPresetFilters.jsx`
+- `gif/GifEditor.jsx`
+- `gif/VideoPresetFilters.jsx`
+- `gif/GifFilterMain.jsx`
+- `gif/GifToolPlaceholder.jsx`
 
 **Responsible for**
 - video and GIF preview UI
@@ -55,9 +81,12 @@ Components in `src/components` are not responsible for:
 ### Image workflow
 
 **Components**
-- `ImageEditor.jsx`
-- `ImageCropper.jsx`
-- `PresetSizes.jsx`
+- `image/ImageEditor.jsx`
+- `image/ImageCropper.jsx`
+- `image/PresetSizes.jsx`
+- `image/PresetFilters.jsx`
+- `image/ColorFilters.jsx`
+- `image/AddText.jsx`
 
 **Responsible for**
 - image editing UI and interaction behavior
@@ -79,9 +108,6 @@ Components in `src/components` are not responsible for:
 - `MediaEntry.jsx`
 - `FilterMain.jsx`
 - `FilterScreen.jsx`
-- `AddText.jsx`
-- `PresetFilters.jsx`
-- `ColorFilters.jsx`
 
 **Responsible for**
 - screen transitions and editor flow coordination
