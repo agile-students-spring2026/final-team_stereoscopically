@@ -6,10 +6,10 @@ import {
   convertVideoToGif,
   exportGifToBackend,
   trimVideoService,
-} from '../backendGifService'
-import { postJson, postMultipart } from '../backendMediaClient'
+} from '../../src/services/backendGifService'
+import { postJson, postMultipart } from '../../src/services/backendMediaClient'
 
-vi.mock('../backendMediaClient', () => ({
+vi.mock('../../src/services/backendMediaClient', () => ({
   postJson: vi.fn(),
   postMultipart: vi.fn(),
 }))

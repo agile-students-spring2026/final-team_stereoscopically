@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { isVideoTypeSupported } from '../videoSupport'
+import { isVideoTypeSupported } from '../../src/utils/videoSupport'
 
 describe('isVideoTypeSupported', () => {
   afterEach(() => {

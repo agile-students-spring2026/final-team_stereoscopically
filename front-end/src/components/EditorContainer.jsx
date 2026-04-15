@@ -16,10 +16,10 @@ import CameraCapture from './CameraCapture'
 import PhotoPreview from './PhotoPreview'
 import VideoPresetFilters from './gif/VideoPresetFilters'
 import GifFilterMain from './gif/GifFilterMain'
-import GifToolPlaceholder from './gif/GifToolPlaceholder'
 import GifSpeedControls from './gif/GifSpeedControls'
 import GifTrimEditor from './gif/GifTrimEditor'
 import GifResizePresets from './gif/GifResizePresets'
+import GifTextOverlayEditor from './gif/GifTextOverlayEditor'
 
 const SCREENS = {
   EDITOR: 'editor',
@@ -341,14 +341,15 @@ function EditorContainer() {
       <GifEditor
         key={videoKey}
         videoFile={selectedMedia}
-		gifSessionState={{
-			trimRange: gifSession.trimRange,
-			resizePreset: gifSession.resizePreset,
-			resizeBorderColor: gifSession.resizeBorderColor,
-			selectedSpeedPlaybackRate: gifSession.selectedSpeedPlaybackRate,
-		}}
+        gifSessionState={{
+          trimRange: gifSession.trimRange,
+          resizePreset: gifSession.resizePreset,
+          resizeBorderColor: gifSession.resizeBorderColor,
+          selectedSpeedPlaybackRate: gifSession.selectedSpeedPlaybackRate,
+          textOverlaySettings: gifSession.textOverlaySettings,
+        }}
         onCancel={handleBackToUpload}
-		onCreateGif={(videoFile, trimOverrides) => gifSession.createAndExportGif(videoFile, trimOverrides)}
+        onCreateGif={(videoFile, trimOverrides) => gifSession.createAndExportGif(videoFile, trimOverrides)}
         onOpenTrim={() => gifSession.openGifTool(gifSession.GIF_FLOW_TOOLS.TRIM)}
         onOpenResize={() => gifSession.openGifTool(gifSession.GIF_FLOW_TOOLS.RESIZE)}
         onOpenFilters={() => gifSession.openGifTool(gifSession.GIF_FLOW_TOOLS.FILTERS_MAIN)}
@@ -465,9 +466,10 @@ function EditorContainer() {
 
       if (gifSession.activeTool === gifSession.GIF_FLOW_TOOLS.TEXT) {
         return (
-          <GifToolPlaceholder
-            title="Text"
-            description="Text overlay controls for GIFs will be added in the next step."
+          <GifTextOverlayEditor
+            initialSettings={gifSession.textOverlaySettings}
+            onChange={gifSession.updateGifTextOverlaySettings}
+            onApply={gifSession.applyGifTextOverlaySettings}
             onBack={() => gifSession.openGifTool(gifSession.GIF_FLOW_TOOLS.FILTERS_MAIN)}
             onCancel={() => gifSession.openGifTool(gifSession.GIF_FLOW_TOOLS.EDITOR)}
           />

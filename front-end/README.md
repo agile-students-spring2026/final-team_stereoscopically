@@ -17,6 +17,12 @@ If you are developing a production application, we recommend using TypeScript wi
 
 ## Unit tests (Vitest)
 
+Front-end tests are organized under a single top-level folder:
+
+- `test/**`
+
+This mirrors the back-end convention (`back-end/test/**`) for consistent project structure.
+
 Run the front-end unit tests:
 
 - `npm test`
