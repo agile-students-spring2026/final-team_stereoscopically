@@ -34,6 +34,7 @@ const GIF_TOOLS = {
   PRESET_FILTERS: 'preset-filters',
   TEXT: 'text',
   SPEED: 'speed',
+  RESIZE: 'resize',
 }
 
 const FILE_TOO_LARGE_MESSAGE = 'File is too large (max 50 MB).'
@@ -351,9 +352,8 @@ function EditorContainer() {
           onCancel={handleBackToUpload}
           onCreateGif={createGif}
           onExportGif={exportGif}
+      onOpenResize={() => openGifTool(GIF_TOOLS.RESIZE)}
           onOpenFilters={() => openGifTool(GIF_TOOLS.FILTERS_MAIN)}
-          onOpenSpeed={() => openGifTool(GIF_TOOLS.SPEED)}
-          onOpenText={() => openGifTool(GIF_TOOLS.TEXT)}
       />
     )
   }
@@ -458,6 +458,17 @@ function EditorContainer() {
             title="Speed"
             description="Speed controls for GIFs will be added in the next step."
             onBack={() => openGifTool(GIF_TOOLS.FILTERS_MAIN)}
+            onCancel={resetGifToolState}
+          />
+        )
+      }
+
+      if (activeGifTool === GIF_TOOLS.RESIZE) {
+        return (
+          <GifToolPlaceholder
+            title="Resize"
+            description="Resize controls for GIFs will be added in the next step."
+            onBack={resetGifToolState}
             onCancel={resetGifToolState}
           />
         )

@@ -1,13 +1,11 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 
 const GifEditor = ({
     videoFile,
     onCancel,
-    onConverted,
     onCreateGif,
+    onOpenResize,
     onOpenFilters,
-    onOpenSpeed,
-    onOpenText,
     onExportGif,
 }) => {
     const [isProcessing, setIsProcessing] = useState(false)
@@ -53,12 +51,6 @@ const GifEditor = ({
     }, [videoFile, videoUrl])
 
     useEffect(() => {
-        if (backendResult) {
-            onConverted?.(backendResult)
-        }
-    }, [backendResult, onConverted])
-
-    useEffect(() => {
         setBackendResult(null)
         setStatusMessage(null)
         setConversionError(null)
@@ -74,6 +66,20 @@ const GifEditor = ({
     }, [videoFile])
 
     const formatTime = (s) => `${s.toFixed(1)}s`
+
+    const resetTransientEditorState = useCallback((nextTrimEnd = duration) => {
+        setTrimStart(0)
+        setTrimEnd(nextTrimEnd)
+        setShowTrim(false)
+        setBackendResult(null)
+        setStatusMessage(null)
+        setConversionError(null)
+
+        if (videoRef.current) {
+            videoRef.current.pause()
+            videoRef.current.currentTime = 0
+        }
+    }, [duration])
     
     const handleConvertToGif = async () => {
         if (isProcessing) return
@@ -169,7 +175,7 @@ const GifEditor = ({
                     </label>
                     <button type="button"
                         style={{ background: 'none', border: 'none', color: '#007aff', fontSize: '0.9rem', fontWeight: '500', cursor: 'pointer' }}
-                        onClick={() => { setTrimStart(0); setTrimEnd(duration) }}>
+                        onClick={() => resetTransientEditorState(duration)}>
                         Reset
                     </button>
                 </div>
@@ -179,25 +185,17 @@ const GifEditor = ({
                 <button type="button" className={`btn-primary ${showTrim ? 'active' : ''}`} onClick={() => setShowTrim((prev) => !prev)}>
                     Trim
                 </button>
-                <button type="button" className="btn-primary">
+                <button type="button" className="btn-primary" onClick={onOpenResize}>
                     Resize
-                </button>
-                <button type="button" className="btn-primary" onClick={onOpenSpeed}>
-                    Speed
                 </button>
                 <button type="button" className="btn-primary" onClick={onOpenFilters}>
                     Filters
-                </button>
-                <button type="button" className="btn-primary" onClick={onOpenText}>
-                    Text
                 </button>
             </div>
 
             <div className="card-actions card-actions-spaced">
                 <button type="button" className="btn-secondary" onClick={() => {
-                    setTrimStart(0)
-                    setTrimEnd(duration)
-                    setBackendResult(null)
+                    resetTransientEditorState(duration)
                     onCancel?.()
                 }}>
                     Cancel

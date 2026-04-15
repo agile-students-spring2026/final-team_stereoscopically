@@ -9,7 +9,7 @@ function GifFilterMain({ onPresetFilters, onTextOverlay, onSpeed, onCancel }) {
           Preset Filters
         </button>
         <button type="button" className="btn-primary" onClick={onTextOverlay}>
-          Text Overlay
+          Text
         </button>
         <button type="button" className="btn-primary" onClick={onSpeed}>
           Speed
