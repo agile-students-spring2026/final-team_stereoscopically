@@ -381,7 +381,7 @@ function EditorContainer() {
               const applied = await applyImagePresetFilter()
               if (applied) setScreen(SCREENS.EDITOR)
             }}
-            onCancel={() => setScreen(SCREENS.EDITOR)}
+            onCancel={() => setScreen(SCREENS.FILTERS_MAIN)}
             applyError={exportError}
             previewError={presetFilterError}
             isLoadingPreview={isLoadingPresetFilterPreview}
