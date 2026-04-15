@@ -144,6 +144,119 @@ const resolveGifResizeBorderColor = (rawColor) => {
 	return { borderColor: color.toLowerCase() }
 }
 
+const DEFAULT_GIF_TEXT_SIZE = 32
+const DEFAULT_GIF_TEXT_COLOR = '#ffffff'
+const DEFAULT_GIF_TEXT_POSITION = { x: 50, y: 50 }
+const MAX_GIF_TEXT_LENGTH = 120
+const MIN_GIF_TEXT_SIZE = 8
+const MAX_GIF_TEXT_SIZE = 120
+
+const parseGifTextOverlay = (rawTextOverlay) => {
+	if (rawTextOverlay == null || rawTextOverlay === '') {
+		return { value: null }
+	}
+
+	let parsedTextOverlay = rawTextOverlay
+	if (typeof rawTextOverlay === 'string') {
+		try {
+			parsedTextOverlay = JSON.parse(rawTextOverlay)
+		} catch {
+			return {
+				error: {
+					status: 400,
+					error: 'Invalid text overlay payload.',
+					code: 'INVALID_TEXT_OVERLAY',
+				},
+			}
+		}
+	}
+
+	if (!parsedTextOverlay || typeof parsedTextOverlay !== 'object' || Array.isArray(parsedTextOverlay)) {
+		return {
+			error: {
+				status: 400,
+				error: 'Invalid text overlay payload.',
+				code: 'INVALID_TEXT_OVERLAY',
+			},
+		}
+	}
+
+	const rawText = parsedTextOverlay.text
+	if (typeof rawText !== 'string') {
+		return {
+			error: {
+				status: 400,
+				error: 'Invalid text overlay text value.',
+				code: 'INVALID_TEXT_OVERLAY_TEXT',
+			},
+		}
+	}
+
+	if (rawText.length > MAX_GIF_TEXT_LENGTH) {
+		return {
+			error: {
+				status: 400,
+				error: `Text overlay is too long (max ${MAX_GIF_TEXT_LENGTH} characters).`,
+				code: 'INVALID_TEXT_OVERLAY_TEXT',
+			},
+		}
+	}
+
+	if (!rawText.trim()) {
+		return { value: null }
+	}
+
+	const rawSize = parsedTextOverlay.size
+	const size = rawSize == null ? DEFAULT_GIF_TEXT_SIZE : Number(rawSize)
+	if (!Number.isFinite(size) || size < MIN_GIF_TEXT_SIZE || size > MAX_GIF_TEXT_SIZE) {
+		return {
+			error: {
+				status: 400,
+				error: `Invalid text overlay size. Must be between ${MIN_GIF_TEXT_SIZE} and ${MAX_GIF_TEXT_SIZE}.`,
+				code: 'INVALID_TEXT_OVERLAY_SIZE',
+			},
+		}
+	}
+
+	const rawColor = parsedTextOverlay.color == null ? DEFAULT_GIF_TEXT_COLOR : parsedTextOverlay.color
+	if (typeof rawColor !== 'string' || !/^#[0-9A-Fa-f]{6}$/.test(rawColor.trim())) {
+		return {
+			error: {
+				status: 400,
+				error: 'Invalid text overlay color. Use a #RRGGBB hex value.',
+				code: 'INVALID_TEXT_OVERLAY_COLOR',
+			},
+		}
+	}
+
+	const rawX = parsedTextOverlay.position?.x
+	const rawY = parsedTextOverlay.position?.y
+	const x = rawX == null ? DEFAULT_GIF_TEXT_POSITION.x : Number(rawX)
+	const y = rawY == null ? DEFAULT_GIF_TEXT_POSITION.y : Number(rawY)
+
+	if (!Number.isFinite(x) || !Number.isFinite(y) || x < 0 || x > 100 || y < 0 || y > 100) {
+		return {
+			error: {
+				status: 400,
+				error: 'Invalid text overlay position.',
+				code: 'INVALID_TEXT_OVERLAY_POSITION',
+			},
+		}
+	}
+
+	return {
+		value: {
+			text: rawText,
+			size: Math.round(size),
+			color: rawColor.trim().toLowerCase(),
+			position: {
+				x,
+				y,
+			},
+		},
+	}
+}
+
 export const uploadImage = (req) => {
 	if (!req.file) {
 		return { error: { status: 400, error: 'No image file uploaded.', code: 'MISSING_FILE' } }
@@ -634,7 +747,7 @@ export const getExportDownloadContent = (id) => {
 	}
 }
 export const trimVideo = async (req) => {
-	const { trimStart, trimEnd, resizePreset, resizeBorderColor } = req.body ?? {}
+	const { trimStart, trimEnd, resizePreset, resizeBorderColor, textOverlay } = req.body ?? {}
 
     if (!req.file) {
         return { error: { status: 400, error: 'No video file uploaded.', code: 'MISSING_FILE' } }
@@ -659,6 +772,11 @@ export const trimVideo = async (req) => {
 	const parsedResizeBorderColor = resolveGifResizeBorderColor(resizeBorderColor)
 	if (parsedResizeBorderColor.error) {
 		return { error: parsedResizeBorderColor.error }
+	}
+
+	const parsedTextOverlay = parseGifTextOverlay(textOverlay)
+	if (parsedTextOverlay.error) {
+		return { error: parsedTextOverlay.error }
 	}
 
     try {
@@ -699,6 +817,7 @@ export const trimVideo = async (req) => {
             mimeType: 'image/gif',
             size: outputBuffer.length,
             fileName: 'output.gif',
+			textOverlay: parsedTextOverlay.value,
         })
 
         return {
@@ -711,6 +830,7 @@ export const trimVideo = async (req) => {
                 size: outputBuffer.length,
 				resizePreset: parsedResizePreset.preset,
 				resizeBorderColor: parsedResizeBorderColor.borderColor,
+				textOverlay: parsedTextOverlay.value,
             },
         }
     } catch (error) {

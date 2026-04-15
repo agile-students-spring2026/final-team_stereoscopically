@@ -306,7 +306,8 @@ const useGifEditingSession = () => {
           effectiveTrimStart,
           effectiveTrimEnd,
           resizePreset,
-          resizeBorderColor
+          resizeBorderColor,
+          textOverlaySettings
         )
 
         if (!trimmed?.id) {
@@ -333,7 +334,7 @@ const useGifEditingSession = () => {
         setIsProcessing(false)
       }
     },
-    [trimRange, resizePreset, resizeBorderColor, selectedSpeedPlaybackRate]
+    [trimRange, resizePreset, resizeBorderColor, selectedSpeedPlaybackRate, textOverlaySettings]
   )
 
   /**

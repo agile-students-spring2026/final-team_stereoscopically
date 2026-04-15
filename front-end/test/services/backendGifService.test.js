@@ -50,16 +50,23 @@ describe('backendGifService', () => {
     })
   })
 
-  it('sends trim range, resize preset, and border color when trimming a video', async () => {
+  it('sends trim range, resize settings, and text overlay when trimming a video', async () => {
     const fakeFile = new File(['video'], 'clip.mp4', { type: 'video/mp4' })
+    const textOverlay = {
+      text: 'Sample text',
+      size: 28,
+      color: '#FFAA11',
+      position: { x: 62, y: 35 },
+    }
     postMultipart.mockResolvedValue({
       id: 'vid_trim_1',
       type: 'video',
       url: 'https://cdn.example.com/trimmed.mp4',
       size: 1024,
+      textOverlay,
     })
 
-    const result = await trimVideoService(fakeFile, 1.2, 3.4, 'portrait', '#112233')
+    const result = await trimVideoService(fakeFile, 1.2, 3.4, 'portrait', '#112233', textOverlay)
 
     expect(postMultipart).toHaveBeenCalledWith({
       path: '/api/trim/video',
@@ -70,6 +77,7 @@ describe('backendGifService', () => {
         trimEnd: 3.4,
         resizePreset: 'portrait',
         resizeBorderColor: '#112233',
+        textOverlay: JSON.stringify(textOverlay),
       },
       fallbackErrorMessage: 'Video trim failed',
     })
@@ -79,6 +87,7 @@ describe('backendGifService', () => {
       type: 'video',
       url: 'https://cdn.example.com/trimmed.mp4',
       size: 1024,
+      textOverlay,
     })
   })
 
