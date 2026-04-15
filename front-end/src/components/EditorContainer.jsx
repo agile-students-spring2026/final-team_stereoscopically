@@ -28,7 +28,7 @@ const SCREENS = {
   CAMERA_PREVIEW: 'camera-preview',
   GIF_FILTERS_MAIN: 'gif-filters-main',
   GIF_PRESET_FILTERS: 'gif-preset-filters',
-  GIF_TEXT_OVERLAY: 'gif-text-overlay',
+  GIF_TEXT: 'gif-text',
   GIF_SPEED: 'gif-speed',
 }
 
@@ -335,6 +335,8 @@ function EditorContainer() {
           onCreateGif={createGif}
           onExportGif={exportGif}
           onOpenFilters={() => setScreen(SCREENS.GIF_FILTERS_MAIN)}
+          onOpenSpeed={() => setScreen(SCREENS.GIF_SPEED)}
+          onOpenText={() => setScreen(SCREENS.GIF_TEXT)}
       />
     )
   }
@@ -405,7 +407,7 @@ function EditorContainer() {
         return (
           <GifFilterMain
             onPresetFilters={() => setScreen(SCREENS.GIF_PRESET_FILTERS)}
-            onTextOverlay={() => setScreen(SCREENS.GIF_TEXT_OVERLAY)}
+            onTextOverlay={() => setScreen(SCREENS.GIF_TEXT)}
             onSpeed={() => setScreen(SCREENS.GIF_SPEED)}
             onCancel={() => setScreen(SCREENS.EDITOR)}
           />
@@ -422,13 +424,13 @@ function EditorContainer() {
         )
       }
 
-      if (screen === SCREENS.GIF_TEXT_OVERLAY) {
+      if (screen === SCREENS.GIF_TEXT) {
         return (
           <GifToolPlaceholder
-            title="Text Overlay"
+            title="Text"
             description="Text overlay controls for GIFs will be added in the next step."
-            onBackToFilters={() => setScreen(SCREENS.GIF_FILTERS_MAIN)}
-            onBackToEditor={() => setScreen(SCREENS.EDITOR)}
+            onBack={() => setScreen(SCREENS.GIF_FILTERS_MAIN)}
+            onCancel={() => setScreen(SCREENS.EDITOR)}
           />
         )
       }
@@ -438,8 +440,8 @@ function EditorContainer() {
           <GifToolPlaceholder
             title="Speed"
             description="Speed controls for GIFs will be added in the next step."
-            onBackToFilters={() => setScreen(SCREENS.GIF_FILTERS_MAIN)}
-            onBackToEditor={() => setScreen(SCREENS.EDITOR)}
+            onBack={() => setScreen(SCREENS.GIF_FILTERS_MAIN)}
+            onCancel={() => setScreen(SCREENS.EDITOR)}
           />
         )
       }

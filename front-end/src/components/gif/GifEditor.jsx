@@ -1,7 +1,15 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 
-
-const GifEditor = ({ videoFile, onCancel, onConverted, onCreateGif, onOpenFilters, onExportGif }) => {
+const GifEditor = ({
+    videoFile,
+    onCancel,
+    onConverted,
+    onCreateGif,
+    onOpenFilters,
+    onOpenSpeed,
+    onOpenText,
+    onExportGif,
+}) => {
     const [isProcessing, setIsProcessing] = useState(false)
     const [statusMessage, setStatusMessage] = useState(null)
     const [backendResult, setBackendResult] = useState(null)
@@ -155,8 +163,14 @@ const GifEditor = ({ videoFile, onCancel, onConverted, onCreateGif, onOpenFilter
                 <button type="button" className="btn-primary">
                     Resize
                 </button>
+                <button type="button" className="btn-primary" onClick={onOpenSpeed}>
+                    Speed
+                </button>
                 <button type="button" className="btn-primary" onClick={onOpenFilters}>
                     Filters
+                </button>
+                <button type="button" className="btn-primary" onClick={onOpenText}>
+                    Text
                 </button>
             </div>
 

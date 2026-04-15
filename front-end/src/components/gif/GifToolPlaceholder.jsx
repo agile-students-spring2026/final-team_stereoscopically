@@ -1,4 +1,4 @@
-function GifToolPlaceholder({ title, description, onBackToFilters, onBackToEditor }) {
+function GifToolPlaceholder({ title, description, onBack, onCancel }) {
   return (
     <div className="preset-sizes-screen">
       <div className="screen-header screen-header-column">
@@ -13,11 +13,11 @@ function GifToolPlaceholder({ title, description, onBackToFilters, onBackToEdito
       </div>
 
       <div className="card-actions preset-sizes-screen-actions">
-        <button type="button" className="btn-secondary" onClick={onBackToFilters}>
-          Back to Filters
+        <button type="button" className="btn-secondary" onClick={onBack}>
+          Back
         </button>
-        <button type="button" className="btn-primary" onClick={onBackToEditor}>
-          Return to Editor
+        <button type="button" className="btn-primary" onClick={onCancel}>
+          Cancel
         </button>
       </div>
     </div>
