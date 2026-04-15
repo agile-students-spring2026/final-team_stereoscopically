@@ -20,6 +20,7 @@ import GifSpeedControls from './gif/GifSpeedControls'
 import {
   createInitialGifFlowState,
   GIF_FLOW_TOOLS,
+  resetGifFlowState,
   setGifFlowActiveTool,
   setGifFlowSelectedSpeed,
 } from './gif/gifFlowState'
@@ -143,37 +144,42 @@ function EditorContainer() {
   }
 
   const [unsupportedVideo, setUnsupportedVideo] = useState(null)
-  const handleVideoSelect = async (file) => {
-    if (!file) return
+  const handleVideoSelect = useCallback(
+    async (file, { preserveSelectedSpeed = false } = {}) => {
+      if (!file) return
 
-    setLastRejectedUploadType('video')
+      setLastRejectedUploadType('video')
 
-    const result = await selectVideo(file)
+      const result = await selectVideo(file)
 
-    if (result?.code === MEDIA_SELECTION_CODES.FILE_TOO_LARGE) {
-      setUnsupportedVideo(null)
-      setFileTooLargeMessage(FILE_TOO_LARGE_MESSAGE)
-      return
-    }
+      if (result?.code === MEDIA_SELECTION_CODES.FILE_TOO_LARGE) {
+        setUnsupportedVideo(null)
+        setFileTooLargeMessage(FILE_TOO_LARGE_MESSAGE)
+        return
+      }
 
-    if (result?.code === MEDIA_SELECTION_CODES.UNSUPPORTED_VIDEO) {
+      if (result?.code === MEDIA_SELECTION_CODES.UNSUPPORTED_VIDEO) {
+        setFileTooLargeMessage(null)
+        setUnsupportedVideo(file)
+        return
+      }
+
+      if (result?.code !== MEDIA_SELECTION_CODES.OK) {
+        return
+      }
+
       setFileTooLargeMessage(null)
-      setUnsupportedVideo(file)
-      return
-    }
+      setUnsupportedVideo(null)
+      clearCropSession()
+      if (result?.applied) {
+        setGifFlowState((prev) => resetGifFlowState(prev, { preserveSelectedSpeed }))
+        setScreen(SCREENS.EDITOR)
+      }
 
-    if (result?.code !== MEDIA_SELECTION_CODES.OK) {
-      return
-    }
-
-    setFileTooLargeMessage(null)
-    setUnsupportedVideo(null)
-    clearCropSession()
-    if (result?.applied) {
-      setGifFlowState(createInitialGifFlowState())
-      setScreen(SCREENS.EDITOR)
-    }
-  }
+      return result
+    },
+    [clearCropSession, selectVideo]
+  )
 
   const handleCameraSelect = () => {
     setScreen(SCREENS.CAMERA)
@@ -182,7 +188,7 @@ function EditorContainer() {
   const handleBackToUpload = () => {
     resetSelection()
     resetImageEditingSessionState()
-    setGifFlowState(createInitialGifFlowState())
+    setGifFlowState((prev) => resetGifFlowState(prev))
     setScreen(SCREENS.EDITOR)
   }
 
@@ -246,15 +252,12 @@ function EditorContainer() {
       const fileName = `filtered-${result?.preset || 'video'}.mp4`
       const filteredFile = new File([blob], fileName, { type: mimeType })
 
-      const selection = await selectVideo(filteredFile)
+      const selection = await handleVideoSelect(filteredFile, { preserveSelectedSpeed: true })
       if (selection?.code !== MEDIA_SELECTION_CODES.OK) {
         throw new Error('Filtered video could not be loaded in editor.')
       }
-
-      resetGifToolState()
-      setScreen(SCREENS.EDITOR)
     },
-    [resetGifToolState, selectVideo]
+    [handleVideoSelect, resetGifToolState]
   )
 
   const handlePresetSizeSelect = async (size) => {

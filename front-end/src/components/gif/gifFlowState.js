@@ -35,3 +35,13 @@ export const setGifFlowSelectedSpeed = (state, nextPlaybackRate) => {
     selectedSpeedPlaybackRate: nextPlaybackRate,
   }
 }
+
+export const resetGifFlowState = (state, { preserveSelectedSpeed = false } = {}) => {
+  const nextState = createInitialGifFlowState()
+
+  if (preserveSelectedSpeed && GIF_SPEED_PLAYBACK_RATES.includes(state?.selectedSpeedPlaybackRate)) {
+    nextState.selectedSpeedPlaybackRate = state.selectedSpeedPlaybackRate
+  }
+
+  return nextState
+}
