@@ -91,10 +91,15 @@ function EditorContainer() {
 
   const [screen, setScreen] = useState(SCREENS.EDITOR)
   const [activeGifTool, setActiveGifTool] = useState(GIF_TOOLS.EDITOR)
+  const [gifTrimRange, setGifTrimRange] = useState({ start: 0, end: 0 })
   const [fileTooLargeMessage, setFileTooLargeMessage] = useState(null)
   const [unsupportedImageMessage, setUnsupportedImageMessage] = useState(null)
   const [lastRejectedUploadType, setLastRejectedUploadType] = useState(null)
   const [tempCapturedFile, setTempCapturedFile] = useState(null)
+
+  const resetGifTrimRange = useCallback(() => {
+    setGifTrimRange({ start: 0, end: 0 })
+  }, [])
 
   const resetGifToolState = useCallback(() => {
     setActiveGifTool(GIF_TOOLS.EDITOR)
@@ -161,6 +166,7 @@ function EditorContainer() {
 
     setFileTooLargeMessage(null)
     setUnsupportedVideo(null)
+    resetGifTrimRange()
     clearCropSession()
     if (result?.applied) {
       resetGifToolState()
@@ -175,6 +181,7 @@ function EditorContainer() {
   const handleBackToUpload = () => {
     resetSelection()
     resetImageEditingSessionState()
+    resetGifTrimRange()
     resetGifToolState()
     setScreen(SCREENS.EDITOR)
   }
@@ -244,11 +251,21 @@ function EditorContainer() {
         throw new Error('Filtered video could not be loaded in editor.')
       }
 
+      resetGifTrimRange()
       resetGifToolState()
       setScreen(SCREENS.EDITOR)
     },
-    [resetGifToolState, selectVideo]
+    [resetGifToolState, resetGifTrimRange, selectVideo]
   )
+
+  const handleGifTrimApply = useCallback((nextRange) => {
+    const safeStart = Math.max(0, Number(nextRange?.trimStart) || 0)
+    const rawEnd = Number(nextRange?.trimEnd)
+    const safeEnd = Number.isFinite(rawEnd) ? Math.max(safeStart, rawEnd) : safeStart
+
+    setGifTrimRange({ start: safeStart, end: safeEnd })
+    resetGifToolState()
+  }, [resetGifToolState])
 
   const handlePresetSizeSelect = async (size) => {
     await handleSizeSelect(size)
@@ -351,6 +368,8 @@ function EditorContainer() {
       <GifEditor
           key={videoKey}
           videoFile={selectedMedia}
+      committedTrimStart={gifTrimRange.start}
+      committedTrimEnd={gifTrimRange.end}
           onCancel={handleBackToUpload}
           onCreateGif={createGif}
           onExportGif={exportGif}
@@ -481,7 +500,9 @@ function EditorContainer() {
         return (
           <GifTrimEditor
             videoFile={selectedMedia}
-            onApply={() => resetGifToolState()}
+            initialTrimStart={gifTrimRange.start}
+            initialTrimEnd={gifTrimRange.end}
+            onApply={handleGifTrimApply}
             onCancel={resetGifToolState}
           />
         )

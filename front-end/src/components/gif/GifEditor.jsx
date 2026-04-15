@@ -2,6 +2,8 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 
 const GifEditor = ({
     videoFile,
+    committedTrimStart = 0,
+    committedTrimEnd = 0,
     onCancel,
     onCreateGif,
     onOpenTrim,
@@ -70,6 +72,17 @@ const GifEditor = ({
 
     const formatTime = (s) => `${s.toFixed(1)}s`
 
+    const resolveCommittedTrim = useCallback((totalDuration) => {
+        const safeStart = Math.min(Math.max(committedTrimStart, 0), totalDuration)
+        const candidateEnd = committedTrimEnd > 0 ? committedTrimEnd : totalDuration
+        const safeEnd = Math.min(Math.max(candidateEnd, safeStart), totalDuration)
+
+        return {
+            start: safeStart,
+            end: safeEnd,
+        }
+    }, [committedTrimEnd, committedTrimStart])
+
     const resetTransientEditorState = useCallback((nextTrimEnd = duration, closeTrimPanel = true) => {
         setTrimStart(0)
         setTrimEnd(nextTrimEnd)
@@ -128,9 +141,10 @@ const GifEditor = ({
                             const total = Number.isFinite(videoRef.current?.duration)
                                 ? videoRef.current.duration
                                 : 0
+                            const nextTrim = resolveCommittedTrim(total)
                             setDuration(total)
-                            setTrimStart(0)
-                            setTrimEnd(total)
+                            setTrimStart(nextTrim.start)
+                            setTrimEnd(nextTrim.end)
                         }}
                         onTimeUpdate={() => {
                             if (trimEnd > 0 && videoRef.current && videoRef.current.currentTime >= trimEnd) {
