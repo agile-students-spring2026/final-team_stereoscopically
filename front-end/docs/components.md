@@ -12,6 +12,8 @@ It covers:
 
 This document describes the intended component architecture the codebase should follow.
 
+For shared editor layout/style naming conventions, see `docs/ui-consistency.md`.
+
 ---
 
 ## `src/components` scope

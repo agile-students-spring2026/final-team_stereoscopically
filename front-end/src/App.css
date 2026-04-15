@@ -65,6 +65,83 @@
 }
 
 /* ============================================================================
+   EDITOR CONSISTENCY FOUNDATION (PHASE 1)
+   ============================================================================ */
+
+/* Shared shell classes for both image and GIF flows. Existing selectors remain valid. */
+.editor-shell {
+  width: 100%;
+  max-width: var(--editor-max-width);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.editor-shell-title {
+  font-size: 1.25rem;
+  margin: 0 0 var(--editor-space-md) 0;
+  text-align: center;
+}
+
+.editor-tool-list {
+  align-items: stretch;
+  gap: 0;
+}
+
+.editor-tool-list .btn-primary {
+  width: 100%;
+  display: block;
+  text-align: center;
+}
+
+.editor-tool-list .btn-primary + .btn-primary {
+  margin-top: var(--editor-space-sm);
+}
+
+.editor-tool-list .btn-secondary {
+  width: 100%;
+  display: block;
+  text-align: center;
+  margin-top: var(--editor-space-sm);
+}
+
+.editor-shell-actions {
+  width: 100%;
+  max-width: var(--editor-max-width);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--editor-space-xs);
+}
+
+.editor-tool-screen {
+  width: 100%;
+  max-width: var(--editor-max-width);
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: var(--editor-space-sm);
+  box-sizing: border-box;
+}
+
+.editor-status,
+.upload-status,
+.preview-label {
+  margin: 0;
+  color: var(--editor-status-color-muted);
+  font-size: 0.9rem;
+}
+
+.editor-status--error {
+  color: var(--editor-status-color-error);
+}
+
+.editor-status--info {
+  color: var(--editor-status-color-info);
+}
+
+/* ============================================================================
    CREATE NEW / UPLOAD SCREEN
    ============================================================================ */
 
@@ -346,21 +423,23 @@
   margin: 0;
 }
 
-.preview-box {
+.preview-box,
+.editor-preview {
   width: 100%;
-  max-width: 400px;
-  height: 220px;
-  border-radius: 12px;
+  max-width: var(--editor-max-width);
+  height: var(--editor-preview-height);
+  border-radius: var(--editor-radius-md);
   border: 1px solid #1a1a1a;
   background-color: #ffffff;
   display: flex;
   align-items: center;
   justify-content: center;
-  margin-bottom: 1rem;
+  margin-bottom: var(--editor-space-md);
   box-sizing: border-box;
 }
 
-.preview-box-interactive {
+.preview-box-interactive,
+.editor-preview--interactive {
   position: relative;
   overflow: hidden;
   touch-action: none;
@@ -374,14 +453,19 @@
 }
 
 /* Lets letterbox / transparent margins read clearly (not “lost” on a solid white frame) */
-.preview-box-checkered {
+.preview-box-checkered,
+.editor-preview--checkered {
   background-color: #d9d9d9;
   background-image: repeating-conic-gradient(#ededed 0% 25%, #d9d9d9 0% 50%);
   background-size: 20px 20px;
 }
 
 .preview-box.preview-box-video {
-  height: 320px;
+  height: var(--editor-preview-height-video);
+}
+
+.editor-preview.editor-preview--video {
+  height: var(--editor-preview-height-video);
 }
 
 .preview-image,
@@ -391,10 +475,7 @@
   object-fit: contain;
 }
 
-.preview-label {
-  color: #999;
-  font-size: 0.9rem;
-}
+
 
 .filter-main-buttons {
   align-items: stretch;
@@ -423,14 +504,15 @@
   margin-top: 1.5rem;
 }
 
-.preset-sizes-screen {
+.preset-sizes-screen,
+.editor-tool-screen {
   width: 100%;
-  max-width: 400px;
+  max-width: var(--editor-max-width);
   margin: 0 auto;
   display: flex;
   flex-direction: column;
   align-items: stretch;
-  gap: 0.75rem;
+  gap: var(--editor-space-sm);
   box-sizing: border-box;
 }
 
@@ -591,17 +673,21 @@ input[type='range']::-moz-range-thumb {
    IMAGE EDITOR
    ============================================================================ */
 
-.image-editor-container {
+.image-editor-container,
+.video-editor-container,
+.editor-shell {
   width: 100%;
-  max-width: 400px;
+  max-width: var(--editor-max-width);
   display: flex;
   flex-direction: column;
   align-items: center;
 }
 
-.image-editor-title {
+.image-editor-title,
+.video-editor-title,
+.editor-shell-title {
   font-size: 1.25rem;
-  margin: 0 0 1rem 0;
+  margin: 0 0 var(--editor-space-md) 0;
   text-align: center;
 }
 
@@ -637,21 +723,8 @@ input[type='range']::-moz-range-thumb {
    GIF EDITOR
    ============================================================================ */
 
-.video-editor-container {
-  width: 100%;
-  max-width: 400px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-}
-
-.video-editor-title {
-  font-size: 1.25rem;
-  margin: 0 0 1rem 0;
-  text-align: center;
-}
-
-.video-editor-actions {
+.video-editor-actions,
+.editor-tool-list {
   align-items: stretch;
   gap: 0;
 }
