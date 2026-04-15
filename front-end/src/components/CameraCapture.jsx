@@ -170,32 +170,36 @@ function CameraCapture({ onCapture, onCancel }) {
             </div>
 
             <div className="card video-editor-actions">
-                <button
-                    type="button"
-                    className="btn-primary"
-                    onClick={handleTakePhoto}
-                    disabled={isRecording}
-                >
-                    Take Photo
-                </button>
-
                 {!isRecording ? (
-                    <button
-                        type="button"
-                        className="btn-primary"
-                        onClick={handleStartRecording}
-                    >
-                        Record Video
-                    </button>
+                    <>
+                        <button
+                            type="button"
+                            className="btn-primary"
+                            onClick={handleTakePhoto}
+                        >
+                            Take Photo
+                        </button>
+                        <button
+                            type="button"
+                            className="btn-primary"
+                            onClick={handleStartRecording}
+                        >
+                            Record Video
+                        </button>
+                    </>
                 ) : (
-                    <button
-                        type="button"
-                        className="btn-primary"
-                        onClick={handleStopRecording}
-                        style={{ background: '#ff3b30' }}
-                    >
-                        Stop Recording
-                    </button>
+                    <>
+                        <p className="camera-recording-status" role="status" aria-live="polite">
+                            Recording in progress…
+                        </p>
+                        <button
+                            type="button"
+                            className="btn-primary btn-danger"
+                            onClick={handleStopRecording}
+                        >
+                            Stop Recording
+                        </button>
+                    </>
                 )}
             </div>
 

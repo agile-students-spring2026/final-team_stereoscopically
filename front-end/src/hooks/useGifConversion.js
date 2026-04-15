@@ -4,8 +4,8 @@ import { trimVideoService, exportGifToBackend } from '../services/backendGifServ
 const useGifConversion = () => {
   const [isProcessing, setIsProcessing] = useState(false)
 
-  const createGif = useCallback(async (videoFile, trimStart, trimEnd) => {
-    return trimVideoService(videoFile, trimStart, trimEnd)
+  const createGif = useCallback(async (videoFile, trimStart, trimEnd, resizePreset, resizeBorderColor) => {
+    return trimVideoService(videoFile, trimStart, trimEnd, resizePreset, resizeBorderColor)
   }, [])
 
   const exportGif = useCallback(async (mediaId, playbackRate) => {

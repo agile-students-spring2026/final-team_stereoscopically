@@ -39,6 +39,8 @@ Components are organized by media mode:
 	- `AddText.jsx`
 - `src/components/gif/`
 	- `GifEditor.jsx`
+	- `GifResizePresets.jsx`
+	- `GifTrimEditor.jsx`
 	- `VideoPresetFilters.jsx`
 	- `GifFilterMain.jsx`
 	- `GifToolPlaceholder.jsx`
@@ -58,13 +60,16 @@ Components are organized by media mode:
 
 **Components**
 - `gif/GifEditor.jsx`
+- `gif/GifResizePresets.jsx`
+- `gif/GifTrimEditor.jsx`
 - `gif/VideoPresetFilters.jsx`
 - `gif/GifFilterMain.jsx`
 - `gif/GifToolPlaceholder.jsx`
 
 **Responsible for**
 - video and GIF preview UI
-- trim controls
+- resize preset draft selection UI with apply/cancel/reset interactions
+- draft trim editing flow with explicit apply/cancel/reset actions
 - conversion-related UI state
 - edit-time interaction checks tied to this screen
 - processing, success, and failure messaging shown during GIF editing
@@ -75,6 +80,7 @@ Components are organized by media mode:
 - admission checks performed during media selection
 - shared non-UI helper logic
 - backend conversion implementation
+- persisting committed resize state across tools (owned by container orchestration)
 
 ---
 
@@ -168,6 +174,7 @@ Top-level container for editor screen flow.
 **Notes**
 - Keep this component focused on orchestration.
 - Extract non-UI helpers if they continue to grow here.
+- Backend media adaptation helpers (for example image/video backend-result to local `File`) should stay in service modules, not inside this container.
 
 ---
 
@@ -241,7 +248,7 @@ Editing screen for video-to-GIF workflows.
 
 **Responsible for**
 - video and GIF preview state shown on this screen
-- trim controls
+- using the committed trim range provided by orchestration
 - conversion-related UI state
 - processing feedback for the user
 - emitting conversion intent through callback props
@@ -254,6 +261,24 @@ Editing screen for video-to-GIF workflows.
 
 **Notes**
 - Watch for overlap with image-editing patterns if shared behavior grows.
+
+---
+
+### `GifTrimEditor.jsx`
+
+**Purpose**
+Dedicated trim screen for GIF workflows.
+
+**Responsible for**
+- trim draft UI and slider interactions
+- previewing the selected trim interval
+- reset-to-full-duration behavior
+- explicit apply/cancel actions that emit trim intent to orchestration
+
+**Not responsible for**
+- final commit of trim state across editor screens
+- GIF conversion execution
+- upload/media admission checks
 
 ---
 

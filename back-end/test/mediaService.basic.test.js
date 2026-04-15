@@ -1,5 +1,5 @@
 import { expect } from 'chai'
-import { uploadImage, getMediaContent } from '../src/services/mediaService.js'
+import { getMediaContent, trimVideo, uploadImage } from '../src/services/mediaService.js'
 
 describe('mediaService basic flows', () => {
 	it('returns error when image file is missing', () => {
@@ -30,5 +30,65 @@ describe('mediaService basic flows', () => {
 		expect(fetched.status).to.equal(200)
 		expect(fetched.headers['Content-Type']).to.equal('image/png')
 		expect(Buffer.isBuffer(fetched.data)).to.equal(true)
+	})
+
+	it('returns INVALID_RESIZE_PRESET for unsupported GIF resize preset', async () => {
+		const result = await trimVideo({
+			body: {
+				trimStart: 0,
+				trimEnd: 1,
+				resizePreset: 'cinematic',
+			},
+			file: {
+				buffer: Buffer.from('fake-video-bytes'),
+				mimetype: 'video/mp4',
+				size: 16,
+			},
+		})
+
+		expect(result.error).to.include({
+			status: 400,
+			code: 'INVALID_RESIZE_PRESET',
+		})
+	})
+
+	it('returns INVALID_RESIZE_BORDER_COLOR for unsupported border color values', async () => {
+		const result = await trimVideo({
+			body: {
+				trimStart: 0,
+				trimEnd: 1,
+				resizePreset: 'square',
+				resizeBorderColor: 'red',
+			},
+			file: {
+				buffer: Buffer.from('fake-video-bytes'),
+				mimetype: 'video/mp4',
+				size: 16,
+			},
+		})
+
+		expect(result.error).to.include({
+			status: 400,
+			code: 'INVALID_RESIZE_BORDER_COLOR',
+		})
+	})
+
+	it('uses trim validation path when resize preset is omitted', async () => {
+		const result = await trimVideo({
+			body: {
+				trimStart: 2,
+				trimEnd: 1,
+			},
+			file: {
+				buffer: Buffer.from('fake-video-bytes'),
+				mimetype: 'video/mp4',
+				size: 16,
+			},
+		})
+
+		expect(result.error).to.include({
+			status: 400,
+			code: 'INVALID_TRIM_RANGE',
+		})
 	})
 })

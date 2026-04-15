@@ -214,7 +214,7 @@ Shared hook for GIF conversion orchestration actions used by editor components.
 
 **Responsible for**
 - exposing conversion actions to components through a hook API
-- delegating trim-to-GIF conversion requests to `trimVideoService`
+- delegating trim-to-GIF conversion requests to `trimVideoService`, including committed `resizePreset`
 - delegating GIF export requests to `exportGifToBackend`
 
 **Not responsible for**
@@ -255,6 +255,20 @@ Shared low-level backend HTTP client abstraction.
 **Not responsible for**
 - workflow orchestration
 - React state management
+
+### `services/backendGifService.js`
+
+**Purpose**
+GIF/video backend API contract layer for trim, filter, conversion, and export workflows.
+
+**Responsible for**
+- shaping `trimVideoService` multipart payload fields (`trimStart`, `trimEnd`, `resizePreset`)
+- normalizing backend responses for GIF/video flows
+- preserving API-level constraints as request contracts (without owning UI state)
+
+**Not responsible for**
+- editor screen transitions
+- draft-versus-committed UI state decisions
 
 ---
 

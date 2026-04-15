@@ -1,24 +1,37 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { DEFAULT_GIF_SPEED_PLAYBACK_RATE } from './gifSpeedOptions'
 
+const DEFAULT_GIF_RESIZE_PRESET = 'square'
+const GIF_RESIZE_PRESET_FRAME_CLASSES = {
+    square: 'gif-preview-frame--square',
+    landscape: 'gif-preview-frame--landscape',
+    portrait: 'gif-preview-frame--portrait',
+}
+const DEFAULT_GIF_RESIZE_BORDER_COLOR = '#000000'
+
 const GifEditor = ({
     videoFile,
     selectedSpeedPlaybackRate = DEFAULT_GIF_SPEED_PLAYBACK_RATE,
+    committedTrimStart = 0,
+    committedTrimEnd = 0,
+    committedResizePreset = DEFAULT_GIF_RESIZE_PRESET,
+    committedResizeBorderColor = DEFAULT_GIF_RESIZE_BORDER_COLOR,
     onCancel,
     onCreateGif,
+    onOpenTrim,
     onOpenResize,
     onOpenFilters,
     onExportGif,
 }) => {
+    const previewFrameClassName = GIF_RESIZE_PRESET_FRAME_CLASSES[committedResizePreset] || GIF_RESIZE_PRESET_FRAME_CLASSES[DEFAULT_GIF_RESIZE_PRESET]
+
     const [isProcessing, setIsProcessing] = useState(false)
     const [statusMessage, setStatusMessage] = useState(null)
-    const [backendResult, setBackendResult] = useState(null)
     const [conversionError, setConversionError] = useState(null)
 
     const [duration, setDuration] = useState(0)
     const [trimStart, setTrimStart] = useState(0)
     const [trimEnd, setTrimEnd] = useState(0)
-    const [showTrim, setShowTrim] = useState(false)
 
     const videoRef = useRef(null)
 
@@ -42,26 +55,23 @@ const GifEditor = ({
             }
         }
         return resolveVideoUrl(videoFile)
-        // Not a File: do not preview, show error/placeholder
     }, [videoFile])
 
     useEffect(() => {
         if (!(videoFile instanceof File) || !videoUrl) return
         return () => {
-            window.setTimeout(() => {
+            if (import.meta.env.PROD) {
                 URL.revokeObjectURL(videoUrl)
-            }, 0)
+            }
         }
     }, [videoFile, videoUrl])
 
     useEffect(() => {
-        setBackendResult(null)
         setStatusMessage(null)
         setConversionError(null)
         setDuration(0)
         setTrimStart(0)
         setTrimEnd(0)
-        setShowTrim(false)
 
         if (videoRef.current) {
             videoRef.current.pause()
@@ -75,15 +85,18 @@ const GifEditor = ({
         video.playbackRate = selectedSpeedPlaybackRate
     }, [selectedSpeedPlaybackRate])
 
-    const formatTime = (s) => `${s.toFixed(1)}s`
+    const resolveCommittedTrim = useCallback((totalDuration) => {
+        const safeStart = Math.min(Math.max(committedTrimStart, 0), totalDuration)
+        const candidateEnd = committedTrimEnd > 0 ? committedTrimEnd : totalDuration
+        const safeEnd = Math.min(Math.max(candidateEnd, safeStart), totalDuration)
 
-    const resetTransientEditorState = useCallback((nextTrimEnd = duration, closeTrimPanel = true) => {
-        setTrimStart(0)
-        setTrimEnd(nextTrimEnd)
-        if (closeTrimPanel) {
-            setShowTrim(false)
+        return {
+            start: safeStart,
+            end: safeEnd,
         }
-        setBackendResult(null)
+    }, [committedTrimEnd, committedTrimStart])
+
+    const resetTransientEditorState = useCallback(() => {
         setStatusMessage(null)
         setConversionError(null)
 
@@ -91,7 +104,7 @@ const GifEditor = ({
             videoRef.current.pause()
             videoRef.current.currentTime = 0
         }
-    }, [duration])
+    }, [])
     
     const handleConvertToGif = async () => {
         if (isProcessing) return
@@ -101,21 +114,29 @@ const GifEditor = ({
         }
 
         if (duration <= 0 || trimEnd <= trimStart) {
-            setConversionError('Trim controls are not ready yet. Please wait for the video metadata to load.')
+            setConversionError('Trim range is not ready yet. Please wait for the video to load.')
             return
         }
 
         setIsProcessing(true)
         setConversionError(null)
-        setStatusMessage('Converting clip to GIF…')
+        setStatusMessage('Preparing GIF download…')
 
         try {
             if (!onCreateGif) throw new Error('GIF conversion is not available right now.')
-            const result = await onCreateGif(videoFile, trimStart, trimEnd)
-            setBackendResult(result)
-            setStatusMessage('GIF created successfully.')
+            const result = await onCreateGif(videoFile, trimStart, trimEnd, committedResizePreset, committedResizeBorderColor)
+
+            if (!result?.id) {
+                throw new Error('GIF conversion did not return a downloadable result.')
+            }
+
+            if (!onExportGif) {
+                throw new Error('GIF export is not available right now.')
+            }
+
+            await onExportGif(result.id)
+            setStatusMessage(null)
         } catch (error) {
-            setBackendResult(null)
             setConversionError(error?.message || 'GIF conversion failed. Please try again.')
             setStatusMessage(null)
         } finally {
@@ -128,82 +149,38 @@ const GifEditor = ({
         <div className="video-editor-container">
             <h2 className="video-editor-title">GIF Editor</h2>
 
-            <div className="preview-box">
+            <div className="preview-box preview-box-video-resize preview-box-checkered">
                 {videoUrl ? (
-                    <video ref={videoRef} src={videoUrl} controls className="preview-video"
-                        onLoadedMetadata={() => {
-                            const total = Number.isFinite(videoRef.current?.duration)
-                                ? videoRef.current.duration
-                                : 0
-                            setDuration(total)
-                            setTrimStart(0)
-                            setTrimEnd(total)
-                            if (videoRef.current) {
-                                videoRef.current.playbackRate = selectedSpeedPlaybackRate
-                            }
-                        }}
-                        onTimeUpdate={() => {
-                            if (trimEnd > 0 && videoRef.current && videoRef.current.currentTime >= trimEnd) {
-                                videoRef.current.pause()
-                                videoRef.current.currentTime = trimStart
-                            }
-                        }}
-                    />
+                    <div className={`gif-preview-frame ${previewFrameClassName}`} style={{ backgroundColor: committedResizeBorderColor }}>
+                        <video ref={videoRef} src={videoUrl} controls className="preview-video gif-preview-video"
+                            onLoadedMetadata={() => {
+                                const total = Number.isFinite(videoRef.current?.duration)
+                                    ? videoRef.current.duration
+                                    : 0
+                                const nextTrim = resolveCommittedTrim(total)
+                                setDuration(total)
+                                setTrimStart(nextTrim.start)
+                                setTrimEnd(nextTrim.end)
+                                if (videoRef.current) {
+                                    videoRef.current.currentTime = nextTrim.start
+                                    videoRef.current.playbackRate = selectedSpeedPlaybackRate
+                                }
+                            }}
+                            onTimeUpdate={() => {
+                                if (trimEnd > 0 && videoRef.current && videoRef.current.currentTime >= trimEnd) {
+                                    videoRef.current.pause()
+                                    videoRef.current.currentTime = trimStart
+                                }
+                            }}
+                        />
+                    </div>
                 ) : (
                     <p className="preview-label">Upload a video to start editing.</p>
                 )}
             </div>
 
-            {showTrim && (
-                <div className="card" style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                    {duration > 0 ? (
-                        <>
-                            <div style={{ display: 'flex', justifyContent: 'center', gap: '60px' }}>
-                                <div style={{ textAlign: 'center' }}>
-                                    <div style={{ fontSize: '0.7rem', color: '#8e8e93', textTransform: 'uppercase' }}>
-                                        Start
-                                    </div>
-                                    <div style={{ fontSize: '1.1rem', fontWeight: '600' }}>{formatTime(trimStart)}</div>
-                                </div>
-                                <div style={{ textAlign: 'center' }}>
-                                    <div style={{ fontSize: '0.7rem', color: '#8e8e93', textTransform: 'uppercase' }}>
-                                        End
-                                    </div>
-                                    <div style={{ fontSize: '1.1rem', fontWeight: '600' }}>{formatTime(trimEnd)}</div>
-                                </div>
-                            </div>
-                            <label style={{ display: 'flex', flexDirection: 'column', gap: '4px', fontSize: '0.9rem' }}>
-                                Start
-                                <input type="range" min={0} max={trimEnd} step={0.1} value={trimStart}
-                                    onChange={(e) => {
-                                        const val = Number(e.target.value)
-                                        setTrimStart(val)
-                                        if (videoRef.current) videoRef.current.currentTime = val
-                                    }}
-                                    style={{ width: '100%', accentColor: '#ffd60a' }} />
-                            </label>
-                            <label style={{ display: 'flex', flexDirection: 'column', gap: '4px', fontSize: '0.9rem' }}>
-                                End
-                                <input type="range" min={trimStart} max={duration} step={0.1} value={trimEnd}
-                                    onChange={(e) => setTrimEnd(Number(e.target.value))}
-                                    style={{ width: '100%', accentColor: '#ffd60a' }} />
-                            </label>
-                            <button type="button"
-                                style={{ background: 'none', border: 'none', color: '#007aff', fontSize: '0.9rem', fontWeight: '500', cursor: 'pointer' }}
-                                onClick={() => resetTransientEditorState(duration, false)}>
-                                Reset
-                            </button>
-                        </>
-                    ) : (
-                        <p className="preview-label" style={{ margin: 0 }}>
-                            Loading trim controls…
-                        </p>
-                    )}
-                </div>
-            )}
-
             <div className="card video-editor-actions">
-                <button type="button" className={`btn-primary ${showTrim ? 'active' : ''}`} onClick={() => setShowTrim((prev) => !prev)}>
+                <button type="button" className="btn-primary" onClick={onOpenTrim}>
                     Trim
                 </button>
                 <button type="button" className="btn-primary" onClick={onOpenResize}>
@@ -216,7 +193,7 @@ const GifEditor = ({
 
             <div className="card-actions card-actions-spaced">
                 <button type="button" className="btn-secondary" onClick={() => {
-                    resetTransientEditorState(duration)
+                    resetTransientEditorState()
                     onCancel?.()
                 }}>
                     Cancel
@@ -227,7 +204,7 @@ const GifEditor = ({
                     onClick={handleConvertToGif}
                     disabled={isProcessing || !videoUrl || duration <= 0}
                 >
-                    {isProcessing ? 'Processing...' : 'Create GIF'}
+                    {isProcessing ? 'Downloading...' : 'Download GIF'}
                 </button>
             </div>
 
@@ -242,18 +219,6 @@ const GifEditor = ({
                     {conversionError}
                 </p>
             )}
-
-            {backendResult?.id && (
-            <button
-                type="button"
-                className="btn-primary"
-                onClick={() => onExportGif(backendResult.id, selectedSpeedPlaybackRate)}
-                disabled={isProcessing}
-            >
-                Download GIF
-            </button>
-            )}
-
         </div>
     )
 }
