@@ -1,5 +1,6 @@
 export const DEFAULT_GIF_RESIZE_PRESET = 'square'
 export const DEFAULT_GIF_RESIZE_BORDER_COLOR = '#000000'
+export const GIF_TRANSPARENT_BORDER_COLOR = 'transparent'
 
 export const GIF_RESIZE_PRESET_OPTIONS = Object.freeze([
   Object.freeze({ key: 'square', label: 'Square', subtitle: '1:1' }),
@@ -13,11 +14,18 @@ export const GIF_RESIZE_PRESET_FRAME_CLASSES = Object.freeze({
   portrait: 'gif-preview-frame--portrait',
 })
 
+export const GIF_RESIZE_BORDER_SWATCHES = Object.freeze([
+  Object.freeze({ id: 'transparent', label: 'Transparent', value: GIF_TRANSPARENT_BORDER_COLOR }),
+  Object.freeze({ id: 'white', label: 'White', value: '#ffffff' }),
+  Object.freeze({ id: 'black', label: 'Black', value: '#000000' }),
+])
+
 export const VALID_GIF_RESIZE_PRESETS = new Set(
   GIF_RESIZE_PRESET_OPTIONS.map((option) => option.key)
 )
 
 export const GIF_BORDER_COLOR_REGEX = /^#[0-9A-Fa-f]{6}$/
+export const GIF_BORDER_COLOR_KEYWORDS = new Set([GIF_TRANSPARENT_BORDER_COLOR])
 
 export const DEFAULT_GIF_TEXT_OVERLAY_SETTINGS = Object.freeze({
   text: '',

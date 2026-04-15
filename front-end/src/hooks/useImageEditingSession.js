@@ -348,7 +348,8 @@ const useImageEditingSession = ({
     }
   }, [applyTransformedImage, colorAdjustments, effectiveBackendMediaId, previewUrl, sourceUrl])
 
-  const handleSizeSelect = useCallback(async (size) => {
+  const handleSizeSelect = useCallback(async (size, options = {}) => {
+    const appliedLetterboxColor = options?.letterboxColor ?? letterboxColor
     const inputMediaId = latestExportResult?.id
       ? presetExportSourceIdRef.current
       : effectiveBackendMediaId
@@ -366,7 +367,7 @@ const useImageEditingSession = ({
         mediaId: inputMediaId,
         width: size.width,
         height: size.height,
-        letterboxColor,
+        letterboxColor: appliedLetterboxColor,
       })
 
       const { file, objectUrl } = await convertBackendImageResultToLocalMedia(exported, {
@@ -384,7 +385,7 @@ const useImageEditingSession = ({
       lastPresetExportAtRef.current = Date.now()
       setSelectedPreset(size)
       setLatestExportResult(exported)
-      setLastExportLetterbox(letterboxColor)
+  setLastExportLetterbox(appliedLetterboxColor)
       return true
     } catch (err) {
       console.error('Preset export failed:', err)
