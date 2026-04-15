@@ -16,6 +16,11 @@ import PhotoPreview from './PhotoPreview'
 import VideoPresetFilters from './gif/VideoPresetFilters'
 import GifFilterMain from './gif/GifFilterMain'
 import GifToolPlaceholder from './gif/GifToolPlaceholder'
+import {
+  createInitialGifFlowState,
+  GIF_FLOW_TOOLS,
+  setGifFlowActiveTool,
+} from './gif/gifFlowState'
 
 const SCREENS = {
   EDITOR: 'editor',
@@ -26,15 +31,6 @@ const SCREENS = {
   PRESET_SIZES: 'preset-sizes',
   CAMERA: 'camera',
   CAMERA_PREVIEW: 'camera-preview',
-}
-
-const GIF_TOOLS = {
-  EDITOR: 'editor',
-  FILTERS_MAIN: 'filters-main',
-  PRESET_FILTERS: 'preset-filters',
-  TEXT: 'text',
-  SPEED: 'speed',
-  RESIZE: 'resize',
 }
 
 const FILE_TOO_LARGE_MESSAGE = 'File is too large (max 50 MB).'
@@ -88,18 +84,18 @@ function EditorContainer() {
   })
 
   const [screen, setScreen] = useState(SCREENS.EDITOR)
-  const [activeGifTool, setActiveGifTool] = useState(GIF_TOOLS.EDITOR)
+  const [gifFlowState, setGifFlowState] = useState(createInitialGifFlowState)
   const [fileTooLargeMessage, setFileTooLargeMessage] = useState(null)
   const [unsupportedImageMessage, setUnsupportedImageMessage] = useState(null)
   const [lastRejectedUploadType, setLastRejectedUploadType] = useState(null)
   const [tempCapturedFile, setTempCapturedFile] = useState(null)
 
   const resetGifToolState = useCallback(() => {
-    setActiveGifTool(GIF_TOOLS.EDITOR)
+    setGifFlowState((prev) => setGifFlowActiveTool(prev, GIF_FLOW_TOOLS.EDITOR))
   }, [])
 
   const openGifTool = useCallback((nextTool) => {
-    setActiveGifTool(nextTool)
+    setGifFlowState((prev) => setGifFlowActiveTool(prev, nextTool))
   }, [])
 
   const handleImageSelect = async (file) => {
@@ -161,7 +157,7 @@ function EditorContainer() {
     setUnsupportedVideo(null)
     clearCropSession()
     if (result?.applied) {
-      resetGifToolState()
+      setGifFlowState(createInitialGifFlowState())
       setScreen(SCREENS.EDITOR)
     }
   }
@@ -173,7 +169,7 @@ function EditorContainer() {
   const handleBackToUpload = () => {
     resetSelection()
     resetImageEditingSessionState()
-    resetGifToolState()
+    setGifFlowState(createInitialGifFlowState())
     setScreen(SCREENS.EDITOR)
   }
 
@@ -352,8 +348,8 @@ function EditorContainer() {
           onCancel={handleBackToUpload}
           onCreateGif={createGif}
           onExportGif={exportGif}
-      onOpenResize={() => openGifTool(GIF_TOOLS.RESIZE)}
-          onOpenFilters={() => openGifTool(GIF_TOOLS.FILTERS_MAIN)}
+    onOpenResize={() => openGifTool(GIF_FLOW_TOOLS.RESIZE)}
+      onOpenFilters={() => openGifTool(GIF_FLOW_TOOLS.FILTERS_MAIN)}
       />
     )
   }
@@ -420,50 +416,50 @@ function EditorContainer() {
     }
 
     if (mediaType === 'video') {
-      if (activeGifTool === GIF_TOOLS.FILTERS_MAIN) {
+      if (gifFlowState.activeTool === GIF_FLOW_TOOLS.FILTERS_MAIN) {
         return (
           <GifFilterMain
-            onPresetFilters={() => openGifTool(GIF_TOOLS.PRESET_FILTERS)}
-            onTextOverlay={() => openGifTool(GIF_TOOLS.TEXT)}
-            onSpeed={() => openGifTool(GIF_TOOLS.SPEED)}
+            onPresetFilters={() => openGifTool(GIF_FLOW_TOOLS.PRESET_FILTERS)}
+            onTextOverlay={() => openGifTool(GIF_FLOW_TOOLS.TEXT)}
+            onSpeed={() => openGifTool(GIF_FLOW_TOOLS.SPEED)}
             onCancel={resetGifToolState}
           />
         )
       }
 
-      if (activeGifTool === GIF_TOOLS.PRESET_FILTERS) {
+      if (gifFlowState.activeTool === GIF_FLOW_TOOLS.PRESET_FILTERS) {
         return (
           <VideoPresetFilters
             videoFile={selectedMedia}
             onApply={handleVideoPresetApply}
-            onCancel={() => openGifTool(GIF_TOOLS.FILTERS_MAIN)}
+            onCancel={() => openGifTool(GIF_FLOW_TOOLS.FILTERS_MAIN)}
           />
         )
       }
 
-      if (activeGifTool === GIF_TOOLS.TEXT) {
+      if (gifFlowState.activeTool === GIF_FLOW_TOOLS.TEXT) {
         return (
           <GifToolPlaceholder
             title="Text"
             description="Text overlay controls for GIFs will be added in the next step."
-            onBack={() => openGifTool(GIF_TOOLS.FILTERS_MAIN)}
+            onBack={() => openGifTool(GIF_FLOW_TOOLS.FILTERS_MAIN)}
             onCancel={resetGifToolState}
           />
         )
       }
 
-      if (activeGifTool === GIF_TOOLS.SPEED) {
+      if (gifFlowState.activeTool === GIF_FLOW_TOOLS.SPEED) {
         return (
           <GifToolPlaceholder
             title="Speed"
             description="Speed controls for GIFs will be added in the next step."
-            onBack={() => openGifTool(GIF_TOOLS.FILTERS_MAIN)}
+            onBack={() => openGifTool(GIF_FLOW_TOOLS.FILTERS_MAIN)}
             onCancel={resetGifToolState}
           />
         )
       }
 
-      if (activeGifTool === GIF_TOOLS.RESIZE) {
+      if (gifFlowState.activeTool === GIF_FLOW_TOOLS.RESIZE) {
         return (
           <GifToolPlaceholder
             title="Resize"
