@@ -46,6 +46,13 @@ const GifEditor = ({
     }, [videoFile])
 
     useEffect(() => {
+        if (!(videoFile instanceof File) || !videoUrl) return
+        return () => {
+            URL.revokeObjectURL(videoUrl)
+        }
+    }, [videoFile, videoUrl])
+
+    useEffect(() => {
         if (backendResult) {
             onConverted?.(backendResult)
         }
@@ -55,6 +62,15 @@ const GifEditor = ({
         setBackendResult(null)
         setStatusMessage(null)
         setConversionError(null)
+        setDuration(0)
+        setTrimStart(0)
+        setTrimEnd(0)
+        setShowTrim(false)
+
+        if (videoRef.current) {
+            videoRef.current.pause()
+            videoRef.current.currentTime = 0
+        }
     }, [videoFile])
 
     const formatTime = (s) => `${s.toFixed(1)}s`
@@ -100,12 +116,15 @@ const GifEditor = ({
                 {videoUrl ? (
                     <video ref={videoRef} src={videoUrl} controls className="preview-video"
                         onLoadedMetadata={() => {
-                            const total = videoRef.current.duration
+                            const total = Number.isFinite(videoRef.current?.duration)
+                                ? videoRef.current.duration
+                                : 0
                             setDuration(total)
+                            setTrimStart(0)
                             setTrimEnd(total)
                         }}
                         onTimeUpdate={() => {
-                            if (videoRef.current && videoRef.current.currentTime >= trimEnd) {
+                            if (trimEnd > 0 && videoRef.current && videoRef.current.currentTime >= trimEnd) {
                                 videoRef.current.pause()
                                 videoRef.current.currentTime = trimStart
                             }

@@ -20,16 +20,20 @@ import GifToolPlaceholder from './gif/GifToolPlaceholder'
 const SCREENS = {
   EDITOR: 'editor',
   FILTERS_MAIN: 'filters-main',
-  PRESET_FILTERS: 'preset',
+  IMAGE_PRESET_FILTERS: 'image-preset-filters',
   ADD_TEXT: 'text',
   COLOR_FILTERS: 'color',
   PRESET_SIZES: 'preset-sizes',
   CAMERA: 'camera',
   CAMERA_PREVIEW: 'camera-preview',
-  GIF_FILTERS_MAIN: 'gif-filters-main',
-  GIF_PRESET_FILTERS: 'gif-preset-filters',
-  GIF_TEXT: 'gif-text',
-  GIF_SPEED: 'gif-speed',
+}
+
+const GIF_TOOLS = {
+  EDITOR: 'editor',
+  FILTERS_MAIN: 'filters-main',
+  PRESET_FILTERS: 'preset-filters',
+  TEXT: 'text',
+  SPEED: 'speed',
 }
 
 const FILE_TOO_LARGE_MESSAGE = 'File is too large (max 50 MB).'
@@ -83,10 +87,19 @@ function EditorContainer() {
   })
 
   const [screen, setScreen] = useState(SCREENS.EDITOR)
+  const [activeGifTool, setActiveGifTool] = useState(GIF_TOOLS.EDITOR)
   const [fileTooLargeMessage, setFileTooLargeMessage] = useState(null)
   const [unsupportedImageMessage, setUnsupportedImageMessage] = useState(null)
   const [lastRejectedUploadType, setLastRejectedUploadType] = useState(null)
   const [tempCapturedFile, setTempCapturedFile] = useState(null)
+
+  const resetGifToolState = useCallback(() => {
+    setActiveGifTool(GIF_TOOLS.EDITOR)
+  }, [])
+
+  const openGifTool = useCallback((nextTool) => {
+    setActiveGifTool(nextTool)
+  }, [])
 
   const handleImageSelect = async (file) => {
     if (!file) return
@@ -147,6 +160,7 @@ function EditorContainer() {
     setUnsupportedVideo(null)
     clearCropSession()
     if (result?.applied) {
+      resetGifToolState()
       setScreen(SCREENS.EDITOR)
     }
   }
@@ -158,6 +172,7 @@ function EditorContainer() {
   const handleBackToUpload = () => {
     resetSelection()
     resetImageEditingSessionState()
+    resetGifToolState()
     setScreen(SCREENS.EDITOR)
   }
 
@@ -180,7 +195,7 @@ function EditorContainer() {
     [applyTransformedImage, invalidateLatestExport, previewUrl, sourceUrl]
   )
 
-  const handlePresetFiltersCommit = useCallback(
+  const handleImagePresetFiltersCommit = useCallback(
     async (result) => {
       if (!result) {
         setScreen(SCREENS.EDITOR)
@@ -206,6 +221,7 @@ function EditorContainer() {
   const handleVideoPresetApply = useCallback(
     async (result) => {
       if (!result?.url) {
+        resetGifToolState()
         setScreen(SCREENS.EDITOR)
         return
       }
@@ -225,9 +241,10 @@ function EditorContainer() {
         throw new Error('Filtered video could not be loaded in editor.')
       }
 
+      resetGifToolState()
       setScreen(SCREENS.EDITOR)
     },
-    [selectVideo]
+    [resetGifToolState, selectVideo]
   )
 
   const handlePresetSizeSelect = async (size) => {
@@ -334,9 +351,9 @@ function EditorContainer() {
           onCancel={handleBackToUpload}
           onCreateGif={createGif}
           onExportGif={exportGif}
-          onOpenFilters={() => setScreen(SCREENS.GIF_FILTERS_MAIN)}
-          onOpenSpeed={() => setScreen(SCREENS.GIF_SPEED)}
-          onOpenText={() => setScreen(SCREENS.GIF_TEXT)}
+          onOpenFilters={() => openGifTool(GIF_TOOLS.FILTERS_MAIN)}
+          onOpenSpeed={() => openGifTool(GIF_TOOLS.SPEED)}
+          onOpenText={() => openGifTool(GIF_TOOLS.TEXT)}
       />
     )
   }
@@ -348,17 +365,17 @@ function EditorContainer() {
       case SCREENS.FILTERS_MAIN:
         return (
           <FilterMain
-            onPresetFilters={() => setScreen(SCREENS.PRESET_FILTERS)}
+            onPresetFilters={() => setScreen(SCREENS.IMAGE_PRESET_FILTERS)}
             onAddText={() => setScreen(SCREENS.ADD_TEXT)}
             onColorFilters={() => setScreen(SCREENS.COLOR_FILTERS)}
           />
         )
-      case SCREENS.PRESET_FILTERS:
+      case SCREENS.IMAGE_PRESET_FILTERS:
         return (
           <PresetFilters
             imageSrc={effectiveImageSrc}
             mediaId={effectiveBackendMediaId}
-            onApply={handlePresetFiltersCommit}
+            onApply={handleImagePresetFiltersCommit}
             onCancel={() => setScreen(SCREENS.EDITOR)}
             applyError={exportError}
           />
@@ -403,45 +420,45 @@ function EditorContainer() {
     }
 
     if (mediaType === 'video') {
-      if (screen === SCREENS.GIF_FILTERS_MAIN) {
+      if (activeGifTool === GIF_TOOLS.FILTERS_MAIN) {
         return (
           <GifFilterMain
-            onPresetFilters={() => setScreen(SCREENS.GIF_PRESET_FILTERS)}
-            onTextOverlay={() => setScreen(SCREENS.GIF_TEXT)}
-            onSpeed={() => setScreen(SCREENS.GIF_SPEED)}
-            onCancel={() => setScreen(SCREENS.EDITOR)}
+            onPresetFilters={() => openGifTool(GIF_TOOLS.PRESET_FILTERS)}
+            onTextOverlay={() => openGifTool(GIF_TOOLS.TEXT)}
+            onSpeed={() => openGifTool(GIF_TOOLS.SPEED)}
+            onCancel={resetGifToolState}
           />
         )
       }
 
-      if (screen === SCREENS.GIF_PRESET_FILTERS) {
+      if (activeGifTool === GIF_TOOLS.PRESET_FILTERS) {
         return (
           <VideoPresetFilters
             videoFile={selectedMedia}
             onApply={handleVideoPresetApply}
-            onCancel={() => setScreen(SCREENS.GIF_FILTERS_MAIN)}
+            onCancel={() => openGifTool(GIF_TOOLS.FILTERS_MAIN)}
           />
         )
       }
 
-      if (screen === SCREENS.GIF_TEXT) {
+      if (activeGifTool === GIF_TOOLS.TEXT) {
         return (
           <GifToolPlaceholder
             title="Text"
             description="Text overlay controls for GIFs will be added in the next step."
-            onBack={() => setScreen(SCREENS.GIF_FILTERS_MAIN)}
-            onCancel={() => setScreen(SCREENS.EDITOR)}
+            onBack={() => openGifTool(GIF_TOOLS.FILTERS_MAIN)}
+            onCancel={resetGifToolState}
           />
         )
       }
 
-      if (screen === SCREENS.GIF_SPEED) {
+      if (activeGifTool === GIF_TOOLS.SPEED) {
         return (
           <GifToolPlaceholder
             title="Speed"
             description="Speed controls for GIFs will be added in the next step."
-            onBack={() => setScreen(SCREENS.GIF_FILTERS_MAIN)}
-            onCancel={() => setScreen(SCREENS.EDITOR)}
+            onBack={() => openGifTool(GIF_TOOLS.FILTERS_MAIN)}
+            onCancel={resetGifToolState}
           />
         )
       }
