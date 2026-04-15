@@ -1,6 +1,7 @@
 import { useRef } from 'react'
 import { GIF_SPEED_OPTIONS } from './gifSpeedOptions'
 import useVideoPreviewUrl from '../../hooks/useVideoPreviewUrl'
+import EditorToolScreen from '../EditorToolScreen'
 
 function GifSpeedControls({ videoFile, selectedSpeedPlaybackRate, onSelectSpeed, onApplySpeed }) {
   const previewVideoRef = useRef(null)
@@ -14,13 +15,10 @@ function GifSpeedControls({ videoFile, selectedSpeedPlaybackRate, onSelectSpeed,
   }
 
   return (
-    <div className="editor-tool-screen">
-      <div className="screen-header screen-header-column">
-        <h2 className="screen-title">Speed</h2>
-        <p className="screen-subtitle">Choose playback speed for this GIF.</p>
-      </div>
-
-      {videoUrl && (
+    <EditorToolScreen
+      title="Speed"
+      subtitle="Choose playback speed for this GIF."
+      preview={videoUrl ? (
         <div className="preview-box editor-preview preview-box-checkered editor-preview--checkered">
           <video
             ref={previewVideoRef}
@@ -34,31 +32,31 @@ function GifSpeedControls({ videoFile, selectedSpeedPlaybackRate, onSelectSpeed,
             }}
           />
         </div>
+      ) : null}
+      controls={(
+        <div className="card filter-main-buttons">
+          {GIF_SPEED_OPTIONS.map((option) => {
+            const isActive = option.playbackRate === selectedSpeedPlaybackRate
+
+            return (
+              <button
+                key={option.id}
+                type="button"
+                className={`btn-secondary${isActive ? ' active' : ''}`}
+                onClick={() => handleSpeedChange(option.playbackRate)}
+              >
+                {option.label}
+              </button>
+            )
+          })}
+        </div>
       )}
-
-      <div className="card filter-main-buttons">
-        {GIF_SPEED_OPTIONS.map((option) => {
-          const isActive = option.playbackRate === selectedSpeedPlaybackRate
-
-          return (
-            <button
-              key={option.id}
-              type="button"
-              className={`btn-secondary${isActive ? ' active' : ''}`}
-              onClick={() => handleSpeedChange(option.playbackRate)}
-            >
-              {option.label}
-            </button>
-          )
-        })}
-      </div>
-
-      <div className="card-actions editor-actions editor-actions--inline editor-tool-screen-actions">
+      actions={(
         <button type="button" className="btn-primary" onClick={() => onApplySpeed?.(selectedSpeedPlaybackRate)}>
           Apply
         </button>
-      </div>
-    </div>
+      )}
+    />
   )
 }
 

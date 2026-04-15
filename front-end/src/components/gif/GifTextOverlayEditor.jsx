@@ -7,6 +7,7 @@ import {
   getSafeFrame,
 } from '../../utils/overlayPlacement'
 import useVideoPreviewUrl from '../../hooks/useVideoPreviewUrl'
+import EditorToolScreen from '../EditorToolScreen'
 
 const DEFAULT_TEXT_OVERLAY_SETTINGS = {
   text: '',
@@ -173,139 +174,140 @@ function GifTextOverlayEditor({ videoFile, initialSettings, onBack, onCancel, on
   const hasTextContent = Boolean(draft.text?.trim())
 
   return (
-  <div className="editor-tool-screen">
-      <div className="screen-header screen-header-column">
-        <h2 className="screen-title">Add Text</h2>
-      </div>
+    <EditorToolScreen
+      title="Add Text"
+      preview={(
+        <div
+          ref={previewContainerRef}
+          className="preview-box editor-preview preview-box-video editor-preview--video preview-box-checkered editor-preview--checkered preview-box-interactive editor-preview--interactive"
+          onPointerDown={handlePreviewPointerDown}
+          onPointerMove={handlePreviewPointerMove}
+          onPointerUp={releasePreviewCapture}
+          onPointerCancel={releasePreviewCapture}
+          onLostPointerCapture={handlePreviewLostPointerCapture}
+        >
+          {videoUrl ? (
+            <video
+              ref={previewVideoRef}
+              src={videoUrl}
+              className="preview-video editor-preview-media"
+              autoPlay
+              loop
+              muted
+              playsInline
+            />
+          ) : (
+            <EditorStatus centered>Upload a video to preview text placement.</EditorStatus>
+          )}
 
-      <div
-        ref={previewContainerRef}
-        className="preview-box editor-preview preview-box-video editor-preview--video preview-box-checkered editor-preview--checkered preview-box-interactive editor-preview--interactive"
-        onPointerDown={handlePreviewPointerDown}
-        onPointerMove={handlePreviewPointerMove}
-        onPointerUp={releasePreviewCapture}
-        onPointerCancel={releasePreviewCapture}
-        onLostPointerCapture={handlePreviewLostPointerCapture}
-      >
-        {videoUrl ? (
-          <video
-            ref={previewVideoRef}
-            src={videoUrl}
-            className="preview-video editor-preview-media"
-            autoPlay
-            loop
-            muted
-            playsInline
-          />
-        ) : (
-          <EditorStatus centered>Upload a video to preview text placement.</EditorStatus>
-        )}
-
-        <div className="filter-screen-preview-overlay" aria-hidden="true">
-          <div
-            className="add-text-overlay-image-frame"
-            style={{
-              left: `${(renderedVideoBox.left / previewContainerSize.width) * 100}%`,
-              top: `${(renderedVideoBox.top / previewContainerSize.height) * 100}%`,
-              width: `${(renderedVideoBox.width / previewContainerSize.width) * 100}%`,
-              height: `${(renderedVideoBox.height / previewContainerSize.height) * 100}%`,
-            }}
-          >
+          <div className="filter-screen-preview-overlay" aria-hidden="true">
             <div
-              className="add-text-placement-marker"
+              className="add-text-overlay-image-frame"
               style={{
-                left: `${safePositionX}%`,
-                top: `${safePositionY}%`,
+                left: `${(renderedVideoBox.left / previewContainerSize.width) * 100}%`,
+                top: `${(renderedVideoBox.top / previewContainerSize.height) * 100}%`,
+                width: `${(renderedVideoBox.width / previewContainerSize.width) * 100}%`,
+                height: `${(renderedVideoBox.height / previewContainerSize.height) * 100}%`,
               }}
             >
               <div
-                className="add-text-placement-marker-box"
+                className="add-text-placement-marker"
                 style={{
-                  color: draft.color,
-                  fontSize: `${previewOverlayFontPx}px`,
-                  fontWeight: 600,
-                  whiteSpace: 'pre-wrap',
-                  opacity: hasTextContent ? 1 : 0.75,
+                  left: `${safePositionX}%`,
+                  top: `${safePositionY}%`,
                 }}
               >
-                {hasTextContent ? draft.text : 'Drag text position'}
+                <div
+                  className="add-text-placement-marker-box"
+                  style={{
+                    color: draft.color,
+                    fontSize: `${previewOverlayFontPx}px`,
+                    fontWeight: 600,
+                    whiteSpace: 'pre-wrap',
+                    opacity: hasTextContent ? 1 : 0.75,
+                  }}
+                >
+                  {hasTextContent ? draft.text : 'Drag text position'}
+                </div>
               </div>
             </div>
           </div>
         </div>
-      </div>
+      )}
+      controls={(
+        <div className="card add-text-form">
+          <p className="add-text-placement-hint add-text-placement-hint--top">
+            Click or drag the preview to move the text.
+          </p>
 
-      <div className="card add-text-form">
-        <p className="add-text-placement-hint add-text-placement-hint--top">
-          Click or drag the preview to move the text.
-        </p>
-
-        <div className="add-text-field add-text-field--stack">
-          <label htmlFor="gif-text-content" className="add-text-label">Text</label>
-          <textarea
-            id="gif-text-content"
-            rows={3}
-            className="text-input add-text-input"
-            placeholder="Type GIF text"
-            value={draft.text}
-            onChange={(event) => updateDraft({ text: event.target.value })}
-          />
-        </div>
-
-        <div className="add-text-field add-text-field--grid">
-          <span className="add-text-label">Color</span>
-          <div className="add-text-color-controls">
-            <input
-              id="gif-text-color"
-              type="color"
-              className="add-text-color-input"
-              value={draft.color}
-              onChange={(event) => updateDraft({ color: event.target.value })}
+          <div className="add-text-field add-text-field--stack">
+            <label htmlFor="gif-text-content" className="add-text-label">Text</label>
+            <textarea
+              id="gif-text-content"
+              rows={3}
+              className="text-input add-text-input"
+              placeholder="Type GIF text"
+              value={draft.text}
+              onChange={(event) => updateDraft({ text: event.target.value })}
             />
-            <span className="add-text-color-value">{String(draft.color || '').toUpperCase()}</span>
+          </div>
+
+          <div className="add-text-field add-text-field--grid">
+            <span className="add-text-label">Color</span>
+            <div className="add-text-color-controls">
+              <input
+                id="gif-text-color"
+                type="color"
+                className="add-text-color-input"
+                value={draft.color}
+                onChange={(event) => updateDraft({ color: event.target.value })}
+              />
+              <span className="add-text-color-value">{String(draft.color || '').toUpperCase()}</span>
+            </div>
+          </div>
+
+          <div className="add-text-field add-text-field--grid">
+            <span className="add-text-label">Size</span>
+            <div className="add-text-size-controls">
+              <input
+                id="gif-text-size"
+                type="number"
+                min={MIN_UI_TEXT_SIZE}
+                max={MAX_UI_TEXT_SIZE}
+                className="text-input editor-number-input add-text-size-input"
+                value={safeTextSize}
+                onChange={(event) => updateDraft({ size: asNumberOrFallback(event.target.value, safeTextSize) })}
+              />
+              <input
+                type="range"
+                min={MIN_UI_TEXT_SIZE}
+                max={MAX_UI_TEXT_SIZE}
+                step={1}
+                value={safeTextSize}
+                onChange={(event) => updateDraft({ size: asNumberOrFallback(event.target.value, safeTextSize) })}
+                className="add-text-size-slider editor-slider"
+              />
+              <p className="add-text-size-help">
+                Size {safeTextSize}px (preview matches export).
+              </p>
+            </div>
           </div>
         </div>
-
-        <div className="add-text-field add-text-field--grid">
-          <span className="add-text-label">Size</span>
-          <div className="add-text-size-controls">
-            <input
-              id="gif-text-size"
-              type="number"
-              min={MIN_UI_TEXT_SIZE}
-              max={MAX_UI_TEXT_SIZE}
-              className="text-input editor-number-input add-text-size-input"
-              value={safeTextSize}
-              onChange={(event) => updateDraft({ size: asNumberOrFallback(event.target.value, safeTextSize) })}
-            />
-            <input
-              type="range"
-              min={MIN_UI_TEXT_SIZE}
-              max={MAX_UI_TEXT_SIZE}
-              step={1}
-              value={safeTextSize}
-              onChange={(event) => updateDraft({ size: asNumberOrFallback(event.target.value, safeTextSize) })}
-              className="add-text-size-slider editor-slider"
-            />
-            <p className="add-text-size-help">
-              Size {safeTextSize}px (preview matches export).
-            </p>
-          </div>
-        </div>
-      </div>
-
-      <div className="card-actions editor-actions editor-actions--inline editor-tool-screen-actions">
-        <button type="button" className="btn-secondary" onClick={onBack}>
-          Back
-        </button>
-        <button type="button" className="btn-secondary" onClick={onCancel}>
-          Cancel
-        </button>
-        <button type="button" className="btn-primary" onClick={() => onApply?.(draft)}>
-          Apply
-        </button>
-      </div>
-    </div>
+      )}
+      actions={(
+        <>
+          <button type="button" className="btn-secondary" onClick={onBack}>
+            Back
+          </button>
+          <button type="button" className="btn-secondary" onClick={onCancel}>
+            Cancel
+          </button>
+          <button type="button" className="btn-primary" onClick={() => onApply?.(draft)}>
+            Apply
+          </button>
+        </>
+      )}
+    />
   )
 }
 

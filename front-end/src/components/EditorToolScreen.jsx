@@ -1,5 +1,6 @@
 function EditorToolScreen({
   title,
+  subtitle = '',
   preview,
   controls,
   onCancel,
@@ -7,6 +8,7 @@ function EditorToolScreen({
   cancelLabel = 'Cancel',
   applyLabel = 'Apply',
   actions = null,
+  hideActions = false,
   className = '',
 }) {
   const rootClassName = ['editor-tool-screen', className]
@@ -17,24 +19,27 @@ function EditorToolScreen({
     <div className={rootClassName}>
       <div className="screen-header screen-header-column">
         <h2 className="screen-title">{title}</h2>
+        {subtitle ? <p className="screen-subtitle">{subtitle}</p> : null}
       </div>
 
       {preview}
 
       {controls}
 
-      {actions ? (
-        <div className="card-actions editor-actions editor-actions--inline editor-tool-screen-actions">{actions}</div>
-      ) : (
-        <div className="card-actions editor-actions editor-actions--inline editor-tool-screen-actions">
-          <button type="button" className="btn-secondary" onClick={onCancel}>
-            {cancelLabel}
-          </button>
-          <button type="button" className="btn-primary" onClick={onApply}>
-            {applyLabel}
-          </button>
-        </div>
-      )}
+      {hideActions
+        ? null
+        : (actions ? (
+            <div className="card-actions editor-actions editor-actions--inline editor-tool-screen-actions">{actions}</div>
+          ) : (
+            <div className="card-actions editor-actions editor-actions--inline editor-tool-screen-actions">
+              <button type="button" className="btn-secondary" onClick={onCancel}>
+                {cancelLabel}
+              </button>
+              <button type="button" className="btn-primary" onClick={onApply}>
+                {applyLabel}
+              </button>
+            </div>
+          ))}
     </div>
   )
 }
