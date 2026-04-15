@@ -2,7 +2,6 @@ import { useRef } from 'react'
 import { GIF_SPEED_OPTIONS } from './gifSpeedOptions'
 
 function GifSpeedControls({ videoFile, selectedSpeedPlaybackRate, onSelectSpeed, onApplySpeed }) {
-  const videoRef = useRef(null)
   const previewVideoRef = useRef(null)
 
   const getVideoUrl = () => {

@@ -154,7 +154,7 @@ function EditorContainer() {
 
       return result
     },
-    [clearCropSession, gifSession]
+    [clearCropSession, gifSession, selectVideo]
   )
 
   const handleCameraSelect = () => {
