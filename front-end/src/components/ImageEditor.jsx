@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useCallback, useState } from 'react'
 import ImageCropper from './ImageCropper'
 
 const ImageEditor = ({
@@ -30,9 +30,9 @@ const ImageEditor = ({
     setIsCropping(true)
   }
 
-  const handleCropChange = (data) => {
+  const handleCropChange = useCallback((data) => {
     setCropData(data)
-  }
+  }, [])
 
   const handleApplyCrop = async () => {
     if (!cropData?.ratio) {

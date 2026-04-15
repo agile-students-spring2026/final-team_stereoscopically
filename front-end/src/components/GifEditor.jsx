@@ -38,14 +38,6 @@ const GifEditor = ({ videoFile, onCancel, onConverted, onCreateGif, onOpenFilter
     }, [videoFile])
 
     useEffect(() => {
-        if (!(videoFile instanceof File) || !videoUrl) return
-
-        return () => {
-            URL.revokeObjectURL(videoUrl)
-        }
-    }, [videoFile, videoUrl])
-
-    useEffect(() => {
         if (backendResult) {
             onConverted?.(backendResult)
         }
@@ -161,7 +153,7 @@ const GifEditor = ({ videoFile, onCancel, onConverted, onCreateGif, onOpenFilter
                     Trim
                 </button>
                 <button type="button" className="btn-primary">
-                    Reframe
+                    Resize
                 </button>
                 <button type="button" className="btn-primary" onClick={onOpenFilters}>
                     Filters

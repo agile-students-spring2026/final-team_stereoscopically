@@ -1,9 +1,9 @@
 import sharp from 'sharp'
 import ffmpeg from 'fluent-ffmpeg'
 import ffmpegInstaller from '@ffmpeg-installer/ffmpeg'
-import os from 'os'
-import fs from 'fs'
-import path from 'path'
+import { tmpdir } from 'os'
+import { writeFileSync, unlinkSync } from 'fs'
+import { join } from 'path'
 ffmpeg.setFfmpegPath(ffmpegInstaller.path)
 import { MAX_EXPORT_DIMENSION } from '../config/constants.js'
 import { createMedia, getActiveMediaOrDeleteExpired } from './mediaStore.js'

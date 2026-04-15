@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useMemo, useState } from 'react'
 import FilterScreen from './FilterScreen'
 import { applyVideoFilter } from '../services/backendGifService'
 
@@ -23,14 +23,6 @@ function VideoPresetFilters({ videoFile, onApply, onCancel }) {
     if (videoFile instanceof File) return URL.createObjectURL(videoFile)
     return videoFile?.url || null
   }, [videoFile])
-
-  useEffect(() => {
-    if (!(videoFile instanceof File) || !videoUrl) return
-
-    return () => {
-      URL.revokeObjectURL(videoUrl)
-    }
-  }, [videoFile, videoUrl])
 
   const handleSelectStyle = async (id) => {
     setSelectedStyle(id)

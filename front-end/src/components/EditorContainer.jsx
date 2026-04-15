@@ -14,6 +14,8 @@ import { convertBackendImageResultToLocalMedia } from '../services/backendImageS
 import CameraCapture from './CameraCapture'
 import PhotoPreview from './PhotoPreview'
 import VideoPresetFilters from './VideoPresetFilters'
+import GifFilterMain from './GifFilterMain'
+import GifToolPlaceholder from './GifToolPlaceholder'
 
 const SCREENS = {
   EDITOR: 'editor',
@@ -24,7 +26,10 @@ const SCREENS = {
   PRESET_SIZES: 'preset-sizes',
   CAMERA: 'camera',
   CAMERA_PREVIEW: 'camera-preview',
-  GIF_FILTERS: 'gif-filters',
+  GIF_FILTERS_MAIN: 'gif-filters-main',
+  GIF_PRESET_FILTERS: 'gif-preset-filters',
+  GIF_TEXT_OVERLAY: 'gif-text-overlay',
+  GIF_SPEED: 'gif-speed',
 }
 
 const FILE_TOO_LARGE_MESSAGE = 'File is too large (max 50 MB).'
@@ -329,7 +334,7 @@ function EditorContainer() {
           onCancel={handleBackToUpload}
           onCreateGif={createGif}
           onExportGif={exportGif}
-          onOpenFilters={() => setScreen(SCREENS.GIF_FILTERS)}
+          onOpenFilters={() => setScreen(SCREENS.GIF_FILTERS_MAIN)}
       />
     )
   }
@@ -396,15 +401,49 @@ function EditorContainer() {
     }
 
     if (mediaType === 'video') {
-      if (screen === SCREENS.GIF_FILTERS) {
+      if (screen === SCREENS.GIF_FILTERS_MAIN) {
         return (
-          <VideoPresetFilters
-            videoFile={selectedMedia}
-            onApply={handleVideoPresetApply}
+          <GifFilterMain
+            onPresetFilters={() => setScreen(SCREENS.GIF_PRESET_FILTERS)}
+            onTextOverlay={() => setScreen(SCREENS.GIF_TEXT_OVERLAY)}
+            onSpeed={() => setScreen(SCREENS.GIF_SPEED)}
             onCancel={() => setScreen(SCREENS.EDITOR)}
           />
         )
       }
+
+      if (screen === SCREENS.GIF_PRESET_FILTERS) {
+        return (
+          <VideoPresetFilters
+            videoFile={selectedMedia}
+            onApply={handleVideoPresetApply}
+            onCancel={() => setScreen(SCREENS.GIF_FILTERS_MAIN)}
+          />
+        )
+      }
+
+      if (screen === SCREENS.GIF_TEXT_OVERLAY) {
+        return (
+          <GifToolPlaceholder
+            title="Text Overlay"
+            description="Text overlay controls for GIFs will be added in the next step."
+            onBackToFilters={() => setScreen(SCREENS.GIF_FILTERS_MAIN)}
+            onBackToEditor={() => setScreen(SCREENS.EDITOR)}
+          />
+        )
+      }
+
+      if (screen === SCREENS.GIF_SPEED) {
+        return (
+          <GifToolPlaceholder
+            title="Speed"
+            description="Speed controls for GIFs will be added in the next step."
+            onBackToFilters={() => setScreen(SCREENS.GIF_FILTERS_MAIN)}
+            onBackToEditor={() => setScreen(SCREENS.EDITOR)}
+          />
+        )
+      }
+
       return renderVideoFlow()
     }
 
