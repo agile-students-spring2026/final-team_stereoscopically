@@ -28,9 +28,9 @@ function VideoPresetFilters({ videoFile, onApply, onCancel }) {
   useEffect(() => {
     if (!(videoFile instanceof File) || !videoUrl) return
     return () => {
-      window.setTimeout(() => {
+      if (import.meta.env.PROD) {
         URL.revokeObjectURL(videoUrl)
-      }, 0)
+      }
     }
   }, [videoFile, videoUrl])
 

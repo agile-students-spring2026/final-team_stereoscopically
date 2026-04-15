@@ -42,15 +42,14 @@ const GifEditor = ({
             }
         }
         return resolveVideoUrl(videoFile)
-        // Not a File: do not preview, show error/placeholder
     }, [videoFile])
 
     useEffect(() => {
         if (!(videoFile instanceof File) || !videoUrl) return
         return () => {
-            window.setTimeout(() => {
+            if (import.meta.env.PROD) {
                 URL.revokeObjectURL(videoUrl)
-            }, 0)
+            }
         }
     }, [videoFile, videoUrl])
 
@@ -136,6 +135,9 @@ const GifEditor = ({
                             setDuration(total)
                             setTrimStart(nextTrim.start)
                             setTrimEnd(nextTrim.end)
+                            if (videoRef.current) {
+                                videoRef.current.currentTime = nextTrim.start
+                            }
                         }}
                         onTimeUpdate={() => {
                             if (trimEnd > 0 && videoRef.current && videoRef.current.currentTime >= trimEnd) {

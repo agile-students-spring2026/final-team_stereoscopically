@@ -1,5 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 
+const TRIM_STEP = 0.1
+
 function GifTrimEditor({
   videoFile,
   initialTrimStart = 0,
@@ -22,9 +24,9 @@ function GifTrimEditor({
   useEffect(() => {
     if (!(videoFile instanceof File) || !videoUrl) return
     return () => {
-      window.setTimeout(() => {
+      if (import.meta.env.PROD) {
         URL.revokeObjectURL(videoUrl)
-      }, 0)
+      }
     }
   }, [videoFile, videoUrl])
 
@@ -42,16 +44,30 @@ function GifTrimEditor({
 
   const handleApply = () => {
     onApply?.({
-      trimStart: draftTrimStart,
-      trimEnd: draftTrimEnd,
+      trimStart: Number(draftTrimStart.toFixed(1)),
+      trimEnd: Number(draftTrimEnd.toFixed(1)),
     })
+  }
+
+  const handleStartChange = (value) => {
+    const numericValue = Number(value)
+    const maxStart = Math.max(0, draftTrimEnd - TRIM_STEP)
+    const safeStart = Math.min(Math.max(numericValue, 0), maxStart)
+    setDraftTrimStart(safeStart)
+    if (videoRef.current) videoRef.current.currentTime = safeStart
+  }
+
+  const handleEndChange = (value) => {
+    const numericValue = Number(value)
+    const minEnd = Math.min(duration, draftTrimStart + TRIM_STEP)
+    const safeEnd = Math.max(minEnd, Math.min(numericValue, duration))
+    setDraftTrimEnd(safeEnd)
   }
 
   return (
     <div className="preset-sizes-screen">
       <div className="screen-header screen-header-column">
         <h2 className="screen-title">Trim</h2>
-        <p className="screen-subtitle">Choose the segment you want to keep for GIF export.</p>
       </div>
 
       <div className="card" style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
@@ -112,13 +128,9 @@ function GifTrimEditor({
                 type="range"
                 min={0}
                 max={draftTrimEnd}
-                step={0.1}
+                step={TRIM_STEP}
                 value={draftTrimStart}
-                onChange={(e) => {
-                  const val = Number(e.target.value)
-                  setDraftTrimStart(val)
-                  if (videoRef.current) videoRef.current.currentTime = val
-                }}
+                onChange={(e) => handleStartChange(e.target.value)}
                 style={{ width: '100%', accentColor: '#ffd60a' }}
               />
             </label>
@@ -127,11 +139,11 @@ function GifTrimEditor({
               End
               <input
                 type="range"
-                min={draftTrimStart}
+                min={0}
                 max={duration}
-                step={0.1}
+                step={TRIM_STEP}
                 value={draftTrimEnd}
-                onChange={(e) => setDraftTrimEnd(Number(e.target.value))}
+                onChange={(e) => handleEndChange(e.target.value)}
                 style={{ width: '100%', accentColor: '#ffd60a' }}
               />
             </label>
