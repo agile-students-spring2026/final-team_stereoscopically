@@ -82,6 +82,8 @@ For image and GIF text overlays, keep these controls in the same order when poss
 
 If a media type lacks a field (for example, font family), keep the remaining order stable.
 
+For placement math (frame fitting, clamping, fallback sizing), reuse `src/utils/overlayPlacement.js` instead of duplicating helpers in individual text editor components.
+
 ## Spacing and token guidance
 
 Use CSS custom properties from `src/index.css` (Phase 1 added):
