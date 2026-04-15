@@ -47,4 +47,13 @@ describe('gifFlowState', () => {
       selectedSpeedPlaybackRate: DEFAULT_GIF_SPEED_PLAYBACK_RATE,
     })
   })
+
+  it('keeps selected speed in sync when user navigates between GIF tools', () => {
+    const withSpeed = setGifFlowSelectedSpeed(createInitialGifFlowState(), 0.5)
+
+    expect(setGifFlowActiveTool(withSpeed, GIF_FLOW_TOOLS.FILTERS_MAIN)).toEqual({
+      activeTool: GIF_FLOW_TOOLS.FILTERS_MAIN,
+      selectedSpeedPlaybackRate: 0.5,
+    })
+  })
 })

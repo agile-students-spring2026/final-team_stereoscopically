@@ -16,10 +16,12 @@ import PhotoPreview from './PhotoPreview'
 import VideoPresetFilters from './gif/VideoPresetFilters'
 import GifFilterMain from './gif/GifFilterMain'
 import GifToolPlaceholder from './gif/GifToolPlaceholder'
+import GifSpeedControls from './gif/GifSpeedControls'
 import {
   createInitialGifFlowState,
   GIF_FLOW_TOOLS,
   setGifFlowActiveTool,
+  setGifFlowSelectedSpeed,
 } from './gif/gifFlowState'
 
 const SCREENS = {
@@ -96,6 +98,10 @@ function EditorContainer() {
 
   const openGifTool = useCallback((nextTool) => {
     setGifFlowState((prev) => setGifFlowActiveTool(prev, nextTool))
+  }, [])
+
+  const handleGifSpeedSelect = useCallback((nextSpeedPlaybackRate) => {
+    setGifFlowState((prev) => setGifFlowSelectedSpeed(prev, nextSpeedPlaybackRate))
   }, [])
 
   const handleImageSelect = async (file) => {
@@ -450,9 +456,9 @@ function EditorContainer() {
 
       if (gifFlowState.activeTool === GIF_FLOW_TOOLS.SPEED) {
         return (
-          <GifToolPlaceholder
-            title="Speed"
-            description="Speed controls for GIFs will be added in the next step."
+          <GifSpeedControls
+            selectedSpeedPlaybackRate={gifFlowState.selectedSpeedPlaybackRate}
+            onSelectSpeed={handleGifSpeedSelect}
             onBack={() => openGifTool(GIF_FLOW_TOOLS.FILTERS_MAIN)}
             onCancel={resetGifToolState}
           />
