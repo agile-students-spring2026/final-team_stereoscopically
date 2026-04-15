@@ -352,6 +352,7 @@ Navigation screen for filter-related editing options.
 **Responsible for**
 - presenting available filter categories
 - routing the user to the chosen filter flow
+- rendering the filter-hub cancel action for returning to editor home
 
 **Not responsible for**
 - detailed implementation of each filter type
@@ -390,7 +391,8 @@ UI for selecting predefined visual filter presets.
 **Responsible for**
 - preset option display
 - local preset selection
-- emitting the selected preset payload
+- displaying preview/apply/loading/error state provided by hooks
+- emitting user intent events (`select preset`, `apply`, `cancel`)
 
 **Not responsible for**
 - filter-processing implementation
@@ -406,13 +408,35 @@ UI for manual color adjustment controls.
 
 **Responsible for**
 - slider-based adjustment controls
-- local adjustment state
-- emitting the color adjustment payload
+- rendering controlled adjustment values from hook-owned state
+- displaying preview/apply/loading/error state provided by hooks
+- emitting user intent events (`adjust`, `apply`, `cancel`)
 
 **Not responsible for**
 - preset selection logic
 - transformation implementation outside the UI contract
 - preview/apply orchestration owned by hooks
+
+---
+
+## Shared editor tool checklist
+
+When adding a new shared editor tool (image + GIF or a shared navigation surface), verify:
+
+1. **Ownership boundary**
+  - Component is UI-only and callback-driven.
+  - Hook owns async preview/apply orchestration and state continuity.
+2. **Action semantics**
+  - Tool-level footer follows depth contract:
+    - filter hub: `Cancel`
+    - nested sub-tool: `Back` + `Cancel` + `Apply`
+3. **Label/order consistency**
+  - Shared actions use existing labels (`Preset Filters`, `Text`, `Resize`, etc.).
+  - Shared actions preserve relative ordering used in existing flows.
+4. **Status handling**
+  - Loading and error states use `EditorStatus` and shared editor classes.
+5. **No direct service import in components**
+  - Backend service calls stay in hooks/services layers.
 
 ---
 
