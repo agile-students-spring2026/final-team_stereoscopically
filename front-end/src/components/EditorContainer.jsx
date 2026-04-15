@@ -392,6 +392,7 @@ function EditorContainer() {
           <AddText
             imageSrc={effectiveImageSrc}
             onApply={handleAddTextScreenApply}
+            onBack={() => setScreen(SCREENS.FILTERS_MAIN)}
             onCancel={() => setScreen(SCREENS.EDITOR)}
             applyError={exportError}
           />

@@ -25,6 +25,7 @@ describe('gifFlowState', () => {
       selectedSpeedPlaybackRate: 1.5,
       textOverlay: {
         text: 'Watermark',
+        fontFamily: 'Georgia',
         size: 22,
         color: '#0099FF',
         position: { x: 10, y: 15 },
@@ -36,6 +37,7 @@ describe('gifFlowState', () => {
       selectedSpeedPlaybackRate: 1.5,
       textOverlay: {
         text: 'Watermark',
+        fontFamily: 'Georgia',
         size: 22,
         color: '#0099FF',
         position: { x: 10, y: 15 },
@@ -48,6 +50,7 @@ describe('gifFlowState', () => {
       ...createInitialGifFlowState(),
       textOverlay: {
         text: 'Clip title',
+        fontFamily: 'Arial',
         size: 30,
         color: '#AA5500',
         position: { x: 44, y: 77 },
@@ -59,6 +62,7 @@ describe('gifFlowState', () => {
       selectedSpeedPlaybackRate: 2,
       textOverlay: {
         text: 'Clip title',
+        fontFamily: 'Arial',
         size: 30,
         color: '#AA5500',
         position: { x: 44, y: 77 },
@@ -115,6 +119,7 @@ describe('gifFlowState', () => {
       selectedSpeedPlaybackRate: 1.5,
       textOverlay: {
         text: 'Overlay',
+        fontFamily: 'Helvetica',
         size: 18,
         color: '#FF00FF',
         position: { x: 35, y: 75 },
@@ -131,6 +136,7 @@ describe('gifFlowState', () => {
   it('sanitizes text settings with clamped size, color fallback, and bounded position', () => {
     const next = sanitizeGifTextSettings({
       text: 'x'.repeat(200),
+      fontFamily: 'Papyrus',
       size: 400,
       color: 'not-a-hex-color',
       position: { x: -12, y: 134 },
@@ -138,6 +144,7 @@ describe('gifFlowState', () => {
 
     expect(next).toEqual({
       text: 'x'.repeat(120),
+      fontFamily: 'Arial',
       size: 120,
       color: '#FFFFFF',
       position: { x: 0, y: 100 },
@@ -147,6 +154,7 @@ describe('gifFlowState', () => {
   it('keeps valid text settings unchanged', () => {
     const next = sanitizeGifTextSettings({
       text: 'Caption',
+      fontFamily: 'Georgia',
       size: 36,
       color: '#123ABC',
       position: { x: 15, y: 65 },
@@ -154,6 +162,7 @@ describe('gifFlowState', () => {
 
     expect(next).toEqual({
       text: 'Caption',
+      fontFamily: 'Georgia',
       size: 36,
       color: '#123ABC',
       position: { x: 15, y: 65 },

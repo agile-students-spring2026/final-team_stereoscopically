@@ -8,9 +8,11 @@ import {
 } from '../../utils/overlayPlacement'
 import useVideoPreviewUrl from '../../hooks/useVideoPreviewUrl'
 import EditorToolScreen from '../EditorToolScreen'
+import { GIF_TEXT_FONT_FAMILIES } from './gifEditorConstants'
 
 const DEFAULT_TEXT_OVERLAY_SETTINGS = {
   text: '',
+  fontFamily: 'Arial',
   size: 32,
   color: '#FFFFFF',
   position: { x: 50, y: 50 },
@@ -221,6 +223,7 @@ function GifTextOverlayEditor({ videoFile, initialSettings, onBack, onCancel, on
                   className="add-text-placement-marker-box"
                   style={{
                     color: draft.color,
+                    fontFamily: draft.fontFamily || 'Arial',
                     fontSize: `${previewOverlayFontPx}px`,
                     fontWeight: 600,
                     whiteSpace: 'pre-wrap',
@@ -236,9 +239,10 @@ function GifTextOverlayEditor({ videoFile, initialSettings, onBack, onCancel, on
       )}
       controls={(
         <div className="card add-text-form">
-          <p className="add-text-placement-hint add-text-placement-hint--top">
-            Click or drag the preview to move the text.
-          </p>
+          <div className="add-text-field add-text-field--grid">
+            <span className="add-text-label">Move</span>
+            <EditorStatus>Click or drag the preview.</EditorStatus>
+          </div>
 
           <div className="add-text-field add-text-field--stack">
             <label htmlFor="gif-text-content" className="add-text-label">Text</label>
@@ -250,6 +254,22 @@ function GifTextOverlayEditor({ videoFile, initialSettings, onBack, onCancel, on
               value={draft.text}
               onChange={(event) => updateDraft({ text: event.target.value })}
             />
+          </div>
+
+          <div className="add-text-field add-text-field--grid">
+            <span className="add-text-label">Font</span>
+            <select
+              id="gif-text-font-family"
+              value={draft.fontFamily || 'Arial'}
+              onChange={(event) => updateDraft({ fontFamily: event.target.value })}
+              className="form-select add-text-select"
+            >
+              {GIF_TEXT_FONT_FAMILIES.map((family) => (
+                <option key={family} value={family}>
+                  {family}
+                </option>
+              ))}
+            </select>
           </div>
 
           <div className="add-text-field add-text-field--grid">
@@ -287,9 +307,6 @@ function GifTextOverlayEditor({ videoFile, initialSettings, onBack, onCancel, on
                 onChange={(event) => updateDraft({ size: asNumberOrFallback(event.target.value, safeTextSize) })}
                 className="add-text-size-slider editor-slider"
               />
-              <p className="add-text-size-help">
-                Size {safeTextSize}px (preview matches export).
-              </p>
             </div>
           </div>
         </div>
