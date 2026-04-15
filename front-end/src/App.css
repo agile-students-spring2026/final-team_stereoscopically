@@ -145,6 +145,15 @@
   background-color: #222222;
 }
 
+.btn-primary.btn-danger {
+  background-color: #ff3b30;
+  border-color: #ff3b30;
+}
+
+.btn-primary.btn-danger:hover {
+  background-color: #e43329;
+}
+
 .btn-secondary:hover {
   background-color: #f0f0f0;
 }
@@ -650,6 +659,14 @@ input[type='range']::-moz-range-thumb {
 .video-editor-actions .btn-primary {
   width: 100%;
   margin-top: 0.75rem;
+}
+
+.camera-recording-status {
+  margin: 0;
+  margin-top: 0.5rem;
+  text-align: center;
+  font-size: 0.86rem;
+  color: #8e8e93;
 }
 
 .preview-box.preview-box-video-resize {
