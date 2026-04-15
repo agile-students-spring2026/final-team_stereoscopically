@@ -7,6 +7,7 @@ const ImageEditor = ({
   cropSourceImageSrc = null,
   initialCropPx = null,
   onCropApply,
+  onResetCrop,
   onOpenFilters,
   onBack,
   onSize,
@@ -14,10 +15,12 @@ const ImageEditor = ({
   onResetExportSettings,
   showResetExportSettings = false,
   isUploading = false,
+  isResettingCrop = false,
   uploadError = null,
   isExporting = false,
   exportError = null,
   sessionNotice = null,
+  showResetCrop = false,
 }) => {
   // Track if cropper is active
   const [isCropping, setIsCropping] = useState(false)
@@ -56,6 +59,17 @@ const ImageEditor = ({
     setCropError(null)
   }
 
+  const handleResetCrop = async () => {
+    try {
+      setCropError(null)
+      await onResetCrop?.()
+      setIsCropping(false)
+    } catch (err) {
+      setCropError(err?.message || 'Could not reset crop to original image.')
+      console.error('Reset crop failed:', err)
+    }
+  }
+
   const handleImageError = () => {
     setImageLoadError(true)
   }
@@ -82,6 +96,16 @@ const ImageEditor = ({
           <button type="button" className="btn-secondary" onClick={handleCancelCrop}>
             Cancel
           </button>
+          {showResetCrop && (
+            <button
+              type="button"
+              className="btn-secondary"
+              onClick={handleResetCrop}
+              disabled={isResettingCrop}
+            >
+              {isResettingCrop ? 'Resetting...' : 'Reset Crop'}
+            </button>
+          )}
           <button type="button" className="btn-primary" onClick={handleApplyCrop}>
             Apply Crop
           </button>

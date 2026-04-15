@@ -57,6 +57,41 @@ describe('editor consistency contracts', () => {
     expect(filtersIndex).toBeGreaterThan(resizeIndex)
   })
 
+  it('shows Reset Crop in crop mode when crop history exists and calls reset handler', async () => {
+    const onResetCrop = vi.fn().mockResolvedValue(undefined)
+
+    const { container, cleanup } = await renderComponentToDom(
+      <ImageEditor
+        imageSrc="https://example.com/image.png"
+        onCropApply={vi.fn()}
+        onResetCrop={onResetCrop}
+        onOpenFilters={vi.fn()}
+        onBack={vi.fn()}
+        onSize={vi.fn()}
+        onExport={vi.fn()}
+        showResetCrop
+      />,
+    )
+
+    const getButton = (label) => Array.from(container.querySelectorAll('button')).find((button) => button.textContent?.trim() === label)
+
+    const cropButton = getButton('Crop')
+    expect(cropButton).toBeTruthy()
+
+    cropButton.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+    await Promise.resolve()
+
+    const resetCropButton = getButton('Reset Crop')
+    expect(resetCropButton).toBeTruthy()
+
+    resetCropButton.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+    await Promise.resolve()
+
+    expect(onResetCrop).toHaveBeenCalledTimes(1)
+
+    cleanup()
+  })
+
   it('renders image filter hub with Text label and Cancel action', async () => {
     const onCancel = vi.fn()
 

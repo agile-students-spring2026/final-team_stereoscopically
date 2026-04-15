@@ -53,6 +53,7 @@ const useImageEditingSession = ({
   const [lastExportLetterbox, setLastExportLetterbox] = useState(null)
   const [letterboxColor, setLetterboxColor] = useState('transparent')
   const [isExporting, setIsExporting] = useState(false)
+  const [isResettingCrop, setIsResettingCrop] = useState(false)
   const [exportError, setExportError] = useState(null)
   const [sessionNotice, setSessionNotice] = useState(null)
   const [lastCropBoxPx, setLastCropBoxPx] = useState(null)
@@ -69,6 +70,8 @@ const useImageEditingSession = ({
 
   /** Media id of the image to letterbox from (never the letterboxed export id). */
   const presetExportSourceIdRef = useRef(null)
+  const originalImageMediaIdRef = useRef(null)
+  const originalImageSourceUrlRef = useRef(null)
   const lastPresetExportAtRef = useRef(0)
   const presetFilterRequestIdRef = useRef(0)
   const colorFilterRequestIdRef = useRef(0)
@@ -101,6 +104,24 @@ const useImageEditingSession = ({
       presetExportSourceIdRef.current = effectiveBackendMediaId
     }
   }, [latestExportResult, effectiveBackendMediaId])
+
+  useEffect(() => {
+    if (mediaType !== 'image') {
+      originalImageMediaIdRef.current = null
+      originalImageSourceUrlRef.current = null
+      return
+    }
+
+    if (!sourceUrl || !backendImageResult?.id) {
+      return
+    }
+
+    const sourceChanged = originalImageSourceUrlRef.current !== sourceUrl
+    if (sourceChanged || !originalImageMediaIdRef.current) {
+      originalImageMediaIdRef.current = backendImageResult.id
+      originalImageSourceUrlRef.current = sourceUrl
+    }
+  }, [backendImageResult?.id, mediaType, sourceUrl])
 
   useEffect(() => {
     setSelectedImageFilterPreset(DEFAULT_IMAGE_FILTER_PRESET)
@@ -475,6 +496,50 @@ const useImageEditingSession = ({
     }
   }, [applyTransformedImage, effectiveBackendMediaId, resetExportSessionState])
 
+  const resetCropToOriginal = useCallback(async () => {
+    const originalId = originalImageMediaIdRef.current
+    if (!originalId) {
+      const err = new Error('Original image is not available for crop reset yet.')
+      setExportError(err.message)
+      throw err
+    }
+
+    try {
+      setIsResettingCrop(true)
+      setExportError(null)
+      setSessionNotice(null)
+
+      const url = `${getBackendBaseUrl()}/api/media/${originalId}`
+      const result = {
+        id: originalId,
+        url,
+        mimeType: 'image/png',
+      }
+
+      const { file, objectUrl } = await convertBackendImageResultToLocalMedia(result, {
+        fallbackFileName: 'original.png',
+        fetchErrorMessage: 'Failed to restore original image preview.',
+      })
+
+      if (previewUrl && previewUrl !== sourceUrl) {
+        URL.revokeObjectURL(previewUrl)
+      }
+
+      applyTransformedImage(file, objectUrl, result)
+      resetExportSessionState()
+      setLastCropBoxPx(null)
+      setSessionNotice('Crop reset to the original image.')
+      presetExportSourceIdRef.current = originalId
+      lastPresetExportAtRef.current = Date.now()
+    } catch (err) {
+      console.error('Reset crop failed:', err)
+      setExportError(err?.message || 'Could not reset crop to original image.')
+      throw err
+    } finally {
+      setIsResettingCrop(false)
+    }
+  }, [applyTransformedImage, previewUrl, resetExportSessionState, sourceUrl])
+
   const handleAddTextApply = useCallback(async (textRequest) => {
     if (mediaType !== 'image') return false
     if (!effectiveBackendMediaId) {
@@ -620,9 +685,11 @@ const useImageEditingSession = ({
     letterboxColor,
     setLetterboxColor,
     isExporting,
+  isResettingCrop,
     exportError,
     sessionNotice,
     lastCropBoxPx,
+  hasCropHistory: Boolean(lastCropBoxPx),
     effectiveBackendResult,
     effectiveBackendMediaId,
     effectiveImageSrc,
@@ -639,6 +706,7 @@ const useImageEditingSession = ({
     clearCropSession,
     handleSizeSelect,
     handleCropApply,
+  resetCropToOriginal,
     handleAddTextApply,
     handleExport,
     resetPresetExportSettings,
