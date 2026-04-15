@@ -126,8 +126,6 @@ const GifEditor = ({
             setIsProcessing(false)
         }
     }
-    // No longer need to check support here; handled in EditorContainer
-
     return (
         <div className="video-editor-container">
             <h2 className="video-editor-title">GIF Editor</h2>

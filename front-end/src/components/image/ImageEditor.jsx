@@ -19,7 +19,6 @@ const ImageEditor = ({
   uploadError = null,
   isExporting = false,
   exportError = null,
-  sessionNotice = null,
   showResetCrop = false,
 }) => {
   // Track if cropper is active
@@ -126,11 +125,6 @@ const ImageEditor = ({
       {exportError && (
         <EditorStatus tone="error" spaced>
           {exportError}
-        </EditorStatus>
-      )}
-      {sessionNotice && (
-        <EditorStatus tone="info" className="session-notice">
-          {sessionNotice}
         </EditorStatus>
       )}
 

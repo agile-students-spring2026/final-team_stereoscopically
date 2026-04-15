@@ -55,7 +55,6 @@ const useImageEditingSession = ({
   const [isExporting, setIsExporting] = useState(false)
   const [isResettingCrop, setIsResettingCrop] = useState(false)
   const [exportError, setExportError] = useState(null)
-  const [sessionNotice, setSessionNotice] = useState(null)
   const [lastCropBoxPx, setLastCropBoxPx] = useState(null)
 
   const [selectedImageFilterPreset, setSelectedImageFilterPreset] = useState(DEFAULT_IMAGE_FILTER_PRESET)
@@ -142,7 +141,6 @@ const useImageEditingSession = ({
 
   const resetImageEditingSessionState = useCallback(() => {
     resetExportSessionState()
-    setSessionNotice(null)
     setLastCropBoxPx(null)
   }, [resetExportSessionState])
 
@@ -387,7 +385,6 @@ const useImageEditingSession = ({
       setSelectedPreset(size)
       setLatestExportResult(exported)
       setLastExportLetterbox(letterboxColor)
-      setSessionNotice(null)
       return true
     } catch (err) {
       console.error('Preset export failed:', err)
@@ -487,7 +484,6 @@ const useImageEditingSession = ({
 
       applyTransformedImage(file, objectUrl, result)
       resetExportSessionState()
-      setSessionNotice('Platform size cleared — use Resize before Export.')
       setLastCropBoxPx(cropRequest?.pixels || null)
     } catch (err) {
       console.error('Error applying crop in container:', err)
@@ -507,7 +503,6 @@ const useImageEditingSession = ({
     try {
       setIsResettingCrop(true)
       setExportError(null)
-      setSessionNotice(null)
 
       const url = `${getBackendBaseUrl()}/api/media/${originalId}`
       const result = {
@@ -528,7 +523,6 @@ const useImageEditingSession = ({
       applyTransformedImage(file, objectUrl, result)
       resetExportSessionState()
       setLastCropBoxPx(null)
-      setSessionNotice('Crop reset to the original image.')
       presetExportSourceIdRef.current = originalId
       lastPresetExportAtRef.current = Date.now()
     } catch (err) {
@@ -652,7 +646,6 @@ const useImageEditingSession = ({
   const resetPresetExportSettings = useCallback(async () => {
     const restoreId = presetExportSourceIdRef.current
     resetExportSessionState()
-    setSessionNotice(null)
     if (!restoreId) return
     try {
       setExportError(null)
@@ -685,28 +678,27 @@ const useImageEditingSession = ({
     letterboxColor,
     setLetterboxColor,
     isExporting,
-  isResettingCrop,
+    isResettingCrop,
     exportError,
-    sessionNotice,
     lastCropBoxPx,
-  hasCropHistory: Boolean(lastCropBoxPx),
+    hasCropHistory: Boolean(lastCropBoxPx),
     effectiveBackendResult,
     effectiveBackendMediaId,
     effectiveImageSrc,
-  selectedImageFilterPreset,
-  presetFilterPreviewSrc,
-  isLoadingPresetFilterPreview,
-  presetFilterError,
-  colorAdjustments,
-  colorFilterPreviewSrc,
-  isLoadingColorFilterPreview,
-  colorFilterError,
+    selectedImageFilterPreset,
+    presetFilterPreviewSrc,
+    isLoadingPresetFilterPreview,
+    presetFilterError,
+    colorAdjustments,
+    colorFilterPreviewSrc,
+    isLoadingColorFilterPreview,
+    colorFilterError,
     resetExportSessionState,
     resetImageEditingSessionState,
     clearCropSession,
     handleSizeSelect,
     handleCropApply,
-  resetCropToOriginal,
+    resetCropToOriginal,
     handleAddTextApply,
     handleExport,
     resetPresetExportSettings,

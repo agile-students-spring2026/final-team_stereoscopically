@@ -58,11 +58,10 @@ function EditorContainer() {
     letterboxColor,
     setLetterboxColor,
     isExporting,
-  isResettingCrop,
+    isResettingCrop,
     exportError,
-    sessionNotice,
     lastCropBoxPx,
-  hasCropHistory,
+    hasCropHistory,
     effectiveImageSrc,
     selectedPreset,
     latestExportResult,
@@ -79,7 +78,7 @@ function EditorContainer() {
     clearCropSession,
     handleSizeSelect,
     handleCropApply,
-  resetCropToOriginal,
+    resetCropToOriginal,
     handleAddTextApply,
     handleExport,
     selectImageFilterPreset,
@@ -236,13 +235,12 @@ function EditorContainer() {
       cropSourceImageSrc={effectiveImageSrc}
       initialCropPx={lastCropBoxPx}
       onCropApply={handleCropApply}
-  onResetCrop={resetCropToOriginal}
+    onResetCrop={resetCropToOriginal}
       isUploading={isUploading}
       isExporting={isExporting}
-  isResettingCrop={isResettingCrop}
+    isResettingCrop={isResettingCrop}
       uploadError={uploadError}
       exportError={exportError}
-      sessionNotice={sessionNotice}
       onBack={handleBackToUpload}
       onOpenFilters={handleOpenFilters}
       onSize={handleOpenSizes}
