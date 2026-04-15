@@ -18,6 +18,7 @@ import VideoPresetFilters from './gif/VideoPresetFilters'
 import GifFilterMain from './gif/GifFilterMain'
 import GifToolPlaceholder from './gif/GifToolPlaceholder'
 import GifTrimEditor from './gif/GifTrimEditor'
+import GifResizePresets from './gif/GifResizePresets'
 
 const SCREENS = {
   EDITOR: 'editor',
@@ -484,9 +485,8 @@ function EditorContainer() {
 
       if (activeGifTool === GIF_TOOLS.RESIZE) {
         return (
-          <GifToolPlaceholder
-            title="Resize"
-            description="Resize controls for GIFs will be added in the next step."
+          <GifResizePresets
+            onApply={resetGifToolState}
             onBack={resetGifToolState}
             onCancel={resetGifToolState}
           />
