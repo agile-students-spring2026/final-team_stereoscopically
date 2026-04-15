@@ -1,3 +1,5 @@
+import EditorStatus from '../EditorStatus'
+
 function GifToolPlaceholder({ title, description, onBack, onCancel }) {
   return (
     <div className="preset-sizes-screen">
@@ -7,9 +9,9 @@ function GifToolPlaceholder({ title, description, onBack, onCancel }) {
       </div>
 
       <div className="card filter-main-buttons">
-        <p className="preview-label" style={{ margin: 0, textAlign: 'center' }}>
+        <EditorStatus centered>
           This editor option is wired into the GIF flow and ready for implementation.
-        </p>
+        </EditorStatus>
       </div>
 
       <div className="card-actions preset-sizes-screen-actions">

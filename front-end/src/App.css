@@ -141,6 +141,18 @@
   color: var(--editor-status-color-info);
 }
 
+.editor-status--loading {
+  color: var(--editor-status-color-muted);
+}
+
+.editor-status--centered {
+  text-align: center;
+}
+
+.editor-status--spaced {
+  margin-top: var(--editor-space-sm);
+}
+
 /* ============================================================================
    CREATE NEW / UPLOAD SCREEN
    ============================================================================ */
@@ -450,6 +462,24 @@
   position: absolute;
   inset: 0;
   pointer-events: none;
+}
+
+.editor-preview-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.editor-preview-overlay--loading {
+  background: rgba(0, 0, 0, 0.5);
+}
+
+.editor-preview-overlay__status {
+  color: #ffffff;
+  font-size: 1rem;
+  font-weight: 600;
 }
 
 /* Lets letterbox / transparent margins read clearly (not “lost” on a solid white frame) */

@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import EditorToolScreen from '../EditorToolScreen'
+import EditorStatus from '../EditorStatus'
 
 const TRIM_STEP = 0.1
 
@@ -97,9 +98,7 @@ function GifTrimEditor({
               }}
             />
           ) : (
-            <p className="preview-label" style={{ margin: 0, textAlign: 'center' }}>
-              Upload a video to start editing.
-            </p>
+            <EditorStatus centered>Upload a video to start editing.</EditorStatus>
           )}
         </div>
       )}
@@ -149,9 +148,9 @@ function GifTrimEditor({
               </label>
             </>
           ) : (
-            <p className="preview-label" style={{ margin: 0, textAlign: 'center' }}>
+            <EditorStatus tone="loading" centered>
               Loading trim controls…
-            </p>
+            </EditorStatus>
           )}
         </div>
       )}

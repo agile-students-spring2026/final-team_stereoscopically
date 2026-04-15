@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import FilterScreen from '../FilterScreen'
+import EditorStatus from '../EditorStatus'
 
 const PRESETS = [
   { id: 'default', label: 'Original' },
@@ -74,20 +75,10 @@ function VideoPresetFilters({
       onApply={handleApply}
       onCancel={onCancel}
       previewOverlay={isLoadingPreview ? (
-        <div
-          style={{
-            position: 'absolute',
-            inset: 0,
-            background: 'rgba(0,0,0,0.5)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            color: '#fff',
-            fontSize: '1rem',
-            fontWeight: '600',
-          }}
-        >
-          Applying filter…
+        <div className="editor-preview-overlay editor-preview-overlay--loading">
+          <EditorStatus tone="loading" centered className="editor-preview-overlay__status">
+            Applying filter…
+          </EditorStatus>
         </div>
       ) : null}
     >
@@ -103,9 +94,9 @@ function VideoPresetFilters({
         </button>
       ))}
       {(previewError || applyError) && (
-        <p className="validation-error" role="alert">
+        <EditorStatus tone="error">
           {applyError || previewError}
-        </p>
+        </EditorStatus>
       )}
     </FilterScreen>
   )

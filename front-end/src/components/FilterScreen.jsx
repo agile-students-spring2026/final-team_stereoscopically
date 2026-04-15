@@ -1,4 +1,5 @@
 import EditorToolScreen from './EditorToolScreen'
+import EditorStatus from './EditorStatus'
 
 function FilterScreen({
   title,
@@ -43,7 +44,7 @@ function FilterScreen({
           ) : videoSrc ? (
             <video src={videoSrc} controls className="preview-image editor-preview-media" />
           ) : (
-            <span className="preview-label">Preview of Creation</span>
+            <EditorStatus centered>Preview of Creation</EditorStatus>
           )}
 
           {previewOverlay ? (

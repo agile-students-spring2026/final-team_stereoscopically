@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import EditorToolScreen from '../EditorToolScreen'
+import EditorStatus from '../EditorStatus'
 
 const DEFAULT_GIF_RESIZE_PRESET = 'square'
 
@@ -104,9 +105,7 @@ function GifResizePresets({
               <video src={videoUrl} controls className="preview-video editor-preview-media gif-preview-video" />
             </div>
           ) : (
-            <p className="preview-label" style={{ margin: 0, textAlign: 'center' }}>
-              Upload a video to preview resize.
-            </p>
+            <EditorStatus centered>Upload a video to preview resize.</EditorStatus>
           )}
         </div>
       )}

@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import FilterScreen from '../FilterScreen'
+import EditorStatus from '../EditorStatus'
 
 const clamp = (value, min, max) => Math.min(max, Math.max(min, value))
 
@@ -240,9 +241,9 @@ function AddText({ imageSrc, onApply, onCancel, applyError = null }) {
     >
       <div className="add-text-form">
         {applyError ? (
-          <p role="alert" className="upload-status" style={{ marginTop: 0, color: '#ff3b30' }}>
+          <EditorStatus tone="error">
             {applyError}
-          </p>
+          </EditorStatus>
         ) : null}
 
         <p className="add-text-placement-hint add-text-placement-hint--top">

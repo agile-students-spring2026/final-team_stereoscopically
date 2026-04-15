@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { DEFAULT_GIF_SPEED_PLAYBACK_RATE } from './gifSpeedOptions'
 import { resolveGifTrimRange } from '../../hooks/useGifEditingSession'
+import EditorStatus from '../EditorStatus'
 
 const DEFAULT_GIF_RESIZE_PRESET = 'square'
 const DEFAULT_GIF_TEXT_OVERLAY_SETTINGS = {
@@ -204,7 +205,7 @@ const GifEditor = ({
                         ) : null}
                     </div>
                 ) : (
-                    <p className="preview-label">Upload a video to start editing.</p>
+                    <EditorStatus centered>Upload a video to start editing.</EditorStatus>
                 )}
             </div>
 
@@ -238,15 +239,15 @@ const GifEditor = ({
             </div>
 
             {statusMessage && (
-                <p className="preview-label" style={{ marginTop: '0.75rem' }}>
+                <EditorStatus tone="info" spaced>
                     {statusMessage}
-                </p>
+                </EditorStatus>
             )}
 
             {conversionError && (
-                <p className="preview-label" style={{ marginTop: '0.75rem', color: '#ff3b30' }}>
+                <EditorStatus tone="error" spaced>
                     {conversionError}
-                </p>
+                </EditorStatus>
             )}
         </div>
     )

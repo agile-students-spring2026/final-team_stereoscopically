@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
+import EditorStatus from './EditorStatus'
 
 function CameraCapture({ onCapture, onCancel }) {
     const videoRef = useRef(null)
@@ -157,14 +158,14 @@ function CameraCapture({ onCapture, onCancel }) {
 
             <div className="preview-box">
                 {error ? (
-                    <p className="preview-label" style={{ color: '#ff3b30' }}>{error}</p>
+                    <EditorStatus tone="error" centered>{error}</EditorStatus>
                 ) : (
                     <video
                         ref={videoRef}
                         autoPlay
                         muted
                         playsInline
-                        className="preview-video"
+                        className="preview-video editor-preview-media"
                     />
                 )}
             </div>

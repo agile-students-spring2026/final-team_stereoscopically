@@ -40,6 +40,10 @@ Use these classes for all editor-focused screens going forward:
   - error variant
 - `editor-status--info`
   - informational variant
+- `editor-status--loading`
+  - loading variant
+
+Use `EditorStatus.jsx` as the default shared renderer for status text in editor-related screens.
 
 ## Naming guidance
 

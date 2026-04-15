@@ -1,5 +1,6 @@
 import { useCallback, useState } from 'react'
 import ImageCropper from './ImageCropper'
+import EditorStatus from '../EditorStatus'
 
 const ImageEditor = ({
   imageSrc,
@@ -64,13 +65,13 @@ const ImageEditor = ({
     return (
       <div className="image-editor-container">
         <h2 className="image-editor-title">Crop Image</h2>
-        <p role="note" className="upload-status" style={{ marginTop: '0.5rem', color: '#555' }}>
+        <EditorStatus role="note" tone="muted" spaced>
           Cropping uses your current preview (filters and color edits included).
-        </p>
+        </EditorStatus>
         {cropError && (
-          <p role="alert" className="upload-status" style={{ marginTop: '0.5rem', color: '#ff3b30' }}>
+          <EditorStatus tone="error" spaced>
             {cropError}
-          </p>
+          </EditorStatus>
         )}
         <ImageCropper
           imageSrc={cropSourceImageSrc || imageSrc}
@@ -94,25 +95,25 @@ const ImageEditor = ({
       <h2 className="image-editor-title">Image Editor</h2>
 
       {uploadError && (
-        <p role="alert" className="upload-status" style={{ marginTop: '0.5rem', color: '#ff3b30' }}>
+        <EditorStatus tone="error" spaced>
           {uploadError}
-        </p>
+        </EditorStatus>
       )}
       {exportError && (
-        <p role="alert" className="upload-status" style={{ marginTop: '0.5rem', color: '#ff3b30' }}>
+        <EditorStatus tone="error" spaced>
           {exportError}
-        </p>
+        </EditorStatus>
       )}
       {sessionNotice && (
-        <p role="status" className="upload-status session-notice">
+        <EditorStatus tone="info" className="session-notice">
           {sessionNotice}
-        </p>
+        </EditorStatus>
       )}
 
       {imageLoadError && (
-        <p role="alert" className="upload-status" style={{ marginTop: '0.5rem', color: '#ff3b30' }}>
+        <EditorStatus tone="error" spaced>
           This image format cannot be displayed in your browser. Please upload JPG or PNG.
-        </p>
+        </EditorStatus>
       )}
 
       <div
