@@ -2,6 +2,8 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { getBackendBaseUrl } from '../services/backendMediaClient'
 import {
   addTextToImageFromBackend,
+  adjustImageFromBackend,
+  applyPresetImageFilterFromBackend,
   convertBackendImageResultToLocalMedia,
   cropImageFromBackend,
   exportImageFromBackend,
@@ -11,8 +13,33 @@ import { downloadFile } from '../utils/downloadFile'
 const MIN_BACKEND_FONT_SIZE = 8
 const MAX_BACKEND_FONT_SIZE = 2000
 const DEFAULT_BACKEND_FONT_SIZE = 110
+const DEFAULT_IMAGE_FILTER_PRESET = 'default'
+const DEFAULT_COLOR_ADJUSTMENTS = Object.freeze({
+  brightness: 100,
+  contrast: 100,
+  saturation: 100,
+  sharpness: 100,
+})
 
 const clamp = (value, min, max) => Math.min(max, Math.max(min, value))
+const pctToFactor = (pct) => Math.min(2, Math.max(0, pct / 100))
+
+const normalizeColorAdjustments = (nextAdjustments = {}) => ({
+  brightness: Number.isFinite(Number(nextAdjustments.brightness)) ? Number(nextAdjustments.brightness) : 100,
+  contrast: Number.isFinite(Number(nextAdjustments.contrast)) ? Number(nextAdjustments.contrast) : 100,
+  saturation: Number.isFinite(Number(nextAdjustments.saturation)) ? Number(nextAdjustments.saturation) : 100,
+  sharpness: Number.isFinite(Number(nextAdjustments.sharpness)) ? Number(nextAdjustments.sharpness) : 100,
+})
+
+const isDefaultColorAdjustments = (nextAdjustments = DEFAULT_COLOR_ADJUSTMENTS) => {
+  const normalized = normalizeColorAdjustments(nextAdjustments)
+  return (
+    normalized.brightness === DEFAULT_COLOR_ADJUSTMENTS.brightness &&
+    normalized.contrast === DEFAULT_COLOR_ADJUSTMENTS.contrast &&
+    normalized.saturation === DEFAULT_COLOR_ADJUSTMENTS.saturation &&
+    normalized.sharpness === DEFAULT_COLOR_ADJUSTMENTS.sharpness
+  )
+}
 
 const useImageEditingSession = ({
   mediaType,
@@ -30,9 +57,21 @@ const useImageEditingSession = ({
   const [sessionNotice, setSessionNotice] = useState(null)
   const [lastCropBoxPx, setLastCropBoxPx] = useState(null)
 
+  const [selectedImageFilterPreset, setSelectedImageFilterPreset] = useState(DEFAULT_IMAGE_FILTER_PRESET)
+  const [presetFilterPreviewSrc, setPresetFilterPreviewSrc] = useState(previewUrl || backendImageResult?.url || null)
+  const [isLoadingPresetFilterPreview, setIsLoadingPresetFilterPreview] = useState(false)
+  const [presetFilterError, setPresetFilterError] = useState(null)
+
+  const [colorAdjustments, setColorAdjustments] = useState(DEFAULT_COLOR_ADJUSTMENTS)
+  const [colorFilterPreviewSrc, setColorFilterPreviewSrc] = useState(previewUrl || backendImageResult?.url || null)
+  const [isLoadingColorFilterPreview, setIsLoadingColorFilterPreview] = useState(false)
+  const [colorFilterError, setColorFilterError] = useState(null)
+
   /** Media id of the image to letterbox from (never the letterboxed export id). */
   const presetExportSourceIdRef = useRef(null)
   const lastPresetExportAtRef = useRef(0)
+  const presetFilterRequestIdRef = useRef(0)
+  const colorFilterRequestIdRef = useRef(0)
   const liveExportRef = useRef({
     selectedPreset: null,
     latestExportResult: null,
@@ -63,6 +102,15 @@ const useImageEditingSession = ({
     }
   }, [latestExportResult, effectiveBackendMediaId])
 
+  useEffect(() => {
+    setSelectedImageFilterPreset(DEFAULT_IMAGE_FILTER_PRESET)
+    setPresetFilterPreviewSrc(effectiveImageSrc)
+    setPresetFilterError(null)
+    setColorAdjustments(DEFAULT_COLOR_ADJUSTMENTS)
+    setColorFilterPreviewSrc(effectiveImageSrc)
+    setColorFilterError(null)
+  }, [effectiveBackendMediaId, effectiveImageSrc])
+
   const resetExportSessionState = useCallback(() => {
     setSelectedPreset(null)
     setLatestExportResult(null)
@@ -86,6 +134,200 @@ const useImageEditingSession = ({
   const clearCropSession = useCallback(() => {
     setLastCropBoxPx(null)
   }, [])
+
+  const loadPresetFilterPreview = useCallback(async (preset) => {
+    const nextPreset = preset || DEFAULT_IMAGE_FILTER_PRESET
+    setPresetFilterError(null)
+    const requestId = ++presetFilterRequestIdRef.current
+
+    if (nextPreset === DEFAULT_IMAGE_FILTER_PRESET) {
+      setPresetFilterPreviewSrc(effectiveImageSrc)
+      setIsLoadingPresetFilterPreview(false)
+      return null
+    }
+
+    if (!effectiveBackendMediaId) {
+      setPresetFilterError('Image is not ready on the server yet.')
+      setIsLoadingPresetFilterPreview(false)
+      return null
+    }
+
+    try {
+      setIsLoadingPresetFilterPreview(true)
+      const result = await applyPresetImageFilterFromBackend({
+        mediaId: effectiveBackendMediaId,
+        preset: nextPreset,
+      })
+
+      if (requestId !== presetFilterRequestIdRef.current) {
+        return null
+      }
+
+      if (result?.url) {
+        setPresetFilterPreviewSrc(`${result.url}?cb=${Date.now()}`)
+      }
+
+      return result
+    } catch (err) {
+      if (requestId !== presetFilterRequestIdRef.current) {
+        return null
+      }
+      setPresetFilterPreviewSrc(effectiveImageSrc)
+      setPresetFilterError(err?.message || 'Preview update failed.')
+      return null
+    } finally {
+      if (requestId === presetFilterRequestIdRef.current) {
+        setIsLoadingPresetFilterPreview(false)
+      }
+    }
+  }, [effectiveBackendMediaId, effectiveImageSrc])
+
+  const selectImageFilterPreset = useCallback(async (preset) => {
+    const nextPreset = preset || DEFAULT_IMAGE_FILTER_PRESET
+    setSelectedImageFilterPreset(nextPreset)
+    return loadPresetFilterPreview(nextPreset)
+  }, [loadPresetFilterPreview])
+
+  const applyImagePresetFilter = useCallback(async () => {
+    if (selectedImageFilterPreset === DEFAULT_IMAGE_FILTER_PRESET) {
+      setPresetFilterError(null)
+      return true
+    }
+
+    if (!effectiveBackendMediaId) {
+      const message = 'Image is not ready on the server yet.'
+      setExportError(message)
+      setPresetFilterError(message)
+      return false
+    }
+
+    try {
+      setExportError(null)
+      setPresetFilterError(null)
+
+      const result = await applyPresetImageFilterFromBackend({
+        mediaId: effectiveBackendMediaId,
+        preset: selectedImageFilterPreset,
+      })
+
+      const { file, objectUrl } = await convertBackendImageResultToLocalMedia(result, {
+        fetchErrorMessage: 'Failed to load preset image.',
+      })
+
+      if (previewUrl && previewUrl !== sourceUrl) {
+        URL.revokeObjectURL(previewUrl)
+      }
+
+      applyTransformedImage(file, objectUrl, result)
+      setLatestExportResult(null)
+      setLastExportLetterbox(null)
+      return true
+    } catch (err) {
+      const message = err?.message || 'Could not apply preset.'
+      setExportError(message)
+      setPresetFilterError(message)
+      return false
+    }
+  }, [
+    applyTransformedImage,
+    effectiveBackendMediaId,
+    previewUrl,
+    selectedImageFilterPreset,
+    sourceUrl,
+  ])
+
+  useEffect(() => {
+    const normalized = normalizeColorAdjustments(colorAdjustments)
+
+    if (isDefaultColorAdjustments(normalized)) {
+      setColorFilterPreviewSrc(effectiveImageSrc)
+      setColorFilterError(null)
+      setIsLoadingColorFilterPreview(false)
+      return
+    }
+
+    if (!effectiveBackendMediaId) {
+      setColorFilterError('Image is not ready on the server yet.')
+      setIsLoadingColorFilterPreview(false)
+      return
+    }
+
+    const requestId = ++colorFilterRequestIdRef.current
+    setColorFilterError(null)
+
+    const timer = window.setTimeout(async () => {
+      try {
+        setIsLoadingColorFilterPreview(true)
+        const result = await adjustImageFromBackend({
+          mediaId: effectiveBackendMediaId,
+          brightness: pctToFactor(normalized.brightness),
+          contrast: pctToFactor(normalized.contrast),
+          saturation: pctToFactor(normalized.saturation),
+          sharpness: pctToFactor(normalized.sharpness),
+        })
+
+        if (requestId !== colorFilterRequestIdRef.current || !result?.url) return
+        setColorFilterPreviewSrc(`${result.url}?cb=${Date.now()}`)
+      } catch (err) {
+        if (requestId !== colorFilterRequestIdRef.current) return
+        setColorFilterPreviewSrc(effectiveImageSrc)
+        setColorFilterError(err?.message || 'Preview update failed.')
+      } finally {
+        if (requestId === colorFilterRequestIdRef.current) {
+          setIsLoadingColorFilterPreview(false)
+        }
+      }
+    }, 220)
+
+    return () => window.clearTimeout(timer)
+  }, [colorAdjustments, effectiveBackendMediaId, effectiveImageSrc])
+
+  const updateColorAdjustments = useCallback((nextAdjustments) => {
+    setColorAdjustments((current) => normalizeColorAdjustments({
+      ...current,
+      ...(nextAdjustments || {}),
+    }))
+  }, [])
+
+  const applyColorAdjustments = useCallback(async () => {
+    if (!effectiveBackendMediaId) {
+      const message = 'Image is not ready on the server yet.'
+      setExportError(message)
+      setColorFilterError(message)
+      return false
+    }
+
+    try {
+      setExportError(null)
+      setColorFilterError(null)
+      const normalized = normalizeColorAdjustments(colorAdjustments)
+      const result = await adjustImageFromBackend({
+        mediaId: effectiveBackendMediaId,
+        brightness: pctToFactor(normalized.brightness),
+        contrast: pctToFactor(normalized.contrast),
+        saturation: pctToFactor(normalized.saturation),
+        sharpness: pctToFactor(normalized.sharpness),
+      })
+
+      const { file, objectUrl } = await convertBackendImageResultToLocalMedia(result, {
+        fetchErrorMessage: 'Failed to load adjusted image.',
+      })
+
+      if (previewUrl && previewUrl !== sourceUrl) {
+        URL.revokeObjectURL(previewUrl)
+      }
+
+      applyTransformedImage(file, objectUrl, result)
+      setLatestExportResult(null)
+      setLastExportLetterbox(null)
+      return true
+    } catch (err) {
+      const message = err?.message || 'Could not apply adjustments.'
+      setExportError(message)
+      setColorFilterError(message)
+      return false
+    }
+  }, [applyTransformedImage, colorAdjustments, effectiveBackendMediaId, previewUrl, sourceUrl])
 
   const handleSizeSelect = useCallback(async (size) => {
     const inputMediaId = latestExportResult?.id
@@ -384,6 +626,14 @@ const useImageEditingSession = ({
     effectiveBackendResult,
     effectiveBackendMediaId,
     effectiveImageSrc,
+  selectedImageFilterPreset,
+  presetFilterPreviewSrc,
+  isLoadingPresetFilterPreview,
+  presetFilterError,
+  colorAdjustments,
+  colorFilterPreviewSrc,
+  isLoadingColorFilterPreview,
+  colorFilterError,
     resetExportSessionState,
     resetImageEditingSessionState,
     clearCropSession,
@@ -393,6 +643,10 @@ const useImageEditingSession = ({
     handleExport,
     resetPresetExportSettings,
     invalidateLatestExport,
+    selectImageFilterPreset,
+    applyImagePresetFilter,
+    updateColorAdjustments,
+    applyColorAdjustments,
   }
 }
 

@@ -10,7 +10,6 @@ import GifEditor from './gif/GifEditor'
 import useMediaSelection, { MEDIA_SELECTION_CODES } from '../hooks/useMediaSelection'
 import useGifEditingSession from '../hooks/useGifEditingSession'
 import useImageEditingSession from '../hooks/useImageEditingSession'
-import { convertBackendImageResultToLocalMedia } from '../services/backendImageService'
 import { convertBackendVideoResultToLocalMedia } from '../services/backendGifService'
 import CameraCapture from './CameraCapture'
 import PhotoPreview from './PhotoPreview'
@@ -63,17 +62,27 @@ function EditorContainer() {
     sessionNotice,
     lastCropBoxPx,
     effectiveImageSrc,
-    effectiveBackendMediaId,
     selectedPreset,
     latestExportResult,
     resetImageEditingSessionState,
     resetPresetExportSettings,
-    invalidateLatestExport,
+    selectedImageFilterPreset,
+    presetFilterPreviewSrc,
+    isLoadingPresetFilterPreview,
+    presetFilterError,
+    colorAdjustments,
+    colorFilterPreviewSrc,
+    isLoadingColorFilterPreview,
+    colorFilterError,
     clearCropSession,
     handleSizeSelect,
     handleCropApply,
     handleAddTextApply,
     handleExport,
+    selectImageFilterPreset,
+    applyImagePresetFilter,
+    updateColorAdjustments,
+    applyColorAdjustments,
   } = useImageEditingSession({
     mediaType,
     backendImageResult,
@@ -171,40 +180,6 @@ function EditorContainer() {
   const handleOpenFilters = () => {
     setScreen(SCREENS.FILTERS_MAIN)
   }
-
-  const handleColorFiltersCommit = useCallback(
-    async (backendResult) => {
-      const { file, objectUrl } = await convertBackendImageResultToLocalMedia(backendResult, {
-        fetchErrorMessage: 'Failed to load adjusted image.',
-      })
-      if (previewUrl && previewUrl !== sourceUrl) {
-        URL.revokeObjectURL(previewUrl)
-      }
-      applyTransformedImage(file, objectUrl, backendResult)
-      invalidateLatestExport()
-      setScreen(SCREENS.EDITOR)
-    },
-    [applyTransformedImage, invalidateLatestExport, previewUrl, sourceUrl]
-  )
-
-  const handleImagePresetFiltersCommit = useCallback(
-    async (result) => {
-      if (!result) {
-        setScreen(SCREENS.EDITOR)
-        return
-      }
-      const { file, objectUrl } = await convertBackendImageResultToLocalMedia(result, {
-        fetchErrorMessage: 'Failed to load preset image.',
-      })
-      if (previewUrl && previewUrl !== sourceUrl) {
-        URL.revokeObjectURL(previewUrl)
-      }
-      applyTransformedImage(file, objectUrl, result)
-      invalidateLatestExport()
-      setScreen(SCREENS.EDITOR)
-    },
-    [applyTransformedImage, invalidateLatestExport, previewUrl, sourceUrl]
-  )
 
   const handleOpenSizes = () => {
     setScreen(SCREENS.PRESET_SIZES)
@@ -373,10 +348,17 @@ function EditorContainer() {
         return (
           <PresetFilters
             imageSrc={effectiveImageSrc}
-            mediaId={effectiveBackendMediaId}
-            onApply={handleImagePresetFiltersCommit}
+            selectedStyle={selectedImageFilterPreset}
+            previewSrc={presetFilterPreviewSrc}
+            onSelectStyle={selectImageFilterPreset}
+            onApply={async () => {
+              const applied = await applyImagePresetFilter()
+              if (applied) setScreen(SCREENS.EDITOR)
+            }}
             onCancel={() => setScreen(SCREENS.EDITOR)}
             applyError={exportError}
+            previewError={presetFilterError}
+            isLoadingPreview={isLoadingPresetFilterPreview}
           />
         )
       case SCREENS.ADD_TEXT:
@@ -392,10 +374,17 @@ function EditorContainer() {
         return (
           <ColorFilters
             imageSrc={effectiveImageSrc}
-            mediaId={effectiveBackendMediaId}
-            onApply={handleColorFiltersCommit}
+            adjustments={colorAdjustments}
+            previewSrc={colorFilterPreviewSrc}
+            onAdjustmentsChange={updateColorAdjustments}
+            onApply={async () => {
+              const applied = await applyColorAdjustments()
+              if (applied) setScreen(SCREENS.EDITOR)
+            }}
             onCancel={() => setScreen(SCREENS.EDITOR)}
             applyError={exportError}
+            previewError={colorFilterError}
+            isLoadingPreview={isLoadingColorFilterPreview}
           />
         )
       case SCREENS.PRESET_SIZES:
