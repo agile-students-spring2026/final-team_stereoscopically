@@ -341,11 +341,12 @@ function EditorContainer() {
       <GifEditor
         key={videoKey}
         videoFile={selectedMedia}
-        selectedSpeedPlaybackRate={gifSession.selectedSpeedPlaybackRate}
-        committedTrimStart={gifSession.trimRange.start}
-        committedTrimEnd={gifSession.trimRange.end}
-        committedResizePreset={gifSession.resizePreset}
-        committedResizeBorderColor={gifSession.resizeBorderColor}
+		gifSessionState={{
+			trimRange: gifSession.trimRange,
+			resizePreset: gifSession.resizePreset,
+			resizeBorderColor: gifSession.resizeBorderColor,
+			selectedSpeedPlaybackRate: gifSession.selectedSpeedPlaybackRate,
+		}}
         onCancel={handleBackToUpload}
         onCreateGif={(videoFile) => gifSession.createAndExportGif(videoFile)}
         onOpenTrim={() => gifSession.openGifTool(gifSession.GIF_FLOW_TOOLS.TRIM)}

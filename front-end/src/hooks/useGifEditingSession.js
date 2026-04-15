@@ -4,6 +4,22 @@ import { GIF_SPEED_PLAYBACK_RATES, DEFAULT_GIF_SPEED_PLAYBACK_RATE } from '../co
 import { downloadFile } from '../utils/downloadFile'
 
 /**
+ * Normalize a committed trim range against a concrete video duration.
+ * Ensures start/end are within [0, duration] and end >= start.
+ */
+export const resolveGifTrimRange = (trimRange, totalDuration) => {
+  const safeDuration = Number.isFinite(totalDuration) && totalDuration > 0 ? totalDuration : 0
+  const rawStart = Number(trimRange?.start)
+  const rawEnd = Number(trimRange?.end)
+
+  const safeStart = Math.min(Math.max(Number.isFinite(rawStart) ? rawStart : 0, 0), safeDuration)
+  const candidateEnd = Number.isFinite(rawEnd) && rawEnd > 0 ? rawEnd : safeDuration
+  const safeEnd = Math.min(Math.max(candidateEnd, safeStart), safeDuration)
+
+  return { start: safeStart, end: safeEnd }
+}
+
+/**
  * GIF flow tool states
  * @readonly
  */

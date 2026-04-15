@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { DEFAULT_GIF_SPEED_PLAYBACK_RATE } from './gifSpeedOptions'
+import { resolveGifTrimRange } from '../../hooks/useGifEditingSession'
 
 const DEFAULT_GIF_RESIZE_PRESET = 'square'
 const GIF_RESIZE_PRESET_FRAME_CLASSES = {
@@ -11,18 +12,21 @@ const DEFAULT_GIF_RESIZE_BORDER_COLOR = '#000000'
 
 const GifEditor = ({
     videoFile,
-    selectedSpeedPlaybackRate = DEFAULT_GIF_SPEED_PLAYBACK_RATE,
-    committedTrimStart = 0,
-    committedTrimEnd = 0,
-    committedResizePreset = DEFAULT_GIF_RESIZE_PRESET,
-    committedResizeBorderColor = DEFAULT_GIF_RESIZE_BORDER_COLOR,
+    gifSessionState,
     onCancel,
     onCreateGif,
     onOpenTrim,
     onOpenResize,
     onOpenFilters,
 }) => {
-    const previewFrameClassName = GIF_RESIZE_PRESET_FRAME_CLASSES[committedResizePreset] || GIF_RESIZE_PRESET_FRAME_CLASSES[DEFAULT_GIF_RESIZE_PRESET]
+    const {
+        trimRange = { start: 0, end: 0 },
+        resizePreset = DEFAULT_GIF_RESIZE_PRESET,
+        resizeBorderColor = DEFAULT_GIF_RESIZE_BORDER_COLOR,
+        selectedSpeedPlaybackRate = DEFAULT_GIF_SPEED_PLAYBACK_RATE,
+    } = gifSessionState || {}
+
+    const previewFrameClassName = GIF_RESIZE_PRESET_FRAME_CLASSES[resizePreset] || GIF_RESIZE_PRESET_FRAME_CLASSES[DEFAULT_GIF_RESIZE_PRESET]
 
     const [isProcessing, setIsProcessing] = useState(false)
     const [statusMessage, setStatusMessage] = useState(null)
@@ -84,17 +88,6 @@ const GifEditor = ({
         video.playbackRate = selectedSpeedPlaybackRate
     }, [selectedSpeedPlaybackRate])
 
-    const resolveCommittedTrim = useCallback((totalDuration) => {
-        const safeStart = Math.min(Math.max(committedTrimStart, 0), totalDuration)
-        const candidateEnd = committedTrimEnd > 0 ? committedTrimEnd : totalDuration
-        const safeEnd = Math.min(Math.max(candidateEnd, safeStart), totalDuration)
-
-        return {
-            start: safeStart,
-            end: safeEnd,
-        }
-    }, [committedTrimEnd, committedTrimStart])
-
     const resetTransientEditorState = useCallback(() => {
         setStatusMessage(null)
         setConversionError(null)
@@ -144,9 +137,9 @@ const GifEditor = ({
                         <video ref={videoRef} src={videoUrl} controls className="preview-video gif-preview-video"
                             onLoadedMetadata={() => {
                                 const total = Number.isFinite(videoRef.current?.duration)
-                                    ? videoRef.current.duration
-                                    : 0
-                                const nextTrim = resolveCommittedTrim(total)
+                                        ? videoRef.current.duration
+                                        : 0
+                                const nextTrim = resolveGifTrimRange(trimRange, total)
                                 setDuration(total)
                                 setTrimStart(nextTrim.start)
                                 setTrimEnd(nextTrim.end)
