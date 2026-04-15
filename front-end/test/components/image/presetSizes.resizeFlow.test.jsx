@@ -41,7 +41,7 @@ describe('PresetSizes resize flow', () => {
     )
 
     expect(container.textContent).toContain('Resize')
-  expect(container.textContent).toContain('Choose a size and border color, then apply.')
+    expect(container.textContent).toContain('Choose a size and border color, then apply.')
     expect(container.querySelector('img[alt="Resize preview"]')).toBeTruthy()
 
     const labels = Array.from(container.querySelectorAll('button')).map((button) => button.textContent?.trim())
