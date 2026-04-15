@@ -535,7 +535,6 @@ function EditorContainer() {
             initialBorderColor={gifResizeBorderColor}
             videoFile={selectedMedia}
             onApply={handleGifResizeApply}
-            onBack={resetGifToolState}
             onCancel={resetGifToolState}
           />
         )

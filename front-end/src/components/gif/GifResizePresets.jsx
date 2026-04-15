@@ -41,7 +41,6 @@ function GifResizePresets({
   initialBorderColor = DEFAULT_GIF_RESIZE_BORDER_COLOR,
   videoFile,
   onApply,
-  onBack,
   onCancel,
 }) {
   const [selectedPreset, setSelectedPreset] = useState(initialPreset)
@@ -119,7 +118,8 @@ function GifResizePresets({
             <button
               key={option.key}
               type="button"
-              className={isActive ? 'btn-secondary active' : 'btn-secondary'}
+              className={isActive ? 'btn-secondary active gif-preset-option is-selected' : 'btn-secondary gif-preset-option'}
+              aria-pressed={isActive}
               onClick={() => setSelectedPreset(option.key)}
             >
               {option.label} ({option.subtitle})
@@ -143,9 +143,6 @@ function GifResizePresets({
       </div>
 
       <div className="card-actions preset-sizes-screen-actions">
-        <button type="button" className="btn-secondary" onClick={onBack}>
-          Back
-        </button>
         <button type="button" className="btn-secondary" onClick={onCancel}>
           Cancel
         </button>

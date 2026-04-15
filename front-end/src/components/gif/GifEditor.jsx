@@ -127,7 +127,7 @@ const GifEditor = ({
             }
 
             await onExportGif(result.id)
-            setStatusMessage('Download started.')
+            setStatusMessage(null)
         } catch (error) {
             setConversionError(error?.message || 'GIF conversion failed. Please try again.')
             setStatusMessage(null)
