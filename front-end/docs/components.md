@@ -131,6 +131,7 @@ Components are organized by media mode:
 - shared filter navigation and layout used across filter screens
 - reusable tool-screen scaffolding used by both image and GIF editor tool pages
 - shared status/feedback rendering for loading, info, and error messaging
+- shared tool header/action behavior via `EditorToolScreen` props (`title`, optional `subtitle`, optional `hideActions`, and custom `actions`)
 
 **Not responsible for**
 - deep media-specific editing behavior

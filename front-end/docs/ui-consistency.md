@@ -61,6 +61,13 @@ Use these classes for all editor-focused screens going forward:
 
 Use `EditorStatus.jsx` as the default shared renderer for status text in editor-related screens.
 
+Use `EditorToolScreen.jsx` as the default scaffold for tool pages. Prefer passing:
+
+- `title` and optional `subtitle` for header text
+- `preview` for media preview content
+- `controls` for tool-specific form/buttons
+- `actions` for custom button rows, or `hideActions` when no footer actions are needed
+
 ## Naming guidance
 
 - Prefer **semantic** names (`editor-tool-screen`) over feature-specific carryover names (`preset-sizes-screen`) when used by multiple tools.
