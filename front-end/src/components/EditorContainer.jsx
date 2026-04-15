@@ -451,7 +451,7 @@ function EditorContainer() {
                     : await gifSession.applyVideoFilterAndReturn(selectedMedia, preset, existingResult)
 
                 await handleVideoPresetApply(result)
-              } catch (error) {
+              } catch {
                 // Errors are already surfaced via gifSession.exportError or previewError; no-op here
               }
             }}

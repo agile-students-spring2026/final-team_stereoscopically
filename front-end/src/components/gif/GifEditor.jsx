@@ -133,7 +133,7 @@ const GifEditor = ({
 
             <div className="preview-box preview-box-video-resize preview-box-checkered">
                 {videoUrl ? (
-                    <div className={`gif-preview-frame ${previewFrameClassName}`} style={{ backgroundColor: committedResizeBorderColor }}>
+                    <div className={`gif-preview-frame ${previewFrameClassName}`} style={{ backgroundColor: resizeBorderColor }}>
                         <video ref={videoRef} src={videoUrl} controls className="preview-video gif-preview-video"
                             onLoadedMetadata={() => {
                                 const total = Number.isFinite(videoRef.current?.duration)
