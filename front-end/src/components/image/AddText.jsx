@@ -4,9 +4,9 @@ import EditorStatus from '../EditorStatus'
 import { clamp, getContainedContentFrame, getSafeFrame } from '../../utils/overlayPlacement'
 
 /* Slider is a relative scale; backend uses image-space px = round(slider * BACKEND_FONT_SCALE). */
-const MIN_UI_FONT_SIZE = 10
+const MIN_UI_FONT_SIZE = 2
 const MAX_UI_FONT_SIZE = 56
-const DEFAULT_UI_FONT_SIZE = 22
+const DEFAULT_UI_FONT_SIZE = 16
 const BACKEND_FONT_SCALE = 5
 
 const DEFAULT_TEXT_COLOR = '#111111'
@@ -96,7 +96,7 @@ function AddText({ imageSrc, onApply, onCancel, applyError = null }) {
     const nw = Math.max(1, naturalImageSize.width)
     const displayW = Math.max(1, renderedImageBox.width)
     const raw = backendFontSize * (displayW / nw)
-    return clamp(raw, 6, 320)
+    return clamp(raw, 2, 320)
   }, [backendFontSize, naturalImageSize.width, renderedImageBox.width])
 
   const updatePlacementFromPointer = useCallback((event) => {
