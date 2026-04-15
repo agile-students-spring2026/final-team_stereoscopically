@@ -3,6 +3,7 @@ import ffmpeg from 'fluent-ffmpeg'
 import ffmpegInstaller from '@ffmpeg-installer/ffmpeg'
 import { tmpdir } from 'os'
 import { writeFileSync, unlinkSync } from 'fs'
+import { readFile, unlink, writeFile } from 'fs/promises'
 import { join } from 'path'
 ffmpeg.setFfmpegPath(ffmpegInstaller.path)
 import { MAX_EXPORT_DIMENSION } from '../config/constants.js'
@@ -590,10 +591,10 @@ export const trimVideo = async (req) => {
     try {
         const duration = trimEndNum - trimStartNum
 
-        const tmpInput = path.join(os.tmpdir(), `input_${Date.now()}.mp4`)
-        const tmpOutput = path.join(os.tmpdir(), `output_${Date.now()}.gif`)
+		const tmpInput = join(tmpdir(), `input_${Date.now()}.mp4`)
+		const tmpOutput = join(tmpdir(), `output_${Date.now()}.gif`)
 
-        await fs.promises.writeFile(tmpInput, req.file.buffer)
+		await writeFile(tmpInput, req.file.buffer)
 
         await new Promise((resolve, reject) => {
             ffmpeg(tmpInput)
@@ -611,10 +612,10 @@ export const trimVideo = async (req) => {
                 .save(tmpOutput)
         })
 
-        const outputBuffer = await fs.promises.readFile(tmpOutput)
+	const outputBuffer = await readFile(tmpOutput)
 
-        await fs.promises.unlink(tmpInput).catch(() => {})
-        await fs.promises.unlink(tmpOutput).catch(() => {})
+	await unlink(tmpInput).catch(() => {})
+	await unlink(tmpOutput).catch(() => {})
 
         const trimId = createMediaId('gif')
         createMedia(trimId, {
