@@ -340,8 +340,9 @@ function EditorContainer() {
         return (
           <FilterMain
             onPresetFilters={() => setScreen(SCREENS.IMAGE_PRESET_FILTERS)}
-            onAddText={() => setScreen(SCREENS.ADD_TEXT)}
+            onText={() => setScreen(SCREENS.ADD_TEXT)}
             onColorFilters={() => setScreen(SCREENS.COLOR_FILTERS)}
+            onCancel={() => setScreen(SCREENS.EDITOR)}
           />
         )
       case SCREENS.IMAGE_PRESET_FILTERS:
@@ -473,6 +474,8 @@ function EditorContainer() {
             selectedSpeedPlaybackRate={gifSession.selectedSpeedPlaybackRate}
             onSelectSpeed={gifSession.selectSpeed}
             onApplySpeed={gifSession.applySpeed}
+            onBack={() => gifSession.openGifTool(gifSession.GIF_FLOW_TOOLS.FILTERS_MAIN)}
+            onCancel={() => gifSession.openGifTool(gifSession.GIF_FLOW_TOOLS.EDITOR)}
           />
         )
       }

@@ -1,18 +1,17 @@
 import EditorToolScreen from './EditorToolScreen'
 
-function FilterMain({ onPresetFilters, onAddText, onColorFilters }) {
+function FilterMain({ onPresetFilters, onText, onColorFilters, onCancel }) {
   return (
     <EditorToolScreen
       title="Filters"
-      hideActions
       controls={(
         <div className="card filter-main-buttons">
           <button type="button" className="btn-primary" onClick={onPresetFilters}>
             Preset Filters
           </button>
-          {onAddText && (
-            <button type="button" className="btn-primary" onClick={onAddText}>
-              Add Text
+          {onText && (
+            <button type="button" className="btn-primary" onClick={onText}>
+              Text
             </button>
           )}
           {onColorFilters && (
@@ -21,6 +20,11 @@ function FilterMain({ onPresetFilters, onAddText, onColorFilters }) {
             </button>
           )}
         </div>
+      )}
+      actions={(
+        <button type="button" className="btn-secondary" onClick={onCancel}>
+          Cancel
+        </button>
       )}
     />
   )

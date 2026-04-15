@@ -130,14 +130,14 @@ const ImageEditor = ({
         )}
       </div>
       <div className="card image-editor-actions editor-actions editor-actions--stack">
-        <button type="button" className="btn-primary" onClick={onOpenFilters}>
-          Filters
-        </button>
         <button type="button" className="btn-primary" onClick={handleCropClick}>
           Crop
         </button>
         <button type="button" className="btn-primary" onClick={onSize || (() => {})}>
           Resize
+        </button>
+        <button type="button" className="btn-primary" onClick={onOpenFilters}>
+          Filters
         </button>
         {showResetExportSettings && (
           <button

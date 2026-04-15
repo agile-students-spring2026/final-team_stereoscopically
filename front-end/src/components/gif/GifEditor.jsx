@@ -202,7 +202,7 @@ const GifEditor = ({
                     onClick={handleConvertToGif}
                     disabled={isProcessing || !videoUrl || duration <= 0}
                 >
-                    {isProcessing ? 'Downloading...' : 'Download GIF'}
+                    {isProcessing ? 'Exporting...' : 'Export GIF'}
                 </button>
             </div>
 

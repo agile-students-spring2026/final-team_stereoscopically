@@ -3,7 +3,14 @@ import { GIF_SPEED_OPTIONS } from './gifSpeedOptions'
 import useVideoPreviewUrl from '../../hooks/useVideoPreviewUrl'
 import EditorToolScreen from '../EditorToolScreen'
 
-function GifSpeedControls({ videoFile, selectedSpeedPlaybackRate, onSelectSpeed, onApplySpeed }) {
+function GifSpeedControls({
+  videoFile,
+  selectedSpeedPlaybackRate,
+  onSelectSpeed,
+  onApplySpeed,
+  onBack,
+  onCancel,
+}) {
   const previewVideoRef = useRef(null)
   const videoUrl = useVideoPreviewUrl(videoFile)
 
@@ -52,9 +59,17 @@ function GifSpeedControls({ videoFile, selectedSpeedPlaybackRate, onSelectSpeed,
         </div>
       )}
       actions={(
-        <button type="button" className="btn-primary" onClick={() => onApplySpeed?.(selectedSpeedPlaybackRate)}>
-          Apply
-        </button>
+        <>
+          <button type="button" className="btn-secondary" onClick={onBack}>
+            Back
+          </button>
+          <button type="button" className="btn-secondary" onClick={onCancel}>
+            Cancel
+          </button>
+          <button type="button" className="btn-primary" onClick={() => onApplySpeed?.(selectedSpeedPlaybackRate)}>
+            Apply
+          </button>
+        </>
       )}
     />
   )
