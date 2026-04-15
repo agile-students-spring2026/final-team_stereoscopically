@@ -78,7 +78,7 @@ const ImageEditor = ({
           initialCropPx={initialCropPx}
           onCropChange={handleCropChange}
         />
-        <div className="card-actions">
+        <div className="card-actions editor-actions editor-actions--inline">
           <button type="button" className="btn-secondary" onClick={handleCancelCrop}>
             Cancel
           </button>
@@ -129,7 +129,7 @@ const ImageEditor = ({
           />
         )}
       </div>
-      <div className="card image-editor-actions">
+      <div className="card image-editor-actions editor-actions editor-actions--stack">
         <button type="button" className="btn-primary" onClick={onOpenFilters}>
           Filters
         </button>
@@ -150,7 +150,7 @@ const ImageEditor = ({
           </button>
         )}
       </div>
-      <div className="card-actions card-actions-spaced">
+      <div className="card-actions card-actions-spaced editor-actions editor-actions--inline">
         <button type="button" className="btn-secondary" onClick={onBack}>
           Cancel
         </button>

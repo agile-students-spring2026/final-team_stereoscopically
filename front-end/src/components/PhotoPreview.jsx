@@ -42,7 +42,7 @@ function PhotoPreview({ file, onRetake, onConfirm, onBack }) {
                 )}
             </div>
 
-            <div className="card video-editor-actions">
+            <div className="card video-editor-actions editor-actions editor-actions--stack">
                 <button
                     type="button"
                     className="btn-primary"
@@ -60,7 +60,7 @@ function PhotoPreview({ file, onRetake, onConfirm, onBack }) {
                 </button>
             </div>
 
-            <div className="card-actions card-actions-spaced">
+            <div className="card-actions card-actions-spaced editor-actions editor-actions--inline">
                 <button
                     type="button"
                     className="btn-secondary"

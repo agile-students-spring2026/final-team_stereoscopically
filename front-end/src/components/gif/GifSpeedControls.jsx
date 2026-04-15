@@ -65,7 +65,7 @@ function GifSpeedControls({ videoFile, selectedSpeedPlaybackRate, onSelectSpeed,
         })}
       </div>
 
-      <div className="card-actions preset-sizes-screen-actions">
+      <div className="card-actions editor-actions editor-actions--inline preset-sizes-screen-actions">
         <button type="button" className="btn-primary" onClick={() => onApplySpeed?.(selectedSpeedPlaybackRate)}>
           Apply
         </button>

@@ -319,7 +319,7 @@ function GifTextOverlayEditor({ videoFile, initialSettings, onBack, onCancel, on
           type="number"
           min={8}
           max={120}
-          className="text-input add-text-size-input"
+          className="text-input editor-number-input add-text-size-input"
           value={draft.size}
           onChange={(event) => updateDraft({ size: asNumberOrFallback(event.target.value, draft.size) })}
         />
@@ -337,7 +337,7 @@ function GifTextOverlayEditor({ videoFile, initialSettings, onBack, onCancel, on
         </div>
       </div>
 
-      <div className="card-actions preset-sizes-screen-actions">
+      <div className="card-actions editor-actions editor-actions--inline preset-sizes-screen-actions">
         <button type="button" className="btn-secondary" onClick={onBack}>
           Back
         </button>

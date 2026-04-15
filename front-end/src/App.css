@@ -64,6 +64,40 @@
   margin-top: 1.25rem;
 }
 
+.editor-actions {
+  display: flex;
+  gap: var(--editor-space-xs);
+  justify-content: center;
+}
+
+.editor-actions--inline {
+  flex-direction: row;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.editor-actions--stack,
+.editor-tool-list,
+.image-editor-actions,
+.video-editor-actions {
+  align-items: stretch;
+  flex-direction: column;
+  gap: var(--editor-space-sm);
+}
+
+.editor-actions--stack .btn-primary,
+.editor-actions--stack .btn-secondary,
+.editor-tool-list .btn-primary,
+.editor-tool-list .btn-secondary,
+.image-editor-actions .btn-primary,
+.image-editor-actions .btn-secondary,
+.video-editor-actions .btn-primary,
+.video-editor-actions .btn-secondary {
+  width: 100%;
+  display: block;
+  text-align: center;
+}
+
 /* ============================================================================
    EDITOR CONSISTENCY FOUNDATION (PHASE 1)
    ============================================================================ */
@@ -85,24 +119,13 @@
 
 .editor-tool-list {
   align-items: stretch;
-  gap: 0;
+  gap: var(--editor-space-sm);
 }
 
 .editor-tool-list .btn-primary {
   width: 100%;
   display: block;
   text-align: center;
-}
-
-.editor-tool-list .btn-primary + .btn-primary {
-  margin-top: var(--editor-space-sm);
-}
-
-.editor-tool-list .btn-secondary {
-  width: 100%;
-  display: block;
-  text-align: center;
-  margin-top: var(--editor-space-sm);
 }
 
 .editor-shell-actions {
@@ -260,6 +283,13 @@
   border: 1px solid #1a1a1a;
   border-radius: 4px;
   font-family: inherit;
+}
+
+.editor-number-input {
+  width: 100%;
+  max-width: 100%;
+  margin-bottom: 0;
+  box-sizing: border-box;
 }
 
 .form-group {
@@ -667,6 +697,21 @@ input[type='range']::-moz-range-thumb {
   margin: 0.5rem auto;
 }
 
+.editor-slider {
+  width: 100%;
+  max-width: 100%;
+  margin: 0;
+  display: block;
+  accent-color: #000000;
+}
+
+.editor-range-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  width: 100%;
+}
+
 .color-filters-panel {
   width: 100%;
   display: flex;
@@ -734,42 +779,13 @@ input[type='range']::-moz-range-thumb {
   font-size: 0.9rem;
 }
 
-.image-editor-actions {
-  align-items: stretch;
-  gap: 0;
-}
 
-.image-editor-actions .btn-primary {
-  width: 100%;
-  display: block;
-  text-align: center;
-}
-
-.image-editor-actions .btn-primary + .btn-primary {
-  margin-top: 0.75rem;
-}
-
-.image-editor-actions .btn-secondary {
-  width: 100%;
-  display: block;
-  text-align: center;
-  margin-top: 0.75rem;
-}
 
 /* ============================================================================
    GIF EDITOR
    ============================================================================ */
 
-.video-editor-actions,
-.editor-tool-list {
-  align-items: stretch;
-  gap: 0;
-}
 
-.video-editor-actions .btn-primary {
-  width: 100%;
-  margin-top: 0.75rem;
-}
 
 .camera-recording-status {
   margin: 0;

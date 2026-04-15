@@ -24,9 +24,9 @@ function EditorToolScreen({
       {controls}
 
       {actions ? (
-        <div className="card-actions preset-sizes-screen-actions">{actions}</div>
+        <div className="card-actions editor-actions editor-actions--inline preset-sizes-screen-actions">{actions}</div>
       ) : (
-        <div className="card-actions preset-sizes-screen-actions">
+        <div className="card-actions editor-actions editor-actions--inline preset-sizes-screen-actions">
           <button type="button" className="btn-secondary" onClick={onCancel}>
             {cancelLabel}
           </button>

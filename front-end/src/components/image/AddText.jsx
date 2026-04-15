@@ -301,7 +301,7 @@ function AddText({ imageSrc, onApply, onCancel, applyError = null }) {
               step={1}
               value={fontSize}
               onChange={(e) => setFontSize(e.target.value)}
-              className="text-input add-text-size-input"
+              className="text-input editor-number-input add-text-size-input"
             />
             <input
               type="range"
@@ -310,7 +310,7 @@ function AddText({ imageSrc, onApply, onCancel, applyError = null }) {
               step={1}
               value={safeUiFontSize}
               onChange={(e) => setFontSize(e.target.value)}
-              className="add-text-size-slider"
+              className="add-text-size-slider editor-slider"
             />
             <p className="add-text-size-help">
               Scale {safeUiFontSize} (~{backendFontSize}px on the full image; preview matches export).

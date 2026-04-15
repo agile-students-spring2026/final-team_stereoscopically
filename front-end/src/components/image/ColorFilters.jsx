@@ -76,7 +76,7 @@ function ColorFilters({ imageSrc, mediaId, onApply, onCancel, applyError }) {
           </p>
         )}
         <div>
-          <label>
+          <label className="editor-range-field">
             Brightness: {brightness}%
             <input
               type="range"
@@ -84,12 +84,12 @@ function ColorFilters({ imageSrc, mediaId, onApply, onCancel, applyError }) {
               max="200"
               value={brightness}
               onChange={(e) => setBrightness(Number(e.target.value))}
-              className="slider-wrapper"
+              className="slider-wrapper editor-slider"
             />
           </label>
         </div>
         <div>
-          <label>
+          <label className="editor-range-field">
             Contrast: {contrast}%
             <input
               type="range"
@@ -97,12 +97,12 @@ function ColorFilters({ imageSrc, mediaId, onApply, onCancel, applyError }) {
               max="200"
               value={contrast}
               onChange={(e) => setContrast(Number(e.target.value))}
-              className="slider-wrapper"
+              className="slider-wrapper editor-slider"
             />
           </label>
         </div>
         <div>
-          <label>
+          <label className="editor-range-field">
             Saturation: {saturation}%
             <input
               type="range"
@@ -110,12 +110,12 @@ function ColorFilters({ imageSrc, mediaId, onApply, onCancel, applyError }) {
               max="200"
               value={saturation}
               onChange={(e) => setSaturation(Number(e.target.value))}
-              className="slider-wrapper"
+              className="slider-wrapper editor-slider"
             />
           </label>
         </div>
         <div>
-          <label>
+          <label className="editor-range-field">
             Sharpness: {sharpness}%
             <input
               type="range"
@@ -123,7 +123,7 @@ function ColorFilters({ imageSrc, mediaId, onApply, onCancel, applyError }) {
               max="200"
               value={sharpness}
               onChange={(e) => setSharpness(Number(e.target.value))}
-              className="slider-wrapper"
+              className="slider-wrapper editor-slider"
             />
           </label>
         </div>

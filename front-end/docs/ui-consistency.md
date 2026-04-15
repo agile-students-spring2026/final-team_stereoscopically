@@ -22,6 +22,18 @@ Use these classes for all editor-focused screens going forward:
   - bottom action row (Cancel + Export/Apply)
 - `editor-tool-screen`
   - shared wrapper for sub-tool pages
+- `editor-actions`
+  - shared action-row base for editor and tool controls
+- `editor-actions--stack`
+  - vertical, full-width button layout (tool lists)
+- `editor-actions--inline`
+  - horizontal/wrapping action layout (Cancel/Apply/Export rows)
+- `editor-slider`
+  - shared range slider style for trim, color, and size controls
+- `editor-number-input`
+  - shared number input style for direct value entry fields
+- `editor-range-field`
+  - shared vertical label/value+slider grouping for range controls
 - `editor-preview`
   - preview area base
 - `editor-preview--checkered`

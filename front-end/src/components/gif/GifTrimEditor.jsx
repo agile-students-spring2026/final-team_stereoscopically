@@ -130,7 +130,7 @@ function GifTrimEditor({
                   step={TRIM_STEP}
                   value={draftTrimStart}
                   onChange={(e) => handleStartChange(e.target.value)}
-                  style={{ width: '100%', accentColor: '#ffd60a' }}
+                  className="editor-slider"
                 />
               </label>
 
@@ -143,7 +143,7 @@ function GifTrimEditor({
                   step={TRIM_STEP}
                   value={draftTrimEnd}
                   onChange={(e) => handleEndChange(e.target.value)}
-                  style={{ width: '100%', accentColor: '#ffd60a' }}
+                  className="editor-slider"
                 />
               </label>
             </>

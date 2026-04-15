@@ -14,7 +14,7 @@ function GifToolPlaceholder({ title, description, onBack, onCancel }) {
         </EditorStatus>
       </div>
 
-      <div className="card-actions preset-sizes-screen-actions">
+      <div className="card-actions editor-actions editor-actions--inline preset-sizes-screen-actions">
         <button type="button" className="btn-secondary" onClick={onBack}>
           Back
         </button>
