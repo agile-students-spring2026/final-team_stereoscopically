@@ -8,10 +8,10 @@ const useGifConversion = () => {
     return trimVideoService(videoFile, trimStart, trimEnd)
   }, [])
 
-  const exportGif = useCallback(async (mediaId) => {
+  const exportGif = useCallback(async (mediaId, playbackRate) => {
     setIsProcessing(true)
     try {
-      const result = await exportGifToBackend(mediaId)
+      const result = await exportGifToBackend(mediaId, playbackRate)
       if (result?.downloadUrl) {
         const a = document.createElement('a')
         a.href = result.downloadUrl

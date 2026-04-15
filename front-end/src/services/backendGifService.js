@@ -70,16 +70,21 @@ export const applyVideoFilter = async (videoFile, preset) => {
   }
 }
 
-export const exportGifToBackend = async (mediaId) => {
+export const exportGifToBackend = async (mediaId, playbackRate) => {
   if (!mediaId) throw new Error('Missing media ID for export')
 
-  const payload = await postJson({
+  const payload = { mediaId }
+  if (Number.isFinite(playbackRate)) {
+    payload.playbackRate = playbackRate
+  }
+
+  const responsePayload = await postJson({
     path: '/api/export/gif',
-    payload: { mediaId },
+    payload,
     fallbackErrorMessage: 'GIF export failed',
   })
 
-  const result = payload?.data ?? payload
+  const result = responsePayload?.data ?? responsePayload
   return {
     id: result?.id ?? null,
     url: result?.url ?? null,

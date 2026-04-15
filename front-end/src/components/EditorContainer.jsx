@@ -104,6 +104,13 @@ function EditorContainer() {
     setGifFlowState((prev) => setGifFlowSelectedSpeed(prev, nextSpeedPlaybackRate))
   }, [])
 
+  const handleGifExport = useCallback(
+    async (mediaId, selectedSpeedPlaybackRate) => {
+      return exportGif(mediaId, selectedSpeedPlaybackRate)
+    },
+    [exportGif]
+  )
+
   const handleImageSelect = async (file) => {
     if (!file) return
 
@@ -354,7 +361,7 @@ function EditorContainer() {
           selectedSpeedPlaybackRate={gifFlowState.selectedSpeedPlaybackRate}
           onCancel={handleBackToUpload}
           onCreateGif={createGif}
-          onExportGif={exportGif}
+          onExportGif={handleGifExport}
     onOpenResize={() => openGifTool(GIF_FLOW_TOOLS.RESIZE)}
       onOpenFilters={() => openGifTool(GIF_FLOW_TOOLS.FILTERS_MAIN)}
       />

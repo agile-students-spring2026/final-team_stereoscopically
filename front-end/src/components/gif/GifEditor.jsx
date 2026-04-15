@@ -247,7 +247,7 @@ const GifEditor = ({
             <button
                 type="button"
                 className="btn-primary"
-                onClick={() => onExportGif(backendResult.id)}
+                onClick={() => onExportGif(backendResult.id, selectedSpeedPlaybackRate)}
                 disabled={isProcessing}
             >
                 Download GIF
