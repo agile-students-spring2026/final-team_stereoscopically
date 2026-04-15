@@ -52,6 +52,7 @@ function PresetSizes({
   return (
     <EditorToolScreen
       title="Resize"
+      subtitle="Choose a size and border color, then apply."
       preview={(
         <div className="card gif-resize-preview-card preview-box-checkered editor-preview--checkered">
           {imageSrc ? (
@@ -87,7 +88,7 @@ function PresetSizes({
             )
           })}
 
-          <div className="preset-letterbox" style={{ padding: '0.75rem 0 0 0' }}>
+          <div className="preset-letterbox resize-border-controls">
             <p className="preset-letterbox-label">Border color</p>
             <div className="preset-letterbox-row">
               {LETTERBOX_SWATCHES.map(({ id, label, value }) => {

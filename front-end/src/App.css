@@ -600,6 +600,10 @@
   padding: 0.75rem 1rem;
 }
 
+.resize-border-controls {
+  padding: 0.75rem 0 0 0;
+}
+
 .preset-letterbox-label {
   margin: 0;
   font-size: 0.85rem;

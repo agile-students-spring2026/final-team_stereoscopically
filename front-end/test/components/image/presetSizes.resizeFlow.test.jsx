@@ -41,6 +41,7 @@ describe('PresetSizes resize flow', () => {
     )
 
     expect(container.textContent).toContain('Resize')
+  expect(container.textContent).toContain('Choose a size and border color, then apply.')
     expect(container.querySelector('img[alt="Resize preview"]')).toBeTruthy()
 
     const labels = Array.from(container.querySelectorAll('button')).map((button) => button.textContent?.trim())
@@ -64,22 +65,22 @@ describe('PresetSizes resize flow', () => {
       />,
     )
 
-  const getButtonExact = (label) => Array.from(container.querySelectorAll('button')).find((button) => button.textContent?.trim() === label)
-  const getButtonContains = (label) => Array.from(container.querySelectorAll('button')).find((button) => button.textContent?.includes(label))
+    const getButtonExact = (label) => Array.from(container.querySelectorAll('button')).find((button) => button.textContent?.trim() === label)
+    const getButtonContains = (label) => Array.from(container.querySelectorAll('button')).find((button) => button.textContent?.includes(label))
 
-  const whatsappButton = getButtonContains('WhatsApp Sticker')
-  expect(whatsappButton).toBeTruthy()
-  whatsappButton?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
-  await Promise.resolve()
+    const whatsappButton = getButtonContains('WhatsApp Sticker')
+    expect(whatsappButton).toBeTruthy()
+    whatsappButton?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+    await Promise.resolve()
 
-  const whiteButton = getButtonExact('White')
-  expect(whiteButton).toBeTruthy()
-  whiteButton?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
-  await Promise.resolve()
+    const whiteButton = getButtonExact('White')
+    expect(whiteButton).toBeTruthy()
+    whiteButton?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+    await Promise.resolve()
 
-  const applyButton = getButtonExact('Apply')
-  expect(applyButton).toBeTruthy()
-  applyButton?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+    const applyButton = getButtonExact('Apply')
+    expect(applyButton).toBeTruthy()
+    applyButton?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
 
     expect(onApply).toHaveBeenCalledWith({
       preset: {

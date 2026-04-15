@@ -47,6 +47,7 @@ describe('GifResizePresets resize flow', () => {
     )
 
     expect(container.textContent).toContain('Resize')
+  expect(container.textContent).toContain('Choose a size and border color, then apply.')
     expect(container.textContent).toContain('Border color')
 
     const labels = Array.from(container.querySelectorAll('button')).map((button) => button.textContent?.trim())

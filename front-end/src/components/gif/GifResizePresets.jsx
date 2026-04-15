@@ -48,6 +48,7 @@ function GifResizePresets({
   return (
     <EditorToolScreen
       title="Resize"
+      subtitle="Choose a size and border color, then apply."
       preview={(
         <div className="card gif-resize-preview-card preview-box-checkered editor-preview--checkered">
           {videoUrl ? (
@@ -79,7 +80,7 @@ function GifResizePresets({
             )
           })}
 
-          <div className="preset-letterbox" style={{ padding: '0.75rem 0 0 0' }}>
+          <div className="preset-letterbox resize-border-controls">
             <p className="preset-letterbox-label">Border color</p>
             <div className="preset-letterbox-row">
               {GIF_RESIZE_BORDER_SWATCHES.map((swatch) => {
@@ -99,12 +100,13 @@ function GifResizePresets({
               })}
             </div>
             <div className="preset-letterbox-custom">
-              <span className="preset-letterbox-custom-label">Color</span>
+              <span className="preset-letterbox-custom-label">Custom</span>
               <input
                 type="color"
                 className="preset-letterbox-color-input"
                 value={selectedBorderColor === 'transparent' ? '#ffffff' : selectedBorderColor}
                 onChange={(event) => setSelectedBorderColor(event.target.value.toLowerCase())}
+                aria-label="Custom border color"
               />
               <span className="add-text-color-value">{selectedBorderColor.toUpperCase()}</span>
             </div>
