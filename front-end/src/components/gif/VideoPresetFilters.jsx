@@ -2,14 +2,7 @@ import { useEffect, useState } from 'react'
 import FilterScreen from '../FilterScreen'
 import EditorStatus from '../EditorStatus'
 import useVideoPreviewUrl from '../../hooks/useVideoPreviewUrl'
-
-const PRESETS = [
-  { id: 'default', label: 'Original' },
-  { id: 'noir', label: 'Noir' },
-  { id: 'sepia', label: 'Sepia' },
-  { id: 'vivid', label: 'Vivid' },
-  { id: 'fade', label: 'Fade' },
-]
+import { PRESET_FILTER_OPTIONS } from '../../constants/editorPresets'
 
 function VideoPresetFilters({
   videoFile,
@@ -70,7 +63,7 @@ function VideoPresetFilters({
         </div>
       ) : null}
     >
-      {PRESETS.map(({ id, label }) => (
+      {PRESET_FILTER_OPTIONS.map(({ id, label }) => (
         <button
           key={id}
           type="button"

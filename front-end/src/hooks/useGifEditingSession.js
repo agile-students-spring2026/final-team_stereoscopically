@@ -6,6 +6,12 @@ import {
   GIF_FLOW_TOOLS,
   sanitizeGifTextSettings,
 } from '../components/gif/gifFlowState'
+import {
+  DEFAULT_GIF_RESIZE_BORDER_COLOR,
+  DEFAULT_GIF_RESIZE_PRESET,
+  GIF_BORDER_COLOR_REGEX,
+  VALID_GIF_RESIZE_PRESETS,
+} from '../components/gif/gifEditorConstants'
 import { downloadFile } from '../utils/downloadFile'
 
 /**
@@ -25,11 +31,6 @@ export const resolveGifTrimRange = (trimRange, totalDuration) => {
 }
 
 const DEFAULT_GIF_TEXT_SETTINGS = createInitialGifTextSettings()
-
-const DEFAULT_GIF_RESIZE_PRESET = 'square'
-const DEFAULT_GIF_RESIZE_BORDER_COLOR = '#000000'
-const VALID_GIF_RESIZE_PRESETS = new Set(['square', 'landscape', 'portrait'])
-const GIF_BORDER_COLOR_REGEX = /^#[0-9A-Fa-f]{6}$/
 
 /**
  * useGifEditingSession

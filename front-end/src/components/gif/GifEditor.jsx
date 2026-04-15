@@ -3,21 +3,13 @@ import { DEFAULT_GIF_SPEED_PLAYBACK_RATE } from './gifSpeedOptions'
 import { resolveGifTrimRange } from '../../hooks/useGifEditingSession'
 import EditorStatus from '../EditorStatus'
 import useVideoPreviewUrl from '../../hooks/useVideoPreviewUrl'
-
-const DEFAULT_GIF_RESIZE_PRESET = 'square'
-const DEFAULT_GIF_TEXT_OVERLAY_SETTINGS = {
-    text: '',
-    size: 32,
-    color: '#FFFFFF',
-    position: { x: 50, y: 50 },
-}
-const GIF_TEXT_COLOR_REGEX = /^#[0-9A-Fa-f]{6}$/
-const GIF_RESIZE_PRESET_FRAME_CLASSES = {
-    square: 'gif-preview-frame--square',
-    landscape: 'gif-preview-frame--landscape',
-    portrait: 'gif-preview-frame--portrait',
-}
-const DEFAULT_GIF_RESIZE_BORDER_COLOR = '#000000'
+import {
+    DEFAULT_GIF_RESIZE_BORDER_COLOR,
+    DEFAULT_GIF_RESIZE_PRESET,
+    DEFAULT_GIF_TEXT_OVERLAY_SETTINGS,
+    GIF_RESIZE_PRESET_FRAME_CLASSES,
+    GIF_TEXT_COLOR_REGEX,
+} from './gifEditorConstants'
 const clamp = (value, min, max) => Math.min(Math.max(value, min), max)
 
 const GifEditor = ({

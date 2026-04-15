@@ -6,6 +6,7 @@ import {
   cropImageFromBackend,
   exportImageFromBackend,
 } from '../services/backendImageService'
+import { downloadFile } from '../utils/downloadFile'
 
 const MIN_BACKEND_FONT_SIZE = 8
 const MAX_BACKEND_FONT_SIZE = 2000
@@ -323,12 +324,7 @@ const useImageEditingSession = ({
 
       setLatestExportResult(exported)
       setLastExportLetterbox(letterboxColor)
-      const link = document.createElement('a')
-      link.href = exported.downloadUrl || exported.url
-      link.download = exported.fileName || 'sticker.png'
-      document.body.appendChild(link)
-      link.click()
-      link.remove()
+      downloadFile(exported.downloadUrl || exported.url, exported.fileName || 'sticker.png')
       return true
     } catch (err) {
       console.error('Download export failed:', err)

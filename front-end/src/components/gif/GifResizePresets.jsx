@@ -2,33 +2,12 @@ import { useEffect, useState } from 'react'
 import EditorToolScreen from '../EditorToolScreen'
 import EditorStatus from '../EditorStatus'
 import useVideoPreviewUrl from '../../hooks/useVideoPreviewUrl'
-
-const DEFAULT_GIF_RESIZE_PRESET = 'square'
-
-const GIF_RESIZE_PRESET_OPTIONS = [
-  {
-    key: 'square',
-    label: 'Square',
-    subtitle: '1:1',
-  },
-  {
-    key: 'landscape',
-    label: 'Landscape',
-    subtitle: '16:9',
-  },
-  {
-    key: 'portrait',
-    label: 'Portrait',
-    subtitle: '9:16',
-  },
-]
-
-const DEFAULT_GIF_RESIZE_BORDER_COLOR = '#000000'
-const GIF_RESIZE_PRESET_FRAME_CLASSES = {
-  square: 'gif-preview-frame--square',
-  landscape: 'gif-preview-frame--landscape',
-  portrait: 'gif-preview-frame--portrait',
-}
+import {
+  DEFAULT_GIF_RESIZE_BORDER_COLOR,
+  DEFAULT_GIF_RESIZE_PRESET,
+  GIF_RESIZE_PRESET_FRAME_CLASSES,
+  GIF_RESIZE_PRESET_OPTIONS,
+} from './gifEditorConstants'
 
 function GifResizePresets({
   initialPreset = DEFAULT_GIF_RESIZE_PRESET,
