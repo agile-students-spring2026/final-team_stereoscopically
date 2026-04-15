@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
+import EditorToolScreen from '../EditorToolScreen'
 
 const DEFAULT_GIF_RESIZE_PRESET = 'square'
 
@@ -91,69 +92,70 @@ function GifResizePresets({
   }
 
   return (
-    <div className="preset-sizes-screen">
-      <div className="screen-header screen-header-column">
-        <h2 className="screen-title">Resize</h2>
-      </div>
-
-      <div className="card gif-resize-preview-card preview-box-checkered">
-        {videoUrl ? (
-          <div
-            className={`gif-preview-frame ${previewFrameClassName}`}
-            style={{ backgroundColor: selectedBorderColor }}
-          >
-            <video src={videoUrl} controls className="preview-video gif-preview-video" />
-          </div>
-        ) : (
-          <p className="preview-label" style={{ margin: 0, textAlign: 'center' }}>
-            Upload a video to preview resize.
-          </p>
-        )}
-      </div>
-
-      <div className="card filter-main-buttons">
-        {GIF_RESIZE_PRESET_OPTIONS.map((option) => {
-          const isActive = selectedPreset === option.key
-          return (
-            <button
-              key={option.key}
-              type="button"
-              className={isActive ? 'btn-secondary active gif-preset-option is-selected' : 'btn-secondary gif-preset-option'}
-              aria-pressed={isActive}
-              onClick={() => setSelectedPreset(option.key)}
+    <EditorToolScreen
+      title="Resize"
+      preview={(
+        <div className="card gif-resize-preview-card preview-box-checkered">
+          {videoUrl ? (
+            <div
+              className={`gif-preview-frame ${previewFrameClassName}`}
+              style={{ backgroundColor: selectedBorderColor }}
             >
-              {option.label} ({option.subtitle})
-            </button>
-          )
-        })}
+              <video src={videoUrl} controls className="preview-video gif-preview-video" />
+            </div>
+          ) : (
+            <p className="preview-label" style={{ margin: 0, textAlign: 'center' }}>
+              Upload a video to preview resize.
+            </p>
+          )}
+        </div>
+      )}
+      controls={(
+        <div className="card filter-main-buttons">
+          {GIF_RESIZE_PRESET_OPTIONS.map((option) => {
+            const isActive = selectedPreset === option.key
+            return (
+              <button
+                key={option.key}
+                type="button"
+                className={isActive ? 'btn-secondary active gif-preset-option is-selected' : 'btn-secondary gif-preset-option'}
+                aria-pressed={isActive}
+                onClick={() => setSelectedPreset(option.key)}
+              >
+                {option.label} ({option.subtitle})
+              </button>
+            )
+          })}
 
-        <div className="preset-letterbox" style={{ padding: '0.75rem 0 0 0' }}>
-          <p className="preset-letterbox-label">Border color</p>
-          <div className="preset-letterbox-custom">
-            <span className="preset-letterbox-custom-label">Color</span>
-            <input
-              type="color"
-              className="preset-letterbox-color-input"
-              value={selectedBorderColor}
-              onChange={(event) => setSelectedBorderColor(event.target.value)}
-            />
-            <span className="add-text-color-value">{selectedBorderColor.toUpperCase()}</span>
+          <div className="preset-letterbox" style={{ padding: '0.75rem 0 0 0' }}>
+            <p className="preset-letterbox-label">Border color</p>
+            <div className="preset-letterbox-custom">
+              <span className="preset-letterbox-custom-label">Color</span>
+              <input
+                type="color"
+                className="preset-letterbox-color-input"
+                value={selectedBorderColor}
+                onChange={(event) => setSelectedBorderColor(event.target.value)}
+              />
+              <span className="add-text-color-value">{selectedBorderColor.toUpperCase()}</span>
+            </div>
           </div>
         </div>
-      </div>
-
-      <div className="card-actions preset-sizes-screen-actions">
-        <button type="button" className="btn-secondary" onClick={onCancel}>
-          Cancel
-        </button>
-        <button type="button" className="btn-secondary" onClick={handleReset}>
-          Reset
-        </button>
-        <button type="button" className="btn-primary" onClick={handleApply}>
-          Apply
-        </button>
-      </div>
-    </div>
+      )}
+      actions={(
+        <>
+          <button type="button" className="btn-secondary" onClick={onCancel}>
+            Cancel
+          </button>
+          <button type="button" className="btn-secondary" onClick={handleReset}>
+            Reset
+          </button>
+          <button type="button" className="btn-primary" onClick={handleApply}>
+            Apply
+          </button>
+        </>
+      )}
+    />
   )
 }
 

@@ -52,6 +52,7 @@ Components are organized by media mode:
   - `GifTextOverlayEditor.jsx`
 - `src/components/` (shared / orchestration)
   - `EditorContainer.jsx`
+  - `EditorToolScreen.jsx`
   - `MediaEntry.jsx`
   - `FilterMain.jsx`
   - `FilterScreen.jsx`
@@ -115,6 +116,7 @@ Components are organized by media mode:
 
 **Components**
 - `EditorContainer.jsx`
+- `EditorToolScreen.jsx`
 - `MediaEntry.jsx`
 - `FilterMain.jsx`
 - `FilterScreen.jsx`
@@ -125,6 +127,7 @@ Components are organized by media mode:
 - wiring hook state and hook callbacks into child components
 - routing between image and GIF workflows
 - shared filter navigation and layout used across filter screens
+- reusable tool-screen scaffolding used by both image and GIF editor tool pages
 
 **Not responsible for**
 - deep media-specific editing behavior

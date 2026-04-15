@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
+import EditorToolScreen from '../EditorToolScreen'
 
 const TRIM_STEP = 0.1
 
@@ -65,113 +66,114 @@ function GifTrimEditor({
   }
 
   return (
-    <div className="preset-sizes-screen">
-      <div className="screen-header screen-header-column">
-        <h2 className="screen-title">Trim</h2>
-      </div>
+    <EditorToolScreen
+      title="Trim"
+      preview={(
+        <div className="card" style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+          {videoUrl ? (
+            <video
+              ref={videoRef}
+              src={videoUrl}
+              controls
+              className="preview-video"
+              onLoadedMetadata={() => {
+                const total = Number.isFinite(videoRef.current?.duration)
+                  ? videoRef.current.duration
+                  : 0
 
-      <div className="card" style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-        {videoUrl ? (
-          <video
-            ref={videoRef}
-            src={videoUrl}
-            controls
-            className="preview-video"
-            onLoadedMetadata={() => {
-              const total = Number.isFinite(videoRef.current?.duration)
-                ? videoRef.current.duration
-                : 0
+                const safeStart = Math.min(Math.max(initialTrimStart, 0), total)
+                const candidateEnd = initialTrimEnd > 0 ? initialTrimEnd : total
+                const safeEnd = Math.min(Math.max(candidateEnd, safeStart), total)
 
-              const safeStart = Math.min(Math.max(initialTrimStart, 0), total)
-              const candidateEnd = initialTrimEnd > 0 ? initialTrimEnd : total
-              const safeEnd = Math.min(Math.max(candidateEnd, safeStart), total)
-
-              setDuration(total)
-              setDraftTrimStart(safeStart)
-              setDraftTrimEnd(safeEnd)
-            }}
-            onTimeUpdate={() => {
-              if (draftTrimEnd > 0 && videoRef.current && videoRef.current.currentTime >= draftTrimEnd) {
-                videoRef.current.pause()
-                videoRef.current.currentTime = draftTrimStart
-              }
-            }}
-          />
-        ) : (
-          <p className="preview-label" style={{ margin: 0, textAlign: 'center' }}>
-            Upload a video to start editing.
-          </p>
-        )}
-      </div>
-
-      <div className="card" style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-        {duration > 0 ? (
-          <>
-            <div style={{ display: 'flex', justifyContent: 'center', gap: '60px' }}>
-              <div style={{ textAlign: 'center' }}>
-                <div style={{ fontSize: '0.7rem', color: '#8e8e93', textTransform: 'uppercase' }}>
-                  Start
+                setDuration(total)
+                setDraftTrimStart(safeStart)
+                setDraftTrimEnd(safeEnd)
+              }}
+              onTimeUpdate={() => {
+                if (draftTrimEnd > 0 && videoRef.current && videoRef.current.currentTime >= draftTrimEnd) {
+                  videoRef.current.pause()
+                  videoRef.current.currentTime = draftTrimStart
+                }
+              }}
+            />
+          ) : (
+            <p className="preview-label" style={{ margin: 0, textAlign: 'center' }}>
+              Upload a video to start editing.
+            </p>
+          )}
+        </div>
+      )}
+      controls={(
+        <div className="card" style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+          {duration > 0 ? (
+            <>
+              <div style={{ display: 'flex', justifyContent: 'center', gap: '60px' }}>
+                <div style={{ textAlign: 'center' }}>
+                  <div style={{ fontSize: '0.7rem', color: '#8e8e93', textTransform: 'uppercase' }}>
+                    Start
+                  </div>
+                  <div style={{ fontSize: '1.1rem', fontWeight: '600' }}>{formatTime(draftTrimStart)}</div>
                 </div>
-                <div style={{ fontSize: '1.1rem', fontWeight: '600' }}>{formatTime(draftTrimStart)}</div>
-              </div>
-              <div style={{ textAlign: 'center' }}>
-                <div style={{ fontSize: '0.7rem', color: '#8e8e93', textTransform: 'uppercase' }}>
-                  End
+                <div style={{ textAlign: 'center' }}>
+                  <div style={{ fontSize: '0.7rem', color: '#8e8e93', textTransform: 'uppercase' }}>
+                    End
+                  </div>
+                  <div style={{ fontSize: '1.1rem', fontWeight: '600' }}>{formatTime(draftTrimEnd)}</div>
                 </div>
-                <div style={{ fontSize: '1.1rem', fontWeight: '600' }}>{formatTime(draftTrimEnd)}</div>
               </div>
-            </div>
 
-            <label style={{ display: 'flex', flexDirection: 'column', gap: '4px', fontSize: '0.9rem' }}>
-              Start
-              <input
-                type="range"
-                min={0}
-                max={draftTrimEnd}
-                step={TRIM_STEP}
-                value={draftTrimStart}
-                onChange={(e) => handleStartChange(e.target.value)}
-                style={{ width: '100%', accentColor: '#ffd60a' }}
-              />
-            </label>
+              <label style={{ display: 'flex', flexDirection: 'column', gap: '4px', fontSize: '0.9rem' }}>
+                Start
+                <input
+                  type="range"
+                  min={0}
+                  max={draftTrimEnd}
+                  step={TRIM_STEP}
+                  value={draftTrimStart}
+                  onChange={(e) => handleStartChange(e.target.value)}
+                  style={{ width: '100%', accentColor: '#ffd60a' }}
+                />
+              </label>
 
-            <label style={{ display: 'flex', flexDirection: 'column', gap: '4px', fontSize: '0.9rem' }}>
-              End
-              <input
-                type="range"
-                min={0}
-                max={duration}
-                step={TRIM_STEP}
-                value={draftTrimEnd}
-                onChange={(e) => handleEndChange(e.target.value)}
-                style={{ width: '100%', accentColor: '#ffd60a' }}
-              />
-            </label>
-          </>
-        ) : (
-          <p className="preview-label" style={{ margin: 0, textAlign: 'center' }}>
-            Loading trim controls…
-          </p>
-        )}
-      </div>
-
-      <div className="card-actions preset-sizes-screen-actions">
-        <button type="button" className="btn-secondary" onClick={onCancel}>
-          Cancel
-        </button>
-        <button type="button" className="btn-secondary" onClick={handleReset} disabled={duration <= 0}>
-          Reset
-        </button>
-        <button
-          type="button"
-          className="btn-primary"
-          onClick={handleApply}
-          disabled={duration <= 0 || draftTrimEnd <= draftTrimStart}
-        >
-          Apply
-        </button>
-      </div>
-    </div>
+              <label style={{ display: 'flex', flexDirection: 'column', gap: '4px', fontSize: '0.9rem' }}>
+                End
+                <input
+                  type="range"
+                  min={0}
+                  max={duration}
+                  step={TRIM_STEP}
+                  value={draftTrimEnd}
+                  onChange={(e) => handleEndChange(e.target.value)}
+                  style={{ width: '100%', accentColor: '#ffd60a' }}
+                />
+              </label>
+            </>
+          ) : (
+            <p className="preview-label" style={{ margin: 0, textAlign: 'center' }}>
+              Loading trim controls…
+            </p>
+          )}
+        </div>
+      )}
+      actions={(
+        <>
+          <button type="button" className="btn-secondary" onClick={onCancel}>
+            Cancel
+          </button>
+          <button type="button" className="btn-secondary" onClick={handleReset} disabled={duration <= 0}>
+            Reset
+          </button>
+          <button
+            type="button"
+            className="btn-primary"
+            onClick={handleApply}
+            disabled={duration <= 0 || draftTrimEnd <= draftTrimStart}
+          >
+            Apply
+          </button>
+        </>
+      )}
+    />
   )
 }
 
