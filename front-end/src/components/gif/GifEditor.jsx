@@ -4,6 +4,7 @@ const GifEditor = ({
     videoFile,
     onCancel,
     onCreateGif,
+    onOpenTrim,
     onOpenResize,
     onOpenFilters,
     onExportGif,
@@ -192,7 +193,7 @@ const GifEditor = ({
             )}
 
             <div className="card video-editor-actions">
-                <button type="button" className={`btn-primary ${showTrim ? 'active' : ''}`} onClick={() => setShowTrim((prev) => !prev)}>
+                <button type="button" className="btn-primary" onClick={onOpenTrim}>
                     Trim
                 </button>
                 <button type="button" className="btn-primary" onClick={onOpenResize}>

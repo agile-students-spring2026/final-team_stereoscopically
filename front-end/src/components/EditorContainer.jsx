@@ -30,6 +30,7 @@ const SCREENS = {
 
 const GIF_TOOLS = {
   EDITOR: 'editor',
+  TRIM: 'trim',
   FILTERS_MAIN: 'filters-main',
   PRESET_FILTERS: 'preset-filters',
   TEXT: 'text',
@@ -352,6 +353,7 @@ function EditorContainer() {
           onCancel={handleBackToUpload}
           onCreateGif={createGif}
           onExportGif={exportGif}
+      onOpenTrim={() => openGifTool(GIF_TOOLS.TRIM)}
       onOpenResize={() => openGifTool(GIF_TOOLS.RESIZE)}
           onOpenFilters={() => openGifTool(GIF_TOOLS.FILTERS_MAIN)}
       />
@@ -468,6 +470,17 @@ function EditorContainer() {
           <GifToolPlaceholder
             title="Resize"
             description="Resize controls for GIFs will be added in the next step."
+            onBack={resetGifToolState}
+            onCancel={resetGifToolState}
+          />
+        )
+      }
+
+      if (activeGifTool === GIF_TOOLS.TRIM) {
+        return (
+          <GifToolPlaceholder
+            title="Trim"
+            description="Trim controls for GIFs will be added in the next step."
             onBack={resetGifToolState}
             onCancel={resetGifToolState}
           />
