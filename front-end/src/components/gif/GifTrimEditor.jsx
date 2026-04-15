@@ -1,6 +1,7 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useRef, useState } from 'react'
 import EditorToolScreen from '../EditorToolScreen'
 import EditorStatus from '../EditorStatus'
+import useVideoPreviewUrl from '../../hooks/useVideoPreviewUrl'
 
 const TRIM_STEP = 0.1
 
@@ -16,21 +17,7 @@ function GifTrimEditor({
   const [draftTrimEnd, setDraftTrimEnd] = useState(0)
 
   const videoRef = useRef(null)
-
-  const videoUrl = useMemo(() => {
-    if (!videoFile) return null
-    if (videoFile instanceof File) return URL.createObjectURL(videoFile)
-    return videoFile?.url || videoFile?.src || null
-  }, [videoFile])
-
-  useEffect(() => {
-    if (!(videoFile instanceof File) || !videoUrl) return
-    return () => {
-      if (import.meta.env.PROD) {
-        URL.revokeObjectURL(videoUrl)
-      }
-    }
-  }, [videoFile, videoUrl])
+  const videoUrl = useVideoPreviewUrl(videoFile)
 
   const formatTime = (s) => `${s.toFixed(1)}s`
 

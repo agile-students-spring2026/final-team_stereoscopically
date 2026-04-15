@@ -1,6 +1,7 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useState } from 'react'
 import EditorToolScreen from '../EditorToolScreen'
 import EditorStatus from '../EditorStatus'
+import useVideoPreviewUrl from '../../hooks/useVideoPreviewUrl'
 
 const DEFAULT_GIF_RESIZE_PRESET = 'square'
 
@@ -29,15 +30,6 @@ const GIF_RESIZE_PRESET_FRAME_CLASSES = {
   portrait: 'gif-preview-frame--portrait',
 }
 
-const resolveVideoUrl = (mediaValue) => {
-  if (!mediaValue) return null
-  if (typeof mediaValue === 'string') return mediaValue
-  if (typeof mediaValue === 'object') {
-    return mediaValue.url || mediaValue.src || mediaValue.source || mediaValue.fullUrl || null
-  }
-  return null
-}
-
 function GifResizePresets({
   initialPreset = DEFAULT_GIF_RESIZE_PRESET,
   initialBorderColor = DEFAULT_GIF_RESIZE_BORDER_COLOR,
@@ -48,17 +40,7 @@ function GifResizePresets({
   const [selectedPreset, setSelectedPreset] = useState(initialPreset)
   const [selectedBorderColor, setSelectedBorderColor] = useState(initialBorderColor)
 
-  const videoUrl = useMemo(() => {
-    if (!videoFile) return null
-    if (videoFile instanceof File) {
-      try {
-        return URL.createObjectURL(videoFile)
-      } catch {
-        return null
-      }
-    }
-    return resolveVideoUrl(videoFile)
-  }, [videoFile])
+  const videoUrl = useVideoPreviewUrl(videoFile)
 
   const previewFrameClassName =
     GIF_RESIZE_PRESET_FRAME_CLASSES[selectedPreset] || GIF_RESIZE_PRESET_FRAME_CLASSES.square
@@ -70,15 +52,6 @@ function GifResizePresets({
   useEffect(() => {
     setSelectedBorderColor(initialBorderColor)
   }, [initialBorderColor])
-
-  useEffect(() => {
-    if (!(videoFile instanceof File) || !videoUrl) return
-    return () => {
-      if (import.meta.env.PROD) {
-        URL.revokeObjectURL(videoUrl)
-      }
-    }
-  }, [videoFile, videoUrl])
 
   const handleApply = () => {
     onApply?.({

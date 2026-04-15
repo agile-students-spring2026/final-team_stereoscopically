@@ -6,6 +6,7 @@ import {
   getContainedContentFrame,
   getSafeFrame,
 } from '../../utils/overlayPlacement'
+import useVideoPreviewUrl from '../../hooks/useVideoPreviewUrl'
 
 const DEFAULT_TEXT_OVERLAY_SETTINGS = {
   text: '',
@@ -16,15 +17,6 @@ const DEFAULT_TEXT_OVERLAY_SETTINGS = {
 
 const MIN_UI_TEXT_SIZE = 8
 const MAX_UI_TEXT_SIZE = 120
-
-const resolveVideoUrl = (mediaValue) => {
-  if (!mediaValue) return null
-  if (typeof mediaValue === 'string') return mediaValue
-  if (typeof mediaValue === 'object') {
-    return mediaValue.url || mediaValue.src || mediaValue.source || mediaValue.fullUrl || null
-  }
-  return null
-}
 
 function GifTextOverlayEditor({ videoFile, initialSettings, onBack, onCancel, onApply, onChange }) {
   const safeInitial = useMemo(() => ({
@@ -45,32 +37,11 @@ function GifTextOverlayEditor({ videoFile, initialSettings, onBack, onCancel, on
   const previewVideoRef = useRef(null)
   const placementDragActiveRef = useRef(false)
 
-  const videoUrl = useMemo(() => {
-    if (!videoFile) return null
-    if (videoFile instanceof File) {
-      try {
-        return URL.createObjectURL(videoFile)
-      } catch {
-        return null
-      }
-    }
-
-    return resolveVideoUrl(videoFile)
-  }, [videoFile])
+  const videoUrl = useVideoPreviewUrl(videoFile)
 
   useEffect(() => {
     setDraft(safeInitial)
   }, [safeInitial])
-
-  useEffect(() => {
-    if (!(videoFile instanceof File) || !videoUrl) return
-
-    return () => {
-      if (import.meta.env.PROD) {
-        URL.revokeObjectURL(videoUrl)
-      }
-    }
-  }, [videoFile, videoUrl])
 
   useEffect(() => {
     const container = previewContainerRef.current

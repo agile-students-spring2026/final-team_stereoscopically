@@ -1,7 +1,8 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { DEFAULT_GIF_SPEED_PLAYBACK_RATE } from './gifSpeedOptions'
 import { resolveGifTrimRange } from '../../hooks/useGifEditingSession'
 import EditorStatus from '../EditorStatus'
+import useVideoPreviewUrl from '../../hooks/useVideoPreviewUrl'
 
 const DEFAULT_GIF_RESIZE_PRESET = 'square'
 const DEFAULT_GIF_TEXT_OVERLAY_SETTINGS = {
@@ -71,36 +72,11 @@ const GifEditor = ({
 
     const videoRef = useRef(null)
 
-    const resolveVideoUrl = (mediaValue) => {
-        if (!mediaValue) return null
-        if (typeof mediaValue === 'string') return mediaValue
-        if (typeof mediaValue === 'object') {
-            return mediaValue.url || mediaValue.src || mediaValue.source || mediaValue.fullUrl || null
-        }
-        return null
-    }
+    const handlePreviewUrlError = useCallback((error) => {
+        console.error('[GifEditor] Unable to create preview for uploaded video', error)
+    }, [])
 
-    const videoUrl = useMemo(() => {
-        if (!videoFile) return null
-        if (videoFile instanceof File) {
-            try {
-                return URL.createObjectURL(videoFile)
-            } catch (error) {
-                console.error('[GifEditor] Unable to create preview for uploaded video', error)
-                return null
-            }
-        }
-        return resolveVideoUrl(videoFile)
-    }, [videoFile])
-
-    useEffect(() => {
-        if (!(videoFile instanceof File) || !videoUrl) return
-        return () => {
-            if (import.meta.env.PROD) {
-                URL.revokeObjectURL(videoUrl)
-            }
-        }
-    }, [videoFile, videoUrl])
+    const videoUrl = useVideoPreviewUrl(videoFile, { onObjectUrlError: handlePreviewUrlError })
 
     useEffect(() => {
         setStatusMessage(null)

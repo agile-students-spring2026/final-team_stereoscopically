@@ -1,6 +1,7 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useState } from 'react'
 import FilterScreen from '../FilterScreen'
 import EditorStatus from '../EditorStatus'
+import useVideoPreviewUrl from '../../hooks/useVideoPreviewUrl'
 
 const PRESETS = [
   { id: 'default', label: 'Original' },
@@ -24,20 +25,7 @@ function VideoPresetFilters({
   const [isApplying, setIsApplying] = useState(false)
   const [applyError, setApplyError] = useState(null)
 
-  const videoUrl = useMemo(() => {
-    if (!videoFile) return null
-    if (videoFile instanceof File) return URL.createObjectURL(videoFile)
-    return videoFile?.url || null
-  }, [videoFile])
-
-  useEffect(() => {
-    if (!(videoFile instanceof File) || !videoUrl) return
-    return () => {
-      if (import.meta.env.PROD) {
-        URL.revokeObjectURL(videoUrl)
-      }
-    }
-  }, [videoFile, videoUrl])
+  const videoUrl = useVideoPreviewUrl(videoFile)
 
   useEffect(() => {
     setSelectedStyle('default')

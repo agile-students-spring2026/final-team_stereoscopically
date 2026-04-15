@@ -84,6 +84,8 @@ If a media type lacks a field (for example, font family), keep the remaining ord
 
 For placement math (frame fitting, clamping, fallback sizing), reuse `src/utils/overlayPlacement.js` instead of duplicating helpers in individual text editor components.
 
+For GIF/video preview source handling (File object URLs vs persisted backend URLs), reuse `src/hooks/useVideoPreviewUrl.js` rather than repeating URL resolution and revoke logic in each component.
+
 ## Spacing and token guidance
 
 Use CSS custom properties from `src/index.css` (Phase 1 added):
