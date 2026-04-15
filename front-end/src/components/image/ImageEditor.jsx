@@ -2,6 +2,8 @@ import { useCallback, useState } from 'react'
 import ImageCropper from './ImageCropper'
 import EditorStatus from '../EditorStatus'
 
+const RESET_CROP_WARNING = 'Reset crop will remove all edits made in this session. Continue?'
+
 const ImageEditor = ({
   imageSrc,
   cropSourceImageSrc = null,
@@ -59,6 +61,11 @@ const ImageEditor = ({
   }
 
   const handleResetCrop = async () => {
+    const shouldReset = window.confirm(RESET_CROP_WARNING)
+    if (!shouldReset) {
+      return
+    }
+
     try {
       setCropError(null)
       await onResetCrop?.()

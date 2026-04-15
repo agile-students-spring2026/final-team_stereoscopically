@@ -59,6 +59,7 @@ describe('editor consistency contracts', () => {
 
   it('shows Reset Crop in crop mode when crop history exists and calls reset handler', async () => {
     const onResetCrop = vi.fn().mockResolvedValue(undefined)
+    const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(true)
 
     const { container, cleanup } = await renderComponentToDom(
       <ImageEditor
@@ -87,7 +88,45 @@ describe('editor consistency contracts', () => {
     resetCropButton.dispatchEvent(new MouseEvent('click', { bubbles: true }))
     await Promise.resolve()
 
+    expect(confirmSpy).toHaveBeenCalledWith('Reset crop will remove all edits made in this session. Continue?')
     expect(onResetCrop).toHaveBeenCalledTimes(1)
+
+    cleanup()
+  })
+
+  it('does not reset crop when reset confirmation is canceled', async () => {
+    const onResetCrop = vi.fn().mockResolvedValue(undefined)
+    const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(false)
+
+    const { container, cleanup } = await renderComponentToDom(
+      <ImageEditor
+        imageSrc="https://example.com/image.png"
+        onCropApply={vi.fn()}
+        onResetCrop={onResetCrop}
+        onOpenFilters={vi.fn()}
+        onBack={vi.fn()}
+        onSize={vi.fn()}
+        onExport={vi.fn()}
+        showResetCrop
+      />,
+    )
+
+    const getButton = (label) => Array.from(container.querySelectorAll('button')).find((button) => button.textContent?.trim() === label)
+
+    const cropButton = getButton('Crop')
+    expect(cropButton).toBeTruthy()
+
+    cropButton.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+    await Promise.resolve()
+
+    const resetCropButton = getButton('Reset Crop')
+    expect(resetCropButton).toBeTruthy()
+
+    resetCropButton.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+    await Promise.resolve()
+
+    expect(confirmSpy).toHaveBeenCalledWith('Reset crop will remove all edits made in this session. Continue?')
+    expect(onResetCrop).not.toHaveBeenCalled()
 
     cleanup()
   })
