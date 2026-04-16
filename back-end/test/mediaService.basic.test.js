@@ -91,4 +91,124 @@ describe('mediaService basic flows', () => {
 			code: 'INVALID_TRIM_RANGE',
 		})
 	})
+
+	it('returns INVALID_TEXT_OVERLAY for malformed text overlay payload', async () => {
+		const result = await trimVideo({
+			body: {
+				trimStart: 0,
+				trimEnd: 1,
+				textOverlay: '{bad-json',
+			},
+			file: {
+				buffer: Buffer.from('fake-video-bytes'),
+				mimetype: 'video/mp4',
+				size: 16,
+			},
+		})
+
+		expect(result.error).to.include({
+			status: 400,
+			code: 'INVALID_TEXT_OVERLAY',
+		})
+	})
+
+	it('returns INVALID_TEXT_OVERLAY_POSITION when text overlay position is out of range', async () => {
+		const result = await trimVideo({
+			body: {
+				trimStart: 0,
+				trimEnd: 1,
+				textOverlay: JSON.stringify({
+					text: 'hello',
+					size: 24,
+					color: '#ffffff',
+					position: { x: 140, y: 40 },
+				}),
+			},
+			file: {
+				buffer: Buffer.from('fake-video-bytes'),
+				mimetype: 'video/mp4',
+				size: 16,
+			},
+		})
+
+		expect(result.error).to.include({
+			status: 400,
+			code: 'INVALID_TEXT_OVERLAY_POSITION',
+		})
+	})
+
+	it('returns INVALID_TEXT_OVERLAY_SIZE when text overlay size is out of range', async () => {
+		const result = await trimVideo({
+			body: {
+				trimStart: 0,
+				trimEnd: 1,
+				textOverlay: JSON.stringify({
+					text: 'hello',
+					size: 999,
+					color: '#ffffff',
+					position: { x: 50, y: 50 },
+				}),
+			},
+			file: {
+				buffer: Buffer.from('fake-video-bytes'),
+				mimetype: 'video/mp4',
+				size: 16,
+			},
+		})
+
+		expect(result.error).to.include({
+			status: 400,
+			code: 'INVALID_TEXT_OVERLAY_SIZE',
+		})
+	})
+
+	it('returns INVALID_TEXT_OVERLAY_COLOR when text overlay color is invalid', async () => {
+		const result = await trimVideo({
+			body: {
+				trimStart: 0,
+				trimEnd: 1,
+				textOverlay: JSON.stringify({
+					text: 'hello',
+					size: 24,
+					color: 'blue',
+					position: { x: 50, y: 50 },
+				}),
+			},
+			file: {
+				buffer: Buffer.from('fake-video-bytes'),
+				mimetype: 'video/mp4',
+				size: 16,
+			},
+		})
+
+		expect(result.error).to.include({
+			status: 400,
+			code: 'INVALID_TEXT_OVERLAY_COLOR',
+		})
+	})
+
+	it('returns INVALID_TEXT_OVERLAY_TEXT when text overlay text is not a string', async () => {
+		const result = await trimVideo({
+			body: {
+				trimStart: 0,
+				trimEnd: 1,
+				textOverlay: JSON.stringify({
+					text: 123,
+					size: 24,
+					color: '#ffffff',
+					position: { x: 50, y: 50 },
+				}),
+			},
+			file: {
+				buffer: Buffer.from('fake-video-bytes'),
+				mimetype: 'video/mp4',
+				size: 16,
+			},
+		})
+
+		expect(result.error).to.include({
+			status: 400,
+			code: 'INVALID_TEXT_OVERLAY_TEXT',
+		})
+	})
 })

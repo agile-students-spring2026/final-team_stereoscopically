@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { DEFAULT_GIF_SPEED_PLAYBACK_RATE } from '../gifSpeedOptions'
+import { DEFAULT_GIF_SPEED_PLAYBACK_RATE } from '../../../src/components/gif/gifSpeedOptions'
 import {
   createInitialGifTextSettings,
   createInitialGifFlowState,
@@ -8,7 +8,7 @@ import {
   sanitizeGifTextSettings,
   setGifFlowActiveTool,
   setGifFlowSelectedSpeed,
-} from '../gifFlowState'
+} from '../../../src/components/gif/gifFlowState'
 
 describe('gifFlowState', () => {
   it('creates active GIF flow state with editor tool, default speed, and default text settings', () => {
@@ -23,23 +23,46 @@ describe('gifFlowState', () => {
     const initial = {
       activeTool: GIF_FLOW_TOOLS.EDITOR,
       selectedSpeedPlaybackRate: 1.5,
-      textOverlay: createInitialGifTextSettings(),
+      textOverlay: {
+        text: 'Watermark',
+        size: 22,
+        color: '#0099FF',
+        position: { x: 10, y: 15 },
+      },
     }
 
     expect(setGifFlowActiveTool(initial, GIF_FLOW_TOOLS.FILTERS_MAIN)).toEqual({
       activeTool: GIF_FLOW_TOOLS.FILTERS_MAIN,
       selectedSpeedPlaybackRate: 1.5,
-      textOverlay: createInitialGifTextSettings(),
+      textOverlay: {
+        text: 'Watermark',
+        size: 22,
+        color: '#0099FF',
+        position: { x: 10, y: 15 },
+      },
     })
   })
 
   it('updates selected speed when provided a supported option', () => {
-    const initial = createInitialGifFlowState()
+    const initial = {
+      ...createInitialGifFlowState(),
+      textOverlay: {
+        text: 'Clip title',
+        size: 30,
+        color: '#AA5500',
+        position: { x: 44, y: 77 },
+      },
+    }
 
     expect(setGifFlowSelectedSpeed(initial, 2)).toEqual({
       activeTool: GIF_FLOW_TOOLS.EDITOR,
       selectedSpeedPlaybackRate: 2,
-      textOverlay: createInitialGifTextSettings(),
+      textOverlay: {
+        text: 'Clip title',
+        size: 30,
+        color: '#AA5500',
+        position: { x: 44, y: 77 },
+      },
     })
   })
 

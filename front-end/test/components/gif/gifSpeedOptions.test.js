@@ -3,7 +3,7 @@ import {
   DEFAULT_GIF_SPEED_PLAYBACK_RATE,
   GIF_SPEED_OPTIONS,
   GIF_SPEED_PLAYBACK_RATES,
-} from '../gifSpeedOptions'
+} from '../../../src/components/gif/gifSpeedOptions'
 
 describe('gifSpeedOptions', () => {
   it('defines a small fixed set of playback speed options for this sprint', () => {

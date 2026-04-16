@@ -216,6 +216,7 @@ Components should consume them rather than redefine them.
 - normalizing response objects for front-end consumption
 - mapping API failures to user-consumable errors
 - keeping media-processing contracts stable for hook consumers
+- passing active GIF text overlay settings through trim/export request contracts
 
 **Not responsible for**
 - screen transitions

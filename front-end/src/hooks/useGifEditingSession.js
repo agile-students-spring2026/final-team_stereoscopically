@@ -1,6 +1,11 @@
 import { useCallback, useRef, useState } from 'react'
 import { trimVideoService, applyVideoFilter, exportGifToBackend } from '../services/backendGifService'
 import { GIF_SPEED_PLAYBACK_RATES, DEFAULT_GIF_SPEED_PLAYBACK_RATE } from '../components/gif/gifSpeedOptions'
+import {
+  createInitialGifTextSettings,
+  GIF_FLOW_TOOLS,
+  sanitizeGifTextSettings,
+} from '../components/gif/gifFlowState'
 import { downloadFile } from '../utils/downloadFile'
 
 /**
@@ -19,19 +24,7 @@ export const resolveGifTrimRange = (trimRange, totalDuration) => {
   return { start: safeStart, end: safeEnd }
 }
 
-/**
- * GIF flow tool states
- * @readonly
- */
-const GIF_FLOW_TOOLS = Object.freeze({
-  EDITOR: 'editor',
-  FILTERS_MAIN: 'filters-main',
-  PRESET_FILTERS: 'preset-filters',
-  TEXT: 'text',
-  SPEED: 'speed',
-  RESIZE: 'resize',
-  TRIM: 'trim',
-})
+const DEFAULT_GIF_TEXT_SETTINGS = createInitialGifTextSettings()
 
 const DEFAULT_GIF_RESIZE_PRESET = 'square'
 const DEFAULT_GIF_RESIZE_BORDER_COLOR = '#000000'
@@ -65,6 +58,9 @@ const useGifEditingSession = () => {
 
   // Speed state
   const [selectedSpeedPlaybackRate, setSelectedSpeedPlaybackRate] = useState(DEFAULT_GIF_SPEED_PLAYBACK_RATE)
+
+  // Text overlay state
+  const [textOverlaySettings, setTextOverlaySettings] = useState(DEFAULT_GIF_TEXT_SETTINGS)
 
   // Tool navigation state
   const [activeTool, setActiveTool] = useState(GIF_FLOW_TOOLS.EDITOR)
@@ -144,6 +140,42 @@ const useGifEditingSession = () => {
    */
   const applySpeed = useCallback(() => {
     setActiveTool(GIF_FLOW_TOOLS.EDITOR)
+  }, [])
+
+  /**
+   * Set GIF text overlay settings as a full object.
+   */
+  const setGifTextOverlaySettings = useCallback((nextSettings) => {
+    setTextOverlaySettings(sanitizeGifTextSettings(nextSettings))
+  }, [])
+
+  /**
+   * Update GIF text overlay settings with partial values.
+   */
+  const updateGifTextOverlaySettings = useCallback((partialSettings) => {
+    setTextOverlaySettings((current) => sanitizeGifTextSettings({
+      ...current,
+      ...partialSettings,
+      position: {
+        ...current.position,
+        ...(partialSettings?.position || {}),
+      },
+    }))
+  }, [])
+
+  /**
+   * Apply text overlay settings and return to editor.
+   */
+  const applyGifTextOverlaySettings = useCallback((nextSettings) => {
+    setTextOverlaySettings(sanitizeGifTextSettings(nextSettings))
+    setActiveTool(GIF_FLOW_TOOLS.EDITOR)
+  }, [])
+
+  /**
+   * Reset text overlay settings to defaults.
+   */
+  const resetGifTextOverlaySettings = useCallback(() => {
+    setTextOverlaySettings(createInitialGifTextSettings())
   }, [])
 
   /**
@@ -274,7 +306,8 @@ const useGifEditingSession = () => {
           effectiveTrimStart,
           effectiveTrimEnd,
           resizePreset,
-          resizeBorderColor
+          resizeBorderColor,
+          textOverlaySettings
         )
 
         if (!trimmed?.id) {
@@ -301,7 +334,7 @@ const useGifEditingSession = () => {
         setIsProcessing(false)
       }
     },
-    [trimRange, resizePreset, resizeBorderColor, selectedSpeedPlaybackRate]
+    [trimRange, resizePreset, resizeBorderColor, selectedSpeedPlaybackRate, textOverlaySettings]
   )
 
   /**
@@ -322,7 +355,8 @@ const useGifEditingSession = () => {
     setFilterPreviewResult(null)
     setIsLoadingFilterPreview(false)
     setFilterPreviewError(null)
-  setSelectedFilterPreset('default')
+    setSelectedFilterPreset('default')
+    setTextOverlaySettings(createInitialGifTextSettings())
 
     if (!preserveSelectedSpeed) {
       setSelectedSpeedPlaybackRate(DEFAULT_GIF_SPEED_PLAYBACK_RATE)
@@ -344,14 +378,21 @@ const useGifEditingSession = () => {
     selectSpeed,
     applySpeed,
 
+    // Text state and actions
+    textOverlaySettings,
+    setGifTextOverlaySettings,
+    updateGifTextOverlaySettings,
+    applyGifTextOverlaySettings,
+    resetGifTextOverlaySettings,
+
     // Tool navigation
     activeTool,
     openGifTool,
     GIF_FLOW_TOOLS,
 
-  // Filter selection state/actions
-  selectedFilterPreset,
-  selectFilterPreset,
+    // Filter selection state/actions
+    selectedFilterPreset,
+    selectFilterPreset,
 
     // Filter preview state and actions
     filterPreviewUrl,
