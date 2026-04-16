@@ -8,7 +8,7 @@ import AddText from './image/AddText'
 import ColorFilters from './image/ColorFilters'
 import GifEditor from './gif/GifEditor'
 import useMediaSelection, { MEDIA_SELECTION_CODES } from '../hooks/useMediaSelection'
-import useGifConversion from '../hooks/useGifConversion'
+import useGifEditingSession from '../hooks/useGifEditingSession'
 import useImageEditingSession from '../hooks/useImageEditingSession'
 import { convertBackendImageResultToLocalMedia } from '../services/backendImageService'
 import { convertBackendVideoResultToLocalMedia } from '../services/backendGifService'
@@ -17,6 +17,7 @@ import PhotoPreview from './PhotoPreview'
 import VideoPresetFilters from './gif/VideoPresetFilters'
 import GifFilterMain from './gif/GifFilterMain'
 import GifToolPlaceholder from './gif/GifToolPlaceholder'
+import GifSpeedControls from './gif/GifSpeedControls'
 import GifTrimEditor from './gif/GifTrimEditor'
 import GifResizePresets from './gif/GifResizePresets'
 
@@ -31,22 +32,8 @@ const SCREENS = {
   CAMERA_PREVIEW: 'camera-preview',
 }
 
-const GIF_TOOLS = {
-  EDITOR: 'editor',
-  TRIM: 'trim',
-  FILTERS_MAIN: 'filters-main',
-  PRESET_FILTERS: 'preset-filters',
-  TEXT: 'text',
-  SPEED: 'speed',
-  RESIZE: 'resize',
-}
-
 const FILE_TOO_LARGE_MESSAGE = 'File is too large (max 50 MB).'
 const HEIC_UNSUPPORTED_MESSAGE = 'HEIC/HEIF files are not supported in this browser yet. Please upload JPG or PNG.'
-const DEFAULT_GIF_RESIZE_PRESET = 'square'
-const VALID_GIF_RESIZE_PRESETS = new Set(['square', 'landscape', 'portrait'])
-const DEFAULT_GIF_RESIZE_BORDER_COLOR = '#000000'
-const GIF_BORDER_COLOR_REGEX = /^#[0-9A-Fa-f]{6}$/
 
 function EditorContainer() {
   const {
@@ -66,7 +53,7 @@ function EditorContainer() {
     applyTransformedImage,
   } = useMediaSelection()
 
-  const { createGif, exportGif } = useGifConversion()
+  const gifSession = useGifEditingSession()
 
   const {
     letterboxColor,
@@ -96,34 +83,10 @@ function EditorContainer() {
   })
 
   const [screen, setScreen] = useState(SCREENS.EDITOR)
-  const [activeGifTool, setActiveGifTool] = useState(GIF_TOOLS.EDITOR)
-  const [gifTrimRange, setGifTrimRange] = useState({ start: 0, end: 0 })
-  const [gifResizePreset, setGifResizePreset] = useState(DEFAULT_GIF_RESIZE_PRESET)
-  const [gifResizeBorderColor, setGifResizeBorderColor] = useState(DEFAULT_GIF_RESIZE_BORDER_COLOR)
   const [fileTooLargeMessage, setFileTooLargeMessage] = useState(null)
   const [unsupportedImageMessage, setUnsupportedImageMessage] = useState(null)
   const [lastRejectedUploadType, setLastRejectedUploadType] = useState(null)
   const [tempCapturedFile, setTempCapturedFile] = useState(null)
-
-  const resetGifTrimRange = useCallback(() => {
-    setGifTrimRange({ start: 0, end: 0 })
-  }, [])
-
-  const resetGifResizePreset = useCallback(() => {
-    setGifResizePreset(DEFAULT_GIF_RESIZE_PRESET)
-  }, [])
-
-  const resetGifResizeBorderColor = useCallback(() => {
-    setGifResizeBorderColor(DEFAULT_GIF_RESIZE_BORDER_COLOR)
-  }, [])
-
-  const resetGifToolState = useCallback(() => {
-    setActiveGifTool(GIF_TOOLS.EDITOR)
-  }, [])
-
-  const openGifTool = useCallback((nextTool) => {
-    setActiveGifTool(nextTool)
-  }, [])
 
   const handleImageSelect = async (file) => {
     if (!file) return
@@ -151,48 +114,48 @@ function EditorContainer() {
     setUnsupportedImageMessage(null)
     setFileTooLargeMessage(null)
     resetImageEditingSessionState()
-    resetGifResizePreset()
-    resetGifResizeBorderColor()
     if (result?.applied) {
       setScreen(SCREENS.EDITOR)
     }
   }
 
   const [unsupportedVideo, setUnsupportedVideo] = useState(null)
-  const handleVideoSelect = async (file) => {
-    if (!file) return
+  const handleVideoSelect = useCallback(
+    async (file, { preserveSelectedSpeed = false } = {}) => {
+      if (!file) return
 
-    setLastRejectedUploadType('video')
+      setLastRejectedUploadType('video')
 
-    const result = await selectVideo(file)
+      const result = await selectVideo(file)
 
-    if (result?.code === MEDIA_SELECTION_CODES.FILE_TOO_LARGE) {
-      setUnsupportedVideo(null)
-      setFileTooLargeMessage(FILE_TOO_LARGE_MESSAGE)
-      return
-    }
+      if (result?.code === MEDIA_SELECTION_CODES.FILE_TOO_LARGE) {
+        setUnsupportedVideo(null)
+        setFileTooLargeMessage(FILE_TOO_LARGE_MESSAGE)
+        return
+      }
 
-    if (result?.code === MEDIA_SELECTION_CODES.UNSUPPORTED_VIDEO) {
+      if (result?.code === MEDIA_SELECTION_CODES.UNSUPPORTED_VIDEO) {
+        setFileTooLargeMessage(null)
+        setUnsupportedVideo(file)
+        return
+      }
+
+      if (result?.code !== MEDIA_SELECTION_CODES.OK) {
+        return
+      }
+
       setFileTooLargeMessage(null)
-      setUnsupportedVideo(file)
-      return
-    }
+      setUnsupportedVideo(null)
+      clearCropSession()
+      if (result?.applied) {
+        gifSession.resetGifSession({ preserveSelectedSpeed })
+        setScreen(SCREENS.EDITOR)
+      }
 
-    if (result?.code !== MEDIA_SELECTION_CODES.OK) {
-      return
-    }
-
-    setFileTooLargeMessage(null)
-    setUnsupportedVideo(null)
-    resetGifTrimRange()
-    resetGifResizePreset()
-  resetGifResizeBorderColor()
-    clearCropSession()
-    if (result?.applied) {
-      resetGifToolState()
-      setScreen(SCREENS.EDITOR)
-    }
-  }
+      return result
+    },
+    [clearCropSession, gifSession, selectVideo]
+  )
 
   const handleCameraSelect = () => {
     setScreen(SCREENS.CAMERA)
@@ -201,10 +164,7 @@ function EditorContainer() {
   const handleBackToUpload = () => {
     resetSelection()
     resetImageEditingSessionState()
-    resetGifTrimRange()
-    resetGifResizePreset()
-    resetGifResizeBorderColor()
-    resetGifToolState()
+    gifSession.resetGifSession()
     setScreen(SCREENS.EDITOR)
   }
 
@@ -253,7 +213,7 @@ function EditorContainer() {
   const handleVideoPresetApply = useCallback(
     async (result) => {
       if (!result?.url) {
-        resetGifToolState()
+        gifSession.openGifTool(gifSession.GIF_FLOW_TOOLS.EDITOR)
         setScreen(SCREENS.EDITOR)
         return
       }
@@ -264,49 +224,21 @@ function EditorContainer() {
         fetchErrorMessage: 'Failed to load filtered video.',
       })
 
-      const selection = await selectVideo(filteredFile)
+      const selection = await handleVideoSelect(filteredFile, { preserveSelectedSpeed: true })
       if (selection?.code !== MEDIA_SELECTION_CODES.OK) {
         throw new Error('Filtered video could not be loaded in editor.')
       }
-
-      resetGifTrimRange()
-      resetGifResizePreset()
-      resetGifResizeBorderColor()
-      resetGifToolState()
-      setScreen(SCREENS.EDITOR)
     },
-    [resetGifResizeBorderColor, resetGifResizePreset, resetGifToolState, resetGifTrimRange, selectVideo]
+    [handleVideoSelect, gifSession]
   )
 
   const handleGifTrimApply = useCallback((nextRange) => {
-    const safeStart = Math.max(0, Number(nextRange?.trimStart) || 0)
-    const rawEnd = Number(nextRange?.trimEnd)
-    const safeEnd = Number.isFinite(rawEnd) ? Math.max(safeStart, rawEnd) : safeStart
-
-    setGifTrimRange({ start: safeStart, end: safeEnd })
-    resetGifToolState()
-  }, [resetGifToolState])
+    gifSession.applyTrimRange(nextRange)
+  }, [gifSession])
 
   const handleGifResizeApply = useCallback((nextResizeSettings) => {
-    const rawPreset = typeof nextResizeSettings === 'string'
-      ? nextResizeSettings
-      : nextResizeSettings?.preset
-    const rawBorderColor = typeof nextResizeSettings === 'string'
-      ? gifResizeBorderColor
-      : nextResizeSettings?.borderColor
-
-    const safePreset = VALID_GIF_RESIZE_PRESETS.has(rawPreset)
-      ? rawPreset
-      : DEFAULT_GIF_RESIZE_PRESET
-    const safeBorderColor =
-      typeof rawBorderColor === 'string' && GIF_BORDER_COLOR_REGEX.test(rawBorderColor)
-        ? rawBorderColor
-        : DEFAULT_GIF_RESIZE_BORDER_COLOR
-
-    setGifResizePreset(safePreset)
-    setGifResizeBorderColor(safeBorderColor)
-    resetGifToolState()
-  }, [gifResizeBorderColor, resetGifToolState])
+    gifSession.applyResizeSettings(nextResizeSettings)
+  }, [gifSession])
 
   const handlePresetSizeSelect = async (size) => {
     await handleSizeSelect(size)
@@ -407,18 +339,19 @@ function EditorContainer() {
       : 'video'
     return (
       <GifEditor
-          key={videoKey}
-          videoFile={selectedMedia}
-      committedTrimStart={gifTrimRange.start}
-      committedTrimEnd={gifTrimRange.end}
-      committedResizePreset={gifResizePreset}
-    committedResizeBorderColor={gifResizeBorderColor}
-          onCancel={handleBackToUpload}
-          onCreateGif={createGif}
-          onExportGif={exportGif}
-      onOpenTrim={() => openGifTool(GIF_TOOLS.TRIM)}
-      onOpenResize={() => openGifTool(GIF_TOOLS.RESIZE)}
-          onOpenFilters={() => openGifTool(GIF_TOOLS.FILTERS_MAIN)}
+        key={videoKey}
+        videoFile={selectedMedia}
+		gifSessionState={{
+			trimRange: gifSession.trimRange,
+			resizePreset: gifSession.resizePreset,
+			resizeBorderColor: gifSession.resizeBorderColor,
+			selectedSpeedPlaybackRate: gifSession.selectedSpeedPlaybackRate,
+		}}
+        onCancel={handleBackToUpload}
+		onCreateGif={(videoFile, trimOverrides) => gifSession.createAndExportGif(videoFile, trimOverrides)}
+        onOpenTrim={() => gifSession.openGifTool(gifSession.GIF_FLOW_TOOLS.TRIM)}
+        onOpenResize={() => gifSession.openGifTool(gifSession.GIF_FLOW_TOOLS.RESIZE)}
+        onOpenFilters={() => gifSession.openGifTool(gifSession.GIF_FLOW_TOOLS.FILTERS_MAIN)}
       />
     )
   }
@@ -485,69 +418,93 @@ function EditorContainer() {
     }
 
     if (mediaType === 'video') {
-      if (activeGifTool === GIF_TOOLS.FILTERS_MAIN) {
+      if (gifSession.activeTool === gifSession.GIF_FLOW_TOOLS.FILTERS_MAIN) {
         return (
           <GifFilterMain
-            onPresetFilters={() => openGifTool(GIF_TOOLS.PRESET_FILTERS)}
-            onTextOverlay={() => openGifTool(GIF_TOOLS.TEXT)}
-            onSpeed={() => openGifTool(GIF_TOOLS.SPEED)}
-            onCancel={resetGifToolState}
+            onPresetFilters={() => gifSession.openGifTool(gifSession.GIF_FLOW_TOOLS.PRESET_FILTERS)}
+            onTextOverlay={() => gifSession.openGifTool(gifSession.GIF_FLOW_TOOLS.TEXT)}
+            onSpeed={() => gifSession.openGifTool(gifSession.GIF_FLOW_TOOLS.SPEED)}
+            onCancel={() => gifSession.openGifTool(gifSession.GIF_FLOW_TOOLS.EDITOR)}
           />
         )
       }
 
-      if (activeGifTool === GIF_TOOLS.PRESET_FILTERS) {
+      if (gifSession.activeTool === gifSession.GIF_FLOW_TOOLS.PRESET_FILTERS) {
         return (
           <VideoPresetFilters
             videoFile={selectedMedia}
-            onApply={handleVideoPresetApply}
-            onCancel={() => openGifTool(GIF_TOOLS.FILTERS_MAIN)}
+            selectedFilter={gifSession.selectedFilterPreset}
+            onSelectFilter={(presetId) => gifSession.selectFilterPreset(selectedMedia, presetId)}
+            onApply={async () => {
+              if (gifSession.selectedFilterPreset === 'default') {
+                await handleVideoPresetApply(null)
+                return
+              }
+
+              const preset = gifSession.selectedFilterPreset
+              const existingResult = gifSession.filterPreviewResult
+
+              try {
+                const result =
+                  existingResult?.preset === preset && existingResult?.url
+                    ? existingResult
+                    : await gifSession.applyVideoFilterAndReturn(selectedMedia, preset, existingResult)
+
+                await handleVideoPresetApply(result)
+              } catch {
+                // Errors are already surfaced via gifSession.exportError or previewError; no-op here
+              }
+            }}
+            onCancel={() => gifSession.openGifTool(gifSession.GIF_FLOW_TOOLS.FILTERS_MAIN)}
+            isLoadingPreview={gifSession.isLoadingFilterPreview}
+            previewError={gifSession.filterPreviewError}
+            previewUrl={gifSession.filterPreviewUrl}
           />
         )
       }
 
-      if (activeGifTool === GIF_TOOLS.TEXT) {
+      if (gifSession.activeTool === gifSession.GIF_FLOW_TOOLS.TEXT) {
         return (
           <GifToolPlaceholder
             title="Text"
             description="Text overlay controls for GIFs will be added in the next step."
-            onBack={() => openGifTool(GIF_TOOLS.FILTERS_MAIN)}
-            onCancel={resetGifToolState}
+            onBack={() => gifSession.openGifTool(gifSession.GIF_FLOW_TOOLS.FILTERS_MAIN)}
+            onCancel={() => gifSession.openGifTool(gifSession.GIF_FLOW_TOOLS.EDITOR)}
           />
         )
       }
 
-      if (activeGifTool === GIF_TOOLS.SPEED) {
+      if (gifSession.activeTool === gifSession.GIF_FLOW_TOOLS.SPEED) {
         return (
-          <GifToolPlaceholder
-            title="Speed"
-            description="Speed controls for GIFs will be added in the next step."
-            onBack={() => openGifTool(GIF_TOOLS.FILTERS_MAIN)}
-            onCancel={resetGifToolState}
+          <GifSpeedControls
+            videoFile={selectedMedia}
+            selectedSpeedPlaybackRate={gifSession.selectedSpeedPlaybackRate}
+            onSelectSpeed={gifSession.selectSpeed}
+            onApplySpeed={gifSession.applySpeed}
           />
         )
       }
 
-      if (activeGifTool === GIF_TOOLS.RESIZE) {
+      if (gifSession.activeTool === gifSession.GIF_FLOW_TOOLS.RESIZE) {
         return (
           <GifResizePresets
-            initialPreset={gifResizePreset}
-            initialBorderColor={gifResizeBorderColor}
+            initialPreset={gifSession.resizePreset}
+            initialBorderColor={gifSession.resizeBorderColor}
             videoFile={selectedMedia}
             onApply={handleGifResizeApply}
-            onCancel={resetGifToolState}
+            onCancel={() => gifSession.openGifTool(gifSession.GIF_FLOW_TOOLS.EDITOR)}
           />
         )
       }
 
-      if (activeGifTool === GIF_TOOLS.TRIM) {
+      if (gifSession.activeTool === gifSession.GIF_FLOW_TOOLS.TRIM) {
         return (
           <GifTrimEditor
             videoFile={selectedMedia}
-            initialTrimStart={gifTrimRange.start}
-            initialTrimEnd={gifTrimRange.end}
+            initialTrimStart={gifSession.trimRange.start}
+            initialTrimEnd={gifSession.trimRange.end}
             onApply={handleGifTrimApply}
-            onCancel={resetGifToolState}
+            onCancel={() => gifSession.openGifTool(gifSession.GIF_FLOW_TOOLS.EDITOR)}
           />
         )
       }

@@ -44,8 +44,8 @@ function GifTrimEditor({
 
   const handleApply = () => {
     onApply?.({
-      trimStart: Number(draftTrimStart.toFixed(1)),
-      trimEnd: Number(draftTrimEnd.toFixed(1)),
+      start: Number(draftTrimStart.toFixed(1)),
+      end: Number(draftTrimEnd.toFixed(1)),
     })
   }
 

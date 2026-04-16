@@ -59,7 +59,7 @@ describe('backendGifService', () => {
       size: 1024,
     })
 
-  const result = await trimVideoService(fakeFile, 1.2, 3.4, 'portrait', '#112233')
+    const result = await trimVideoService(fakeFile, 1.2, 3.4, 'portrait', '#112233')
 
     expect(postMultipart).toHaveBeenCalledWith({
       path: '/api/trim/video',
