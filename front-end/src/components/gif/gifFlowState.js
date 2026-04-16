@@ -4,6 +4,7 @@ import {
 } from './gifSpeedOptions'
 import {
   DEFAULT_GIF_TEXT_OVERLAY_SETTINGS,
+  GIF_TEXT_FONT_FAMILIES,
   GIF_TEXT_COLOR_REGEX,
   MAX_GIF_TEXT_CONTENT_LENGTH,
   MAX_GIF_TEXT_POSITION_PERCENT,
@@ -26,6 +27,7 @@ const clampNumber = (value, min, max) => Math.min(Math.max(value, min), max)
 
 export const createInitialGifTextSettings = () => ({
   text: DEFAULT_GIF_TEXT_OVERLAY_SETTINGS.text,
+  fontFamily: DEFAULT_GIF_TEXT_OVERLAY_SETTINGS.fontFamily,
   size: DEFAULT_GIF_TEXT_OVERLAY_SETTINGS.size,
   color: DEFAULT_GIF_TEXT_OVERLAY_SETTINGS.color,
   position: { ...DEFAULT_GIF_TEXT_OVERLAY_SETTINGS.position },
@@ -34,6 +36,7 @@ export const createInitialGifTextSettings = () => ({
 export const sanitizeGifTextSettings = (nextSettings) => {
   const fallback = createInitialGifTextSettings()
   const rawText = typeof nextSettings?.text === 'string' ? nextSettings.text : fallback.text
+  const rawFontFamily = typeof nextSettings?.fontFamily === 'string' ? nextSettings.fontFamily.trim() : ''
   const rawSize = Number(nextSettings?.size)
   const rawColor = nextSettings?.color
   const rawX = Number(nextSettings?.position?.x)
@@ -41,6 +44,9 @@ export const sanitizeGifTextSettings = (nextSettings) => {
 
   return {
     text: rawText.slice(0, MAX_GIF_TEXT_CONTENT_LENGTH),
+    fontFamily: GIF_TEXT_FONT_FAMILIES.includes(rawFontFamily)
+      ? rawFontFamily
+      : fallback.fontFamily,
     size: Number.isFinite(rawSize)
       ? clampNumber(rawSize, MIN_GIF_TEXT_SIZE, MAX_GIF_TEXT_SIZE)
       : fallback.size,

@@ -9,10 +9,10 @@ const MAX_UI_FONT_SIZE = 56
 const DEFAULT_UI_FONT_SIZE = 16
 const BACKEND_FONT_SCALE = 5
 
-const DEFAULT_TEXT_COLOR = '#111111'
+const DEFAULT_TEXT_COLOR = '#FFFFFF'
 
 
-function AddText({ imageSrc, onApply, onCancel, applyError = null }) {
+function AddText({ imageSrc, onApply, onBack, onCancel, applyError = null }) {
   const [text, setText] = useState('')
   const [font, setFont] = useState('Arial')
   const [textColor, setTextColor] = useState(DEFAULT_TEXT_COLOR)
@@ -163,6 +163,19 @@ function AddText({ imageSrc, onApply, onCancel, applyError = null }) {
       imageSrc={imageSrc}
       onApply={handleApply}
       onCancel={onCancel}
+      actions={(
+        <>
+          <button type="button" className="btn-secondary" onClick={onBack}>
+            Back
+          </button>
+          <button type="button" className="btn-secondary" onClick={onCancel}>
+            Cancel
+          </button>
+          <button type="button" className="btn-primary" onClick={handleApply}>
+            Apply
+          </button>
+        </>
+      )}
       previewInteractive
       onPreviewPointerDown={handlePreviewPointerDown}
       onPreviewPointerMove={handlePreviewPointerMove}
@@ -209,9 +222,10 @@ function AddText({ imageSrc, onApply, onCancel, applyError = null }) {
           </EditorStatus>
         ) : null}
 
-        <p className="add-text-placement-hint add-text-placement-hint--top">
-          Click or drag the preview to move the text.
-        </p>
+        <div className="add-text-field add-text-field--grid">
+          <span className="add-text-label">Move</span>
+          <EditorStatus>Click or drag the preview.</EditorStatus>
+        </div>
 
         <div className="add-text-field add-text-field--stack">
           <label htmlFor="add-text-input" className="add-text-label">
@@ -275,9 +289,6 @@ function AddText({ imageSrc, onApply, onCancel, applyError = null }) {
               onChange={(e) => setFontSize(e.target.value)}
               className="add-text-size-slider editor-slider"
             />
-            <p className="add-text-size-help">
-              Scale {safeUiFontSize} (~{backendFontSize}px on the full image; preview matches export).
-            </p>
           </div>
         </div>
 

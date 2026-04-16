@@ -29,10 +29,13 @@ export const GIF_BORDER_COLOR_KEYWORDS = new Set([GIF_TRANSPARENT_BORDER_COLOR])
 
 export const DEFAULT_GIF_TEXT_OVERLAY_SETTINGS = Object.freeze({
   text: '',
+  fontFamily: 'Arial',
   size: 32,
   color: '#FFFFFF',
   position: Object.freeze({ x: 50, y: 50 }),
 })
+
+export const GIF_TEXT_FONT_FAMILIES = Object.freeze(['Arial', 'Helvetica', 'Georgia'])
 
 export const GIF_TEXT_COLOR_REGEX = /^#[0-9A-Fa-f]{6}$/
 export const MIN_GIF_TEXT_SIZE = 8

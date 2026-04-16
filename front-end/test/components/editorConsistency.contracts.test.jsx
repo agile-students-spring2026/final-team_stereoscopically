@@ -8,6 +8,7 @@ import { flushSync } from 'react-dom'
 
 import ImageEditor from '../../src/components/image/ImageEditor'
 import FilterMain from '../../src/components/FilterMain'
+import AddText from '../../src/components/image/AddText'
 import GifSpeedControls from '../../src/components/gif/GifSpeedControls'
 import GifEditor from '../../src/components/gif/GifEditor'
 
@@ -131,7 +132,7 @@ describe('editor consistency contracts', () => {
     cleanup()
   })
 
-  it('renders image filter hub with Text label and Cancel action', async () => {
+  it('renders image filter hub with Text label and Back action', async () => {
     const onCancel = vi.fn()
 
     const { container, cleanup } = await renderComponentToDom(
@@ -145,13 +146,48 @@ describe('editor consistency contracts', () => {
 
     const labels = Array.from(container.querySelectorAll('button')).map((button) => button.textContent?.trim())
     expect(labels).toContain('Text')
-    expect(labels).toContain('Cancel')
+  expect(labels).toContain('Back')
 
-    const cancelButton = Array.from(container.querySelectorAll('button')).find((button) => button.textContent?.trim() === 'Cancel')
-    expect(cancelButton).toBeTruthy()
+  const backButton = Array.from(container.querySelectorAll('button')).find((button) => button.textContent?.trim() === 'Back')
+  expect(backButton).toBeTruthy()
 
-    cancelButton.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+  backButton.dispatchEvent(new MouseEvent('click', { bubbles: true }))
     expect(onCancel).toHaveBeenCalledTimes(1)
+
+    cleanup()
+  })
+
+  it('renders image text editor with Back, Cancel, and Apply actions', async () => {
+    const onBack = vi.fn()
+    const onCancel = vi.fn()
+    const onApply = vi.fn()
+
+    const { container, cleanup } = await renderComponentToDom(
+      <AddText
+        imageSrc="https://example.com/image.png"
+        onApply={onApply}
+        onBack={onBack}
+        onCancel={onCancel}
+      />,
+    )
+
+    const getButton = (label) => Array.from(container.querySelectorAll('button')).find((button) => button.textContent?.trim() === label)
+
+    const backButton = getButton('Back')
+    const cancelButton = getButton('Cancel')
+    const applyButton = getButton('Apply')
+
+    expect(backButton).toBeTruthy()
+    expect(cancelButton).toBeTruthy()
+    expect(applyButton).toBeTruthy()
+
+    backButton.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+    cancelButton.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+    applyButton.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+
+    expect(onBack).toHaveBeenCalledTimes(1)
+    expect(onCancel).toHaveBeenCalledTimes(1)
+    expect(onApply).toHaveBeenCalledTimes(1)
 
     cleanup()
   })

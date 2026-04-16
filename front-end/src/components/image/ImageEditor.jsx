@@ -14,8 +14,6 @@ const ImageEditor = ({
   onBack,
   onSize,
   onExport,
-  onResetExportSettings,
-  showResetExportSettings = false,
   isUploading = false,
   isResettingCrop = false,
   uploadError = null,
@@ -164,16 +162,6 @@ const ImageEditor = ({
         <button type="button" className="btn-primary" onClick={onOpenFilters}>
           Filters
         </button>
-        {showResetExportSettings && (
-          <button
-            type="button"
-            className="btn-secondary"
-            onClick={() => onResetExportSettings?.()}
-            disabled={isExporting}
-          >
-            Reset resize
-          </button>
-        )}
       </div>
       <div className="card-actions card-actions-spaced editor-actions editor-actions--inline">
         <button type="button" className="btn-secondary" onClick={onBack}>

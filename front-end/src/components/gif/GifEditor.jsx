@@ -41,6 +41,10 @@ const GifEditor = ({
         typeof textOverlaySettings?.color === 'string' && GIF_TEXT_COLOR_REGEX.test(textOverlaySettings.color)
             ? textOverlaySettings.color
             : DEFAULT_GIF_TEXT_OVERLAY_SETTINGS.color
+    const previewTextFontFamily =
+        typeof textOverlaySettings?.fontFamily === 'string' && textOverlaySettings.fontFamily.trim()
+            ? textOverlaySettings.fontFamily.trim()
+            : DEFAULT_GIF_TEXT_OVERLAY_SETTINGS.fontFamily
     const previewTextPositionX = clamp(
         Number(textOverlaySettings?.position?.x) || DEFAULT_GIF_TEXT_OVERLAY_SETTINGS.position.x,
         0,
@@ -163,6 +167,7 @@ const GifEditor = ({
                                         top: `${previewTextPositionY}%`,
                                         color: previewTextColor,
                                         fontSize: `${previewTextSize}px`,
+                                        fontFamily: previewTextFontFamily,
                                     }}
                                 >
                                     {previewText}

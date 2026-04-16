@@ -63,10 +63,8 @@ function EditorContainer() {
     lastCropBoxPx,
     hasCropHistory,
     effectiveImageSrc,
-    selectedPreset,
-    latestExportResult,
+  selectedPreset,
     resetImageEditingSessionState,
-    resetPresetExportSettings,
     selectedImageFilterPreset,
     presetFilterPreviewSrc,
     isLoadingPresetFilterPreview,
@@ -98,10 +96,12 @@ function EditorContainer() {
   const [unsupportedImageMessage, setUnsupportedImageMessage] = useState(null)
   const [lastRejectedUploadType, setLastRejectedUploadType] = useState(null)
   const [tempCapturedFile, setTempCapturedFile] = useState(null)
+  const [originalVideoFile, setOriginalVideoFile] = useState(null)
 
   const handleImageSelect = async (file) => {
     if (!file) return
 
+  setOriginalVideoFile(null)
     setLastRejectedUploadType('image')
 
     const result = await selectImage(file)
@@ -132,7 +132,7 @@ function EditorContainer() {
 
   const [unsupportedVideo, setUnsupportedVideo] = useState(null)
   const handleVideoSelect = useCallback(
-    async (file, { preserveSelectedSpeed = false } = {}) => {
+    async (file, { preserveSelectedSpeed = false, preserveOriginalVideo = false } = {}) => {
       if (!file) return
 
       setLastRejectedUploadType('video')
@@ -155,6 +155,10 @@ function EditorContainer() {
         return
       }
 
+      if (!preserveOriginalVideo) {
+        setOriginalVideoFile(file)
+      }
+
       setFileTooLargeMessage(null)
       setUnsupportedVideo(null)
       clearCropSession()
@@ -173,6 +177,7 @@ function EditorContainer() {
   }
 
   const handleBackToUpload = () => {
+  setOriginalVideoFile(null)
     resetSelection()
     resetImageEditingSessionState()
     gifSession.resetGifSession()
@@ -190,6 +195,13 @@ function EditorContainer() {
   const handleVideoPresetApply = useCallback(
     async (result) => {
       if (!result?.url) {
+        if (originalVideoFile) {
+          await handleVideoSelect(originalVideoFile, {
+            preserveSelectedSpeed: true,
+            preserveOriginalVideo: true,
+          })
+        }
+
         gifSession.openGifTool(gifSession.GIF_FLOW_TOOLS.EDITOR)
         setScreen(SCREENS.EDITOR)
         return
@@ -201,12 +213,15 @@ function EditorContainer() {
         fetchErrorMessage: 'Failed to load filtered video.',
       })
 
-      const selection = await handleVideoSelect(filteredFile, { preserveSelectedSpeed: true })
+      const selection = await handleVideoSelect(filteredFile, {
+        preserveSelectedSpeed: true,
+        preserveOriginalVideo: true,
+      })
       if (selection?.code !== MEDIA_SELECTION_CODES.OK) {
         throw new Error('Filtered video could not be loaded in editor.')
       }
     },
-    [handleVideoSelect, gifSession]
+    [handleVideoSelect, gifSession, originalVideoFile]
   )
 
   const handleGifTrimApply = useCallback((nextRange) => {
@@ -253,8 +268,6 @@ function EditorContainer() {
       onOpenFilters={handleOpenFilters}
       onSize={handleOpenSizes}
       onExport={handleExport}
-      onResetExportSettings={resetPresetExportSettings}
-      showResetExportSettings={Boolean(selectedPreset || latestExportResult)}
       showResetCrop={hasCropHistory}
     />
   )
@@ -368,7 +381,7 @@ function EditorContainer() {
               const applied = await applyImagePresetFilter()
               if (applied) setScreen(SCREENS.EDITOR)
             }}
-            onCancel={() => setScreen(SCREENS.EDITOR)}
+            onCancel={() => setScreen(SCREENS.FILTERS_MAIN)}
             applyError={exportError}
             previewError={presetFilterError}
             isLoadingPreview={isLoadingPresetFilterPreview}
@@ -379,6 +392,7 @@ function EditorContainer() {
           <AddText
             imageSrc={effectiveImageSrc}
             onApply={handleAddTextScreenApply}
+            onBack={() => setScreen(SCREENS.FILTERS_MAIN)}
             onCancel={() => setScreen(SCREENS.EDITOR)}
             applyError={exportError}
           />
@@ -434,13 +448,16 @@ function EditorContainer() {
       }
 
       if (gifSession.activeTool === gifSession.GIF_FLOW_TOOLS.PRESET_FILTERS) {
+  const sourceVideoForFilters = originalVideoFile || selectedMedia
+
         return (
           <VideoPresetFilters
-            videoFile={selectedMedia}
+            videoFile={sourceVideoForFilters}
             selectedFilter={gifSession.selectedFilterPreset}
-            onSelectFilter={(presetId) => gifSession.selectFilterPreset(selectedMedia, presetId)}
+            onSelectFilter={(presetId) => gifSession.selectFilterPreset(sourceVideoForFilters, presetId)}
             onApply={async () => {
               if (gifSession.selectedFilterPreset === 'default') {
+                await gifSession.selectFilterPreset(sourceVideoForFilters, 'default')
                 await handleVideoPresetApply(null)
                 return
               }
@@ -452,7 +469,7 @@ function EditorContainer() {
                 const result =
                   existingResult?.preset === preset && existingResult?.url
                     ? existingResult
-                    : await gifSession.applyVideoFilterAndReturn(selectedMedia, preset, existingResult)
+                    : await gifSession.applyVideoFilterAndReturn(sourceVideoForFilters, preset, existingResult)
 
                 await handleVideoPresetApply(result)
               } catch {

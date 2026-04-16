@@ -23,7 +23,7 @@ function FilterMain({ onPresetFilters, onText, onColorFilters, onCancel }) {
       )}
       actions={(
         <button type="button" className="btn-secondary" onClick={onCancel}>
-          Cancel
+          Back
         </button>
       )}
     />

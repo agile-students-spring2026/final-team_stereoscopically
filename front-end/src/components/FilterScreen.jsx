@@ -17,6 +17,7 @@ function FilterScreen({
   previewOverlay = null,
   previewContainerRef = null,
   previewImageRef = null,
+  actions = null,
 }) {
   return (
     <EditorToolScreen
@@ -55,6 +56,7 @@ function FilterScreen({
         </div>
       )}
       controls={<div className="card filter-main-buttons">{children}</div>}
+      actions={actions}
     />
   )
 }
