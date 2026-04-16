@@ -1,5 +1,6 @@
 import { useCallback, useState } from 'react'
 import ImageCropper from './ImageCropper'
+import EditorStatus from '../EditorStatus'
 
 const ImageEditor = ({
   imageSrc,
@@ -64,20 +65,20 @@ const ImageEditor = ({
     return (
       <div className="image-editor-container">
         <h2 className="image-editor-title">Crop Image</h2>
-        <p role="note" className="upload-status" style={{ marginTop: '0.5rem', color: '#555' }}>
+        <EditorStatus role="note" tone="muted" spaced>
           Cropping uses your current preview (filters and color edits included).
-        </p>
+        </EditorStatus>
         {cropError && (
-          <p role="alert" className="upload-status" style={{ marginTop: '0.5rem', color: '#ff3b30' }}>
+          <EditorStatus tone="error" spaced>
             {cropError}
-          </p>
+          </EditorStatus>
         )}
         <ImageCropper
           imageSrc={cropSourceImageSrc || imageSrc}
           initialCropPx={initialCropPx}
           onCropChange={handleCropChange}
         />
-        <div className="card-actions">
+        <div className="card-actions editor-actions editor-actions--inline">
           <button type="button" className="btn-secondary" onClick={handleCancelCrop}>
             Cancel
           </button>
@@ -94,49 +95,49 @@ const ImageEditor = ({
       <h2 className="image-editor-title">Image Editor</h2>
 
       {uploadError && (
-        <p role="alert" className="upload-status" style={{ marginTop: '0.5rem', color: '#ff3b30' }}>
+        <EditorStatus tone="error" spaced>
           {uploadError}
-        </p>
+        </EditorStatus>
       )}
       {exportError && (
-        <p role="alert" className="upload-status" style={{ marginTop: '0.5rem', color: '#ff3b30' }}>
+        <EditorStatus tone="error" spaced>
           {exportError}
-        </p>
+        </EditorStatus>
       )}
       {sessionNotice && (
-        <p role="status" className="upload-status session-notice">
+        <EditorStatus tone="info" className="session-notice">
           {sessionNotice}
-        </p>
+        </EditorStatus>
       )}
 
       {imageLoadError && (
-        <p role="alert" className="upload-status" style={{ marginTop: '0.5rem', color: '#ff3b30' }}>
+        <EditorStatus tone="error" spaced>
           This image format cannot be displayed in your browser. Please upload JPG or PNG.
-        </p>
+        </EditorStatus>
       )}
 
       <div
-        className="preview-box preview-box-checkered"
+        className="preview-box editor-preview preview-box-checkered editor-preview--checkered"
         style={{ opacity: isUploading ? 0.75 : 1, transition: 'opacity 150ms ease' }}
       >
         {!imageLoadError && (
           <img
             src={imageSrc}
             alt="Preview"
-            className="preview-image"
+            className="preview-image editor-preview-media"
             onError={handleImageError}
           />
         )}
       </div>
-      <div className="card image-editor-actions">
-        <button type="button" className="btn-primary" onClick={onOpenFilters}>
-          Filters
-        </button>
+      <div className="card image-editor-actions editor-actions editor-actions--stack">
         <button type="button" className="btn-primary" onClick={handleCropClick}>
           Crop
         </button>
         <button type="button" className="btn-primary" onClick={onSize || (() => {})}>
           Resize
+        </button>
+        <button type="button" className="btn-primary" onClick={onOpenFilters}>
+          Filters
         </button>
         {showResetExportSettings && (
           <button
@@ -149,7 +150,7 @@ const ImageEditor = ({
           </button>
         )}
       </div>
-      <div className="card-actions card-actions-spaced">
+      <div className="card-actions card-actions-spaced editor-actions editor-actions--inline">
         <button type="button" className="btn-secondary" onClick={onBack}>
           Cancel
         </button>

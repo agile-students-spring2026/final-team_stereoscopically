@@ -1,4 +1,5 @@
 import { useRef } from 'react'
+import EditorStatus from './EditorStatus'
 
 const MediaEntry = ({
   onImageSelect,
@@ -85,15 +86,15 @@ const MediaEntry = ({
         </div>
 
         {statusMessage && (
-          <p role="status" className="upload-status">
+          <EditorStatus>
             {statusMessage}
-          </p>
+          </EditorStatus>
         )}
 
         {validationError && (
-          <p role="alert" className="upload-status" style={{ color: '#ff3b30' }}>
+          <EditorStatus tone="error">
             {validationError}
-          </p>
+          </EditorStatus>
         )}
       </div>
 

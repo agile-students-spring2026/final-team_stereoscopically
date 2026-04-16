@@ -1,52 +1,16 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import FilterScreen from '../FilterScreen'
-
-const clamp = (value, min, max) => Math.min(max, Math.max(min, value))
+import EditorStatus from '../EditorStatus'
+import { clamp, getContainedContentFrame, getSafeFrame } from '../../utils/overlayPlacement'
 
 /* Slider is a relative scale; backend uses image-space px = round(slider * BACKEND_FONT_SCALE). */
-const MIN_UI_FONT_SIZE = 10
+const MIN_UI_FONT_SIZE = 2
 const MAX_UI_FONT_SIZE = 56
-const DEFAULT_UI_FONT_SIZE = 22
+const DEFAULT_UI_FONT_SIZE = 16
 const BACKEND_FONT_SCALE = 5
 
 const DEFAULT_TEXT_COLOR = '#111111'
 
-const getContainedContentFrame = ({
-  frameLeft,
-  frameTop,
-  frameWidth,
-  frameHeight,
-  naturalWidth,
-  naturalHeight,
-}) => {
-  const safeFrameWidth = Math.max(1, frameWidth || 1)
-  const safeFrameHeight = Math.max(1, frameHeight || 1)
-  const safeNaturalWidth = Math.max(1, naturalWidth || 1)
-  const safeNaturalHeight = Math.max(1, naturalHeight || 1)
-
-  const scale = Math.min(safeFrameWidth / safeNaturalWidth, safeFrameHeight / safeNaturalHeight)
-  const width = safeNaturalWidth * scale
-  const height = safeNaturalHeight * scale
-
-  return {
-    left: frameLeft + (safeFrameWidth - width) / 2,
-    top: frameTop + (safeFrameHeight - height) / 2,
-    width,
-    height,
-  }
-}
-
-const getSafeFrame = (frame, containerSize) => {
-  const fallbackWidth = Math.max(1, containerSize.width || 1)
-  const fallbackHeight = Math.max(1, containerSize.height || 1)
-
-  return {
-    left: Number.isFinite(frame?.left) ? frame.left : 0,
-    top: Number.isFinite(frame?.top) ? frame.top : 0,
-    width: Number.isFinite(frame?.width) && frame.width > 0 ? frame.width : fallbackWidth,
-    height: Number.isFinite(frame?.height) && frame.height > 0 ? frame.height : fallbackHeight,
-  }
-}
 
 function AddText({ imageSrc, onApply, onCancel, applyError = null }) {
   const [text, setText] = useState('')
@@ -132,7 +96,7 @@ function AddText({ imageSrc, onApply, onCancel, applyError = null }) {
     const nw = Math.max(1, naturalImageSize.width)
     const displayW = Math.max(1, renderedImageBox.width)
     const raw = backendFontSize * (displayW / nw)
-    return clamp(raw, 6, 320)
+    return clamp(raw, 2, 320)
   }, [backendFontSize, naturalImageSize.width, renderedImageBox.width])
 
   const updatePlacementFromPointer = useCallback((event) => {
@@ -240,9 +204,9 @@ function AddText({ imageSrc, onApply, onCancel, applyError = null }) {
     >
       <div className="add-text-form">
         {applyError ? (
-          <p role="alert" className="upload-status" style={{ marginTop: 0, color: '#ff3b30' }}>
+          <EditorStatus tone="error">
             {applyError}
-          </p>
+          </EditorStatus>
         ) : null}
 
         <p className="add-text-placement-hint add-text-placement-hint--top">
@@ -300,7 +264,7 @@ function AddText({ imageSrc, onApply, onCancel, applyError = null }) {
               step={1}
               value={fontSize}
               onChange={(e) => setFontSize(e.target.value)}
-              className="text-input add-text-size-input"
+              className="text-input editor-number-input add-text-size-input"
             />
             <input
               type="range"
@@ -309,7 +273,7 @@ function AddText({ imageSrc, onApply, onCancel, applyError = null }) {
               step={1}
               value={safeUiFontSize}
               onChange={(e) => setFontSize(e.target.value)}
-              className="add-text-size-slider"
+              className="add-text-size-slider editor-slider"
             />
             <p className="add-text-size-help">
               Scale {safeUiFontSize} (~{backendFontSize}px on the full image; preview matches export).

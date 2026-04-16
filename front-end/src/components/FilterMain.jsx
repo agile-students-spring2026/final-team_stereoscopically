@@ -1,25 +1,32 @@
-function FilterMain({ onPresetFilters, onAddText, onColorFilters }) {
+import EditorToolScreen from './EditorToolScreen'
+
+function FilterMain({ onPresetFilters, onText, onColorFilters, onCancel }) {
   return (
-    <div className="preset-sizes-screen">
-      <div className="screen-header screen-header-column">
-        <h2 className="screen-title">Filters</h2>
-      </div>
-      <div className="card filter-main-buttons">
-        <button type="button" className="btn-primary" onClick={onPresetFilters}>
-          Preset Filters
+    <EditorToolScreen
+      title="Filters"
+      controls={(
+        <div className="card filter-main-buttons">
+          <button type="button" className="btn-primary" onClick={onPresetFilters}>
+            Preset Filters
+          </button>
+          {onText && (
+            <button type="button" className="btn-primary" onClick={onText}>
+              Text
+            </button>
+          )}
+          {onColorFilters && (
+            <button type="button" className="btn-primary" onClick={onColorFilters}>
+              Color Filters
+            </button>
+          )}
+        </div>
+      )}
+      actions={(
+        <button type="button" className="btn-secondary" onClick={onCancel}>
+          Cancel
         </button>
-        {onAddText && (
-          <button type="button" className="btn-primary" onClick={onAddText}>
-            Add Text
-          </button>
-        )}
-        {onColorFilters && (
-          <button type="button" className="btn-primary" onClick={onColorFilters}>
-            Color Filters
-          </button>
-        )}
-      </div>
-    </div>
-  );
+      )}
+    />
+  )
 }
-export default FilterMain;
+export default FilterMain

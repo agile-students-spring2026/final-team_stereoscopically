@@ -2,6 +2,15 @@ import {
   DEFAULT_GIF_SPEED_PLAYBACK_RATE,
   GIF_SPEED_PLAYBACK_RATES,
 } from './gifSpeedOptions'
+import {
+  DEFAULT_GIF_TEXT_OVERLAY_SETTINGS,
+  GIF_TEXT_COLOR_REGEX,
+  MAX_GIF_TEXT_CONTENT_LENGTH,
+  MAX_GIF_TEXT_POSITION_PERCENT,
+  MAX_GIF_TEXT_SIZE,
+  MIN_GIF_TEXT_POSITION_PERCENT,
+  MIN_GIF_TEXT_SIZE,
+} from './gifEditorConstants'
 
 export const GIF_FLOW_TOOLS = Object.freeze({
   EDITOR: 'editor',
@@ -13,24 +22,13 @@ export const GIF_FLOW_TOOLS = Object.freeze({
   TRIM: 'trim',
 })
 
-const DEFAULT_GIF_TEXT_CONTENT = ''
-const DEFAULT_GIF_TEXT_SIZE = 32
-const DEFAULT_GIF_TEXT_COLOR = '#FFFFFF'
-const DEFAULT_GIF_TEXT_POSITION = Object.freeze({ x: 50, y: 50 })
-const GIF_TEXT_COLOR_REGEX = /^#[0-9A-Fa-f]{6}$/
-const MIN_GIF_TEXT_SIZE = 8
-const MAX_GIF_TEXT_SIZE = 120
-const MIN_GIF_TEXT_POSITION_PERCENT = 0
-const MAX_GIF_TEXT_POSITION_PERCENT = 100
-const MAX_GIF_TEXT_CONTENT_LENGTH = 120
-
 const clampNumber = (value, min, max) => Math.min(Math.max(value, min), max)
 
 export const createInitialGifTextSettings = () => ({
-  text: DEFAULT_GIF_TEXT_CONTENT,
-  size: DEFAULT_GIF_TEXT_SIZE,
-  color: DEFAULT_GIF_TEXT_COLOR,
-  position: { ...DEFAULT_GIF_TEXT_POSITION },
+  text: DEFAULT_GIF_TEXT_OVERLAY_SETTINGS.text,
+  size: DEFAULT_GIF_TEXT_OVERLAY_SETTINGS.size,
+  color: DEFAULT_GIF_TEXT_OVERLAY_SETTINGS.color,
+  position: { ...DEFAULT_GIF_TEXT_OVERLAY_SETTINGS.position },
 })
 
 export const sanitizeGifTextSettings = (nextSettings) => {

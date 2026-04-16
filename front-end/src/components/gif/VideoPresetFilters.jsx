@@ -1,13 +1,8 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useState } from 'react'
 import FilterScreen from '../FilterScreen'
-
-const PRESETS = [
-  { id: 'default', label: 'Original' },
-  { id: 'noir', label: 'Noir' },
-  { id: 'sepia', label: 'Sepia' },
-  { id: 'vivid', label: 'Vivid' },
-  { id: 'fade', label: 'Fade' },
-]
+import EditorStatus from '../EditorStatus'
+import useVideoPreviewUrl from '../../hooks/useVideoPreviewUrl'
+import { PRESET_FILTER_OPTIONS } from '../../constants/editorPresets'
 
 function VideoPresetFilters({
   videoFile,
@@ -23,20 +18,7 @@ function VideoPresetFilters({
   const [isApplying, setIsApplying] = useState(false)
   const [applyError, setApplyError] = useState(null)
 
-  const videoUrl = useMemo(() => {
-    if (!videoFile) return null
-    if (videoFile instanceof File) return URL.createObjectURL(videoFile)
-    return videoFile?.url || null
-  }, [videoFile])
-
-  useEffect(() => {
-    if (!(videoFile instanceof File) || !videoUrl) return
-    return () => {
-      if (import.meta.env.PROD) {
-        URL.revokeObjectURL(videoUrl)
-      }
-    }
-  }, [videoFile, videoUrl])
+  const videoUrl = useVideoPreviewUrl(videoFile)
 
   useEffect(() => {
     setSelectedStyle('default')
@@ -74,24 +56,14 @@ function VideoPresetFilters({
       onApply={handleApply}
       onCancel={onCancel}
       previewOverlay={isLoadingPreview ? (
-        <div
-          style={{
-            position: 'absolute',
-            inset: 0,
-            background: 'rgba(0,0,0,0.5)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            color: '#fff',
-            fontSize: '1rem',
-            fontWeight: '600',
-          }}
-        >
-          Applying filter…
+        <div className="editor-preview-overlay editor-preview-overlay--loading">
+          <EditorStatus tone="loading" centered className="editor-preview-overlay__status">
+            Applying filter…
+          </EditorStatus>
         </div>
       ) : null}
     >
-      {PRESETS.map(({ id, label }) => (
+      {PRESET_FILTER_OPTIONS.map(({ id, label }) => (
         <button
           key={id}
           type="button"
@@ -103,9 +75,9 @@ function VideoPresetFilters({
         </button>
       ))}
       {(previewError || applyError) && (
-        <p className="validation-error" role="alert">
+        <EditorStatus tone="error">
           {applyError || previewError}
-        </p>
+        </EditorStatus>
       )}
     </FilterScreen>
   )

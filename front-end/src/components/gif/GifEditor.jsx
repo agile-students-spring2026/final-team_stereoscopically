@@ -1,21 +1,15 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { DEFAULT_GIF_SPEED_PLAYBACK_RATE } from './gifSpeedOptions'
 import { resolveGifTrimRange } from '../../hooks/useGifEditingSession'
-
-const DEFAULT_GIF_RESIZE_PRESET = 'square'
-const DEFAULT_GIF_TEXT_OVERLAY_SETTINGS = {
-    text: '',
-    size: 32,
-    color: '#FFFFFF',
-    position: { x: 50, y: 50 },
-}
-const GIF_TEXT_COLOR_REGEX = /^#[0-9A-Fa-f]{6}$/
-const GIF_RESIZE_PRESET_FRAME_CLASSES = {
-    square: 'gif-preview-frame--square',
-    landscape: 'gif-preview-frame--landscape',
-    portrait: 'gif-preview-frame--portrait',
-}
-const DEFAULT_GIF_RESIZE_BORDER_COLOR = '#000000'
+import EditorStatus from '../EditorStatus'
+import useVideoPreviewUrl from '../../hooks/useVideoPreviewUrl'
+import {
+    DEFAULT_GIF_RESIZE_BORDER_COLOR,
+    DEFAULT_GIF_RESIZE_PRESET,
+    DEFAULT_GIF_TEXT_OVERLAY_SETTINGS,
+    GIF_RESIZE_PRESET_FRAME_CLASSES,
+    GIF_TEXT_COLOR_REGEX,
+} from './gifEditorConstants'
 const clamp = (value, min, max) => Math.min(Math.max(value, min), max)
 
 const GifEditor = ({
@@ -70,36 +64,11 @@ const GifEditor = ({
 
     const videoRef = useRef(null)
 
-    const resolveVideoUrl = (mediaValue) => {
-        if (!mediaValue) return null
-        if (typeof mediaValue === 'string') return mediaValue
-        if (typeof mediaValue === 'object') {
-            return mediaValue.url || mediaValue.src || mediaValue.source || mediaValue.fullUrl || null
-        }
-        return null
-    }
+    const handlePreviewUrlError = useCallback((error) => {
+        console.error('[GifEditor] Unable to create preview for uploaded video', error)
+    }, [])
 
-    const videoUrl = useMemo(() => {
-        if (!videoFile) return null
-        if (videoFile instanceof File) {
-            try {
-                return URL.createObjectURL(videoFile)
-            } catch (error) {
-                console.error('[GifEditor] Unable to create preview for uploaded video', error)
-                return null
-            }
-        }
-        return resolveVideoUrl(videoFile)
-    }, [videoFile])
-
-    useEffect(() => {
-        if (!(videoFile instanceof File) || !videoUrl) return
-        return () => {
-            if (import.meta.env.PROD) {
-                URL.revokeObjectURL(videoUrl)
-            }
-        }
-    }, [videoFile, videoUrl])
+    const videoUrl = useVideoPreviewUrl(videoFile, { onObjectUrlError: handlePreviewUrlError })
 
     useEffect(() => {
         setStatusMessage(null)
@@ -163,10 +132,10 @@ const GifEditor = ({
         <div className="video-editor-container">
             <h2 className="video-editor-title">GIF Editor</h2>
 
-            <div className="preview-box preview-box-video-resize preview-box-checkered">
+            <div className="preview-box editor-preview preview-box-video-resize editor-preview--resize preview-box-checkered editor-preview--checkered">
                 {videoUrl ? (
                     <div className={`gif-preview-frame ${previewFrameClassName}`} style={{ backgroundColor: resizeBorderColor }}>
-                        <video ref={videoRef} src={videoUrl} controls className="preview-video gif-preview-video"
+                        <video ref={videoRef} src={videoUrl} controls className="preview-video editor-preview-media gif-preview-video"
                             onLoadedMetadata={() => {
                                 const total = Number.isFinite(videoRef.current?.duration)
                                         ? videoRef.current.duration
@@ -204,11 +173,11 @@ const GifEditor = ({
                         ) : null}
                     </div>
                 ) : (
-                    <p className="preview-label">Upload a video to start editing.</p>
+                    <EditorStatus centered>Upload a video to start editing.</EditorStatus>
                 )}
             </div>
 
-            <div className="card video-editor-actions">
+            <div className="card video-editor-actions editor-actions editor-actions--stack">
                 <button type="button" className="btn-primary" onClick={onOpenTrim}>
                     Trim
                 </button>
@@ -220,7 +189,7 @@ const GifEditor = ({
                 </button>
             </div>
 
-            <div className="card-actions card-actions-spaced">
+            <div className="card-actions card-actions-spaced editor-actions editor-actions--inline">
                 <button type="button" className="btn-secondary" onClick={() => {
                     resetTransientEditorState()
                     onCancel?.()
@@ -233,20 +202,20 @@ const GifEditor = ({
                     onClick={handleConvertToGif}
                     disabled={isProcessing || !videoUrl || duration <= 0}
                 >
-                    {isProcessing ? 'Downloading...' : 'Download GIF'}
+                    {isProcessing ? 'Exporting...' : 'Export GIF'}
                 </button>
             </div>
 
             {statusMessage && (
-                <p className="preview-label" style={{ marginTop: '0.75rem' }}>
+                <EditorStatus tone="info" spaced>
                     {statusMessage}
-                </p>
+                </EditorStatus>
             )}
 
             {conversionError && (
-                <p className="preview-label" style={{ marginTop: '0.75rem', color: '#ff3b30' }}>
+                <EditorStatus tone="error" spaced>
                     {conversionError}
-                </p>
+                </EditorStatus>
             )}
         </div>
     )

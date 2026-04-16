@@ -196,6 +196,8 @@ Components should consume them rather than redefine them.
 - export and crop action handlers used by editor flow components
 - image-edit session state that spans screens, such as selected preset, export status, and crop-session continuity
 - add-text orchestration for image workflows
+- image preset-filter and color-adjustment preview/apply orchestration
+- stale-request protection for image filter preview updates
 - preserving transformed-preview continuity after image mutations
 
 **Not responsible for**
@@ -287,6 +289,8 @@ Shared hook for image editing session orchestration across export and crop inter
 **Responsible for**
 - maintaining image export session state, including selected preset and letterbox state
 - handling crop, export, and add-text orchestration through image service functions
+- owning image preset-filter selection, preview loading state, and apply orchestration
+- owning image color-adjustment state, preview loading state, and apply orchestration
 - mapping Add Text UI payloads into backend-ready request contracts, including placement coordinates and scaled font size
 - maintaining transformed-preview continuity after image mutations
 - exposing editor-facing actions and state for image workflows
@@ -294,6 +298,20 @@ Shared hook for image editing session orchestration across export and crop inter
 **Not responsible for**
 - UI rendering
 - transport implementation details
+
+---
+
+## Preview/apply lifecycle contract for editor tools
+
+For tools that support live preview before commit (for example, preset filters and color adjustments):
+
+- hooks own and expose preview lifecycle state:
+  - selected option or draft values
+  - preview URL
+  - loading state
+  - preview/apply errors
+- components render that state and emit intent callbacks (`select`, `adjust`, `apply`, `cancel`)
+- services remain transport-only (no React state or workflow decisions)
 
 ---
 
