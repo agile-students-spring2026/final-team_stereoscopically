@@ -2,11 +2,14 @@ import { useCallback, useState } from 'react'
 import ImageCropper from './ImageCropper'
 import EditorStatus from '../EditorStatus'
 
+const RESET_CROP_WARNING = 'Reset crop will remove all edits made in this session. Continue?'
+
 const ImageEditor = ({
   imageSrc,
   cropSourceImageSrc = null,
   initialCropPx = null,
   onCropApply,
+  onResetCrop,
   onOpenFilters,
   onBack,
   onSize,
@@ -14,10 +17,11 @@ const ImageEditor = ({
   onResetExportSettings,
   showResetExportSettings = false,
   isUploading = false,
+  isResettingCrop = false,
   uploadError = null,
   isExporting = false,
   exportError = null,
-  sessionNotice = null,
+  showResetCrop = false,
 }) => {
   // Track if cropper is active
   const [isCropping, setIsCropping] = useState(false)
@@ -56,6 +60,22 @@ const ImageEditor = ({
     setCropError(null)
   }
 
+  const handleResetCrop = async () => {
+    const shouldReset = window.confirm(RESET_CROP_WARNING)
+    if (!shouldReset) {
+      return
+    }
+
+    try {
+      setCropError(null)
+      await onResetCrop?.()
+      setIsCropping(false)
+    } catch (err) {
+      setCropError(err?.message || 'Could not reset crop to original image.')
+      console.error('Reset crop failed:', err)
+    }
+  }
+
   const handleImageError = () => {
     setImageLoadError(true)
   }
@@ -82,6 +102,16 @@ const ImageEditor = ({
           <button type="button" className="btn-secondary" onClick={handleCancelCrop}>
             Cancel
           </button>
+          {showResetCrop && (
+            <button
+              type="button"
+              className="btn-secondary"
+              onClick={handleResetCrop}
+              disabled={isResettingCrop}
+            >
+              {isResettingCrop ? 'Resetting...' : 'Reset Crop'}
+            </button>
+          )}
           <button type="button" className="btn-primary" onClick={handleApplyCrop}>
             Apply Crop
           </button>
@@ -102,11 +132,6 @@ const ImageEditor = ({
       {exportError && (
         <EditorStatus tone="error" spaced>
           {exportError}
-        </EditorStatus>
-      )}
-      {sessionNotice && (
-        <EditorStatus tone="info" className="session-notice">
-          {sessionNotice}
         </EditorStatus>
       )}
 
