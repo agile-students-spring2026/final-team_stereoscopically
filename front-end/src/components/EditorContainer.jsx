@@ -217,8 +217,16 @@ function EditorContainer() {
     gifSession.applyResizeSettings(nextResizeSettings)
   }, [gifSession])
 
-  const handlePresetSizeSelect = async (size) => {
-    await handleSizeSelect(size)
+  const handlePresetSizeApply = async ({ preset, letterboxColor: nextLetterboxColor }) => {
+    const applied = await handleSizeSelect(preset, {
+      letterboxColor: nextLetterboxColor,
+    })
+
+    if (!applied) {
+      return
+    }
+
+    setLetterboxColor(nextLetterboxColor)
     setScreen(SCREENS.EDITOR)
   }
 
@@ -395,9 +403,10 @@ function EditorContainer() {
       case SCREENS.PRESET_SIZES:
         return (
           <PresetSizes
-            letterboxColor={letterboxColor}
-            onLetterboxColorChange={setLetterboxColor}
-            onSelect={handlePresetSizeSelect}
+            imageSrc={effectiveImageSrc}
+            initialPreset={selectedPreset}
+            initialLetterboxColor={letterboxColor}
+            onApply={handlePresetSizeApply}
             onCancel={() => setScreen(SCREENS.EDITOR)}
             isBusy={isExporting}
           />

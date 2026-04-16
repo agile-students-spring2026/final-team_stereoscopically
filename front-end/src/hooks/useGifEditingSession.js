@@ -9,6 +9,7 @@ import {
 import {
   DEFAULT_GIF_RESIZE_BORDER_COLOR,
   DEFAULT_GIF_RESIZE_PRESET,
+  GIF_BORDER_COLOR_KEYWORDS,
   GIF_BORDER_COLOR_REGEX,
   VALID_GIF_RESIZE_PRESETS,
 } from '../components/gif/gifEditorConstants'
@@ -115,9 +116,13 @@ const useGifEditingSession = () => {
     const safePreset = VALID_GIF_RESIZE_PRESETS.has(rawPreset)
       ? rawPreset
       : DEFAULT_GIF_RESIZE_PRESET
+    const normalizedRawBorderColor = typeof rawBorderColor === 'string'
+      ? rawBorderColor.trim().toLowerCase()
+      : ''
     const safeBorderColor =
-      typeof rawBorderColor === 'string' && GIF_BORDER_COLOR_REGEX.test(rawBorderColor)
-        ? rawBorderColor
+      (normalizedRawBorderColor && GIF_BORDER_COLOR_KEYWORDS.has(normalizedRawBorderColor))
+      || (typeof rawBorderColor === 'string' && GIF_BORDER_COLOR_REGEX.test(rawBorderColor))
+        ? normalizedRawBorderColor || rawBorderColor
         : DEFAULT_GIF_RESIZE_BORDER_COLOR
 
     setResizePreset(safePreset)

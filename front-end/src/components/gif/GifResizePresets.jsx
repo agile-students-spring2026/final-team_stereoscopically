@@ -5,6 +5,7 @@ import useVideoPreviewUrl from '../../hooks/useVideoPreviewUrl'
 import {
   DEFAULT_GIF_RESIZE_BORDER_COLOR,
   DEFAULT_GIF_RESIZE_PRESET,
+  GIF_RESIZE_BORDER_SWATCHES,
   GIF_RESIZE_PRESET_FRAME_CLASSES,
   GIF_RESIZE_PRESET_OPTIONS,
 } from './gifEditorConstants'
@@ -47,6 +48,7 @@ function GifResizePresets({
   return (
     <EditorToolScreen
       title="Resize"
+      subtitle="Choose a size and border color, then apply."
       preview={(
         <div className="card gif-resize-preview-card preview-box-checkered editor-preview--checkered">
           {videoUrl ? (
@@ -78,15 +80,33 @@ function GifResizePresets({
             )
           })}
 
-          <div className="preset-letterbox" style={{ padding: '0.75rem 0 0 0' }}>
+          <div className="preset-letterbox resize-border-controls">
             <p className="preset-letterbox-label">Border color</p>
+            <div className="preset-letterbox-row">
+              {GIF_RESIZE_BORDER_SWATCHES.map((swatch) => {
+                const isActive = selectedBorderColor === swatch.value
+
+                return (
+                  <button
+                    key={swatch.id}
+                    type="button"
+                    className={isActive ? 'btn-secondary active gif-preset-option is-selected' : 'btn-secondary gif-preset-option'}
+                    aria-pressed={isActive}
+                    onClick={() => setSelectedBorderColor(swatch.value)}
+                  >
+                    {swatch.label}
+                  </button>
+                )
+              })}
+            </div>
             <div className="preset-letterbox-custom">
-              <span className="preset-letterbox-custom-label">Color</span>
+              <span className="preset-letterbox-custom-label">Custom</span>
               <input
                 type="color"
                 className="preset-letterbox-color-input"
-                value={selectedBorderColor}
-                onChange={(event) => setSelectedBorderColor(event.target.value)}
+                value={selectedBorderColor === 'transparent' ? '#ffffff' : selectedBorderColor}
+                onChange={(event) => setSelectedBorderColor(event.target.value.toLowerCase())}
+                aria-label="Custom border color"
               />
               <span className="add-text-color-value">{selectedBorderColor.toUpperCase()}</span>
             </div>
