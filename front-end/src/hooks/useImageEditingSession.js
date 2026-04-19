@@ -88,7 +88,17 @@ const useImageEditingSession = ({
   const effectiveBackendMediaId = effectiveBackendResult?.id || null
   const effectiveImageSrc = previewUrl || effectiveBackendResult?.url || null
 
-  liveExportRef.current = {
+  useEffect(() => {
+    liveExportRef.current = {
+      selectedPreset,
+      latestExportResult,
+      effectiveBackendMediaId,
+      previewUrl,
+      sourceUrl,
+      letterboxColor,
+      applyTransformedImage,
+    }
+  }, [
     selectedPreset,
     latestExportResult,
     effectiveBackendMediaId,
@@ -96,7 +106,7 @@ const useImageEditingSession = ({
     sourceUrl,
     letterboxColor,
     applyTransformedImage,
-  }
+  ])
 
   useEffect(() => {
     if (!latestExportResult?.id && effectiveBackendMediaId) {
@@ -123,12 +133,14 @@ const useImageEditingSession = ({
   }, [backendImageResult?.id, mediaType, sourceUrl])
 
   useEffect(() => {
-    setSelectedImageFilterPreset(DEFAULT_IMAGE_FILTER_PRESET)
-    setPresetFilterPreviewSrc(sourceUrl || effectiveImageSrc)
-    setPresetFilterError(null)
-    setColorAdjustments(DEFAULT_COLOR_ADJUSTMENTS)
-    setColorFilterPreviewSrc(sourceUrl || effectiveImageSrc)
-    setColorFilterError(null)
+    queueMicrotask(() => {
+      setSelectedImageFilterPreset(DEFAULT_IMAGE_FILTER_PRESET)
+      setPresetFilterPreviewSrc(sourceUrl || effectiveImageSrc)
+      setPresetFilterError(null)
+      setColorAdjustments(DEFAULT_COLOR_ADJUSTMENTS)
+      setColorFilterPreviewSrc(sourceUrl || effectiveImageSrc)
+      setColorFilterError(null)
+    })
   }, [effectiveBackendMediaId, effectiveImageSrc, sourceUrl])
 
   const resetExportSessionState = useCallback(() => {
@@ -298,20 +310,26 @@ const useImageEditingSession = ({
     const baselinePreviewSrc = sourceUrl || effectiveImageSrc
 
     if (isDefaultColorAdjustments(normalized)) {
-      setColorFilterPreviewSrc(baselinePreviewSrc)
-      setColorFilterError(null)
-      setIsLoadingColorFilterPreview(false)
+      queueMicrotask(() => {
+        setColorFilterPreviewSrc(baselinePreviewSrc)
+        setColorFilterError(null)
+        setIsLoadingColorFilterPreview(false)
+      })
       return
     }
 
     if (!adjustmentMediaId) {
-      setColorFilterError('Image is not ready on the server yet.')
-      setIsLoadingColorFilterPreview(false)
+      queueMicrotask(() => {
+        setColorFilterError('Image is not ready on the server yet.')
+        setIsLoadingColorFilterPreview(false)
+      })
       return
     }
 
     const requestId = ++colorFilterRequestIdRef.current
-    setColorFilterError(null)
+    queueMicrotask(() => {
+      setColorFilterError(null)
+    })
 
     const timer = window.setTimeout(async () => {
       try {
