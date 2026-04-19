@@ -11,6 +11,7 @@ import {
 	applyPresetVideoFilter,
 	exportGifService,
 } from '../services/mediaService.js'
+import mongoose from 'mongoose'
 
 const sendResult = (res, result) => {
 	if (result.error) {
@@ -24,7 +25,11 @@ const sendResult = (res, result) => {
 }
 
 export const healthCheck = (_req, res) => {
-	return res.json({ status: 'ok' })
+	const dbConnected = mongoose.connection.readyState === 1
+	return res.json({
+		status: 'ok',
+		database: dbConnected ? 'connected' : 'disconnected',
+	})
 }
 
 export const uploadImageHandler = (req, res) => {

@@ -43,7 +43,9 @@ function GifTextOverlayEditor({ videoFile, initialSettings, onBack, onCancel, on
   const videoUrl = useVideoPreviewUrl(videoFile)
 
   useEffect(() => {
-    setDraft(safeInitial)
+    queueMicrotask(() => {
+      setDraft(safeInitial)
+    })
   }, [safeInitial])
 
   useEffect(() => {

@@ -75,11 +75,13 @@ const GifEditor = ({
     const videoUrl = useVideoPreviewUrl(videoFile, { onObjectUrlError: handlePreviewUrlError })
 
     useEffect(() => {
-        setStatusMessage(null)
-        setConversionError(null)
-        setDuration(0)
-        setTrimStart(0)
-        setTrimEnd(0)
+        queueMicrotask(() => {
+            setStatusMessage(null)
+            setConversionError(null)
+            setDuration(0)
+            setTrimStart(0)
+            setTrimEnd(0)
+        })
 
         if (videoRef.current) {
             videoRef.current.pause()

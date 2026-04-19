@@ -26,11 +26,15 @@ function GifResizePresets({
     GIF_RESIZE_PRESET_FRAME_CLASSES[selectedPreset] || GIF_RESIZE_PRESET_FRAME_CLASSES.square
 
   useEffect(() => {
-    setSelectedPreset(initialPreset)
+    queueMicrotask(() => {
+      setSelectedPreset(initialPreset)
+    })
   }, [initialPreset])
 
   useEffect(() => {
-    setSelectedBorderColor(initialBorderColor)
+    queueMicrotask(() => {
+      setSelectedBorderColor(initialBorderColor)
+    })
   }, [initialBorderColor])
 
   const handleApply = () => {
