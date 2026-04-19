@@ -16,7 +16,10 @@ This backend provides image-processing endpoints for the StickerCreate app. It i
 
 ```bash
 npm install
+cp .env.example .env
 ```
+
+Configure `.env` with your MongoDB Atlas credentials before running the server.
 
 ## Scripts
 
@@ -38,7 +41,8 @@ Default server URL: `http://localhost:4000`
 
 ```json
 {
-  "status": "ok"
+  "status": "ok",
+  "database": "connected"
 }
 ```
 
