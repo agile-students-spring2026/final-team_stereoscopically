@@ -21,14 +21,18 @@ function VideoPresetFilters({
   const videoUrl = useVideoPreviewUrl(videoFile)
 
   useEffect(() => {
-    setSelectedStyle('default')
-    setIsApplying(false)
-    setApplyError(null)
+    queueMicrotask(() => {
+      setSelectedStyle('default')
+      setIsApplying(false)
+      setApplyError(null)
+    })
   }, [videoFile])
 
   useEffect(() => {
-    // Keep local selectedStyle in sync with external session state
-    setSelectedStyle(selectedFilter || 'default')
+    queueMicrotask(() => {
+      // Keep local selectedStyle in sync with external session state
+      setSelectedStyle(selectedFilter || 'default')
+    })
   }, [selectedFilter])
 
   const handleSelectStyle = (id) => {
