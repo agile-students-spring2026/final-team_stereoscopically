@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { postJson, postMultipart } from '../backendMediaClient'
+import { postJson, postMultipart } from '../../src/services/backendMediaClient'
 
 describe('backendMediaClient', () => {
   afterEach(() => {

@@ -239,13 +239,6 @@ function ImageCropper({ imageSrc, onCropChange, initialCropPx = null }) {
           </div>
         </div>
       </div>
-      {/* Display current crop dimensions */}
-      <div className="cropper-info">
-        <p>
-          Crop: X={Math.round(cropData.x)} Y={Math.round(cropData.y)} W=
-          {Math.round(cropData.width)} H={Math.round(cropData.height)}
-        </p>
-      </div>
     </div>
   )
 }

@@ -2,13 +2,17 @@
 
 ## Purpose
 
-This document defines responsibility boundaries for components in `src/components`.
+This document defines the target responsibility boundaries for components in `src/components`.
 
 It covers:
 - what belongs in `src/components`
 - what components are responsible for
 - what components are not responsible for
 - the purpose and scope of each current component
+
+This document describes the intended component architecture the codebase should follow.
+
+For shared editor layout/style naming conventions, see `docs/ui-consistency.md`.
 
 ---
 
@@ -19,38 +23,42 @@ Components in `src/components` are responsible for:
 - managing local UI state
 - handling user interactions tied to rendered views
 - emitting user actions upward through props or callbacks
+- presenting hook-provided state and actions clearly to the user
 
 Components in `src/components` are not responsible for:
 - cross-screen orchestration unless the component is explicitly a container
 - shared business logic reused across multiple screens
 - duplicated validation already handled upstream
+- backend service imports or transport logic
 - large helper logic not directly tied to rendering or interaction
+
+---
 
 ## Mode-based folder layout
 
 Components are organized by media mode:
 
 - `src/components/image/`
-	- `ImageEditor.jsx`
-	- `ImageCropper.jsx`
-	- `PresetSizes.jsx`
-	- `PresetFilters.jsx`
-	- `ColorFilters.jsx`
-	- `AddText.jsx`
+  - `ImageEditor.jsx`
+  - `ImageCropper.jsx`
+  - `PresetSizes.jsx`
+  - `PresetFilters.jsx`
+  - `ColorFilters.jsx`
+  - `AddText.jsx`
 - `src/components/gif/`
-	- `GifEditor.jsx`
-	- `GifResizePresets.jsx`
-	- `GifTrimEditor.jsx`
-	- `VideoPresetFilters.jsx`
-	- `GifFilterMain.jsx`
-	- `GifToolPlaceholder.jsx`
+  - `GifEditor.jsx`
+  - `VideoPresetFilters.jsx`
+  - `GifFilterMain.jsx`
+  - `GifTextOverlayEditor.jsx`
 - `src/components/` (shared / orchestration)
-	- `EditorContainer.jsx`
-	- `MediaEntry.jsx`
-	- `FilterMain.jsx`
-	- `FilterScreen.jsx`
-	- `CameraCapture.jsx`
-	- `PhotoPreview.jsx`
+  - `EditorContainer.jsx`
+  - `EditorStatus.jsx`
+  - `EditorToolScreen.jsx`
+  - `MediaEntry.jsx`
+  - `FilterMain.jsx`
+  - `FilterScreen.jsx`
+  - `CameraCapture.jsx`
+  - `PhotoPreview.jsx`
 
 ---
 
@@ -60,27 +68,24 @@ Components are organized by media mode:
 
 **Components**
 - `gif/GifEditor.jsx`
-- `gif/GifResizePresets.jsx`
-- `gif/GifTrimEditor.jsx`
 - `gif/VideoPresetFilters.jsx`
 - `gif/GifFilterMain.jsx`
-- `gif/GifToolPlaceholder.jsx`
+- `gif/GifTextOverlayEditor.jsx`
 
 **Responsible for**
 - video and GIF preview UI
-- resize preset draft selection UI with apply/cancel/reset interactions
-- draft trim editing flow with explicit apply/cancel/reset actions
-- conversion-related UI state
-- edit-time interaction checks tied to this screen
+- trim and edit controls shown on the GIF screens
+- live text overlay preview rendering in the GIF editor based on active text settings
+- local interaction state tied to the rendered GIF editing screen
 - processing, success, and failure messaging shown during GIF editing
-- preset-filter preview and apply interactions for video workflows
+- emitting user edit intent through props and callbacks
 
 **Not responsible for**
 - upload validation already handled earlier in the flow
 - admission checks performed during media selection
 - shared non-UI helper logic
 - backend conversion implementation
-- persisting committed resize state across tools (owned by container orchestration)
+- long-lived GIF session state that should be owned by hooks
 
 ---
 
@@ -104,6 +109,7 @@ Components are organized by media mode:
 - screen orchestration across the editor flow
 - shared routing between media types
 - backend media-processing implementation
+- long-lived editing-session state that belongs in hooks
 
 ---
 
@@ -111,6 +117,8 @@ Components are organized by media mode:
 
 **Components**
 - `EditorContainer.jsx`
+- `EditorStatus.jsx`
+- `EditorToolScreen.jsx`
 - `MediaEntry.jsx`
 - `FilterMain.jsx`
 - `FilterScreen.jsx`
@@ -118,15 +126,19 @@ Components are organized by media mode:
 **Responsible for**
 - screen transitions and editor flow coordination
 - media selection entry points
-- passing selection outcomes and actions to selection UI components
-- wiring between image and GIF workflows
+- wiring hook state and hook callbacks into child components
+- routing between image and GIF workflows
 - shared filter navigation and layout used across filter screens
-- shared filter controls intended to be available across media types
+- reusable tool-screen scaffolding used by both image and GIF editor tool pages
+- shared status/feedback rendering for loading, info, and error messaging
+- shared tool header/action behavior via `EditorToolScreen` props (`title`, optional `subtitle`, optional `hideActions`, and custom `actions`)
 
 **Not responsible for**
 - deep media-specific editing behavior
 - low-level interaction logic owned by dedicated editor screens
 - reusable non-UI helper logic that should be extracted elsewhere
+- backend result adaptation logic that should live in hooks or services
+- acting as a catch-all owner for editor business rules
 
 ---
 
@@ -147,6 +159,22 @@ Components are organized by media mode:
 
 ---
 
+## Filter ownership rule
+
+Filter behavior is split across layers as follows:
+
+- **shared filter components** own layout and navigation only
+  - examples: `FilterMain.jsx`, `FilterScreen.jsx`
+- **mode-specific filter components** own filter-specific UI controls only
+  - examples: `PresetFilters.jsx`, `ColorFilters.jsx`, `VideoPresetFilters.jsx`
+- **hooks** own preview/apply orchestration and session continuity
+- **services** own transport and backend request contracts
+
+Filter components should emit user intent and display state.
+They should not import backend services directly.
+
+---
+
 ## Component inventory
 
 ### `EditorContainer.jsx`
@@ -157,24 +185,21 @@ Top-level container for editor screen flow.
 **Responsible for**
 - screen selection and transitions
 - wiring child components together
-- passing media state and callbacks between screens
-- coordinating editor-level UI flow
-- mapping upstream media-selection validation outcomes to selection-flow state and callbacks
-- crop apply and export action wiring to hook-provided callbacks, including success or error UI state
-- image source decisions for crop flows, including original source versus current preview
-- passing hook-managed crop-session state across screens, such as the last crop box
+- reading hook-managed state and passing it down to screens
+- passing hook-exposed callbacks between screens
+- coordinating editor-level flow between media entry, capture, image editing, GIF editing, and export handoff
 
 **Not responsible for**
 - large reusable helper logic
 - low-level media-processing logic
-- file-admission decision rules (type, size, format support)
+- file-admission decision rules such as type, size, and format support
+- backend result adaptation logic
+- deep media-specific session logic that belongs in hooks
 - UI behavior that belongs entirely to a child component
-- broad endpoint orchestration logic beyond media-bridging helpers used to adapt backend results into local editor media
 
 **Notes**
-- Keep this component focused on orchestration.
-- Extract non-UI helpers if they continue to grow here.
-- Backend media adaptation helpers (for example image/video backend-result to local `File`) should stay in service modules, not inside this container.
+- Keep this component orchestration-focused.
+- Treat it as a flow coordinator, not as a business-logic owner.
 
 ---
 
@@ -187,12 +212,13 @@ Entry screen for starting a new edit flow.
 - upload entry points for image and video
 - camera entry point
 - local selection and validation messaging tied to this screen
-- selection-time rejection modal UI (unsupported type, size limit)
-- re-upload and retry interactions tied to image/video picker controls
+- selection-time rejection modal UI such as unsupported type or size limit
+- re-upload and retry interactions tied to image and video picker controls
 
 **Not responsible for**
 - editor flow logic beyond the initial user choice
 - media transformation logic
+- persistent editing-session state
 
 ---
 
@@ -205,12 +231,13 @@ Primary editing screen for image-based workflows.
 - image preview display
 - image editing controls shown on this screen
 - crop flow coordination at the screen level, including open, apply, and cancel UX
-- applying edits initiated from image-specific UI
+- applying edits initiated from image-specific UI through callback props
 
 **Not responsible for**
 - crop-box pointer logic
 - reusable helper logic unrelated to this screen
 - backend media-processing implementation details
+- long-lived image session state that belongs in hooks
 
 **Notes**
 - Keep screen-level editing behavior here.
@@ -247,38 +274,22 @@ Interactive crop-box UI for image cropping.
 Editing screen for video-to-GIF workflows.
 
 **Responsible for**
-- video and GIF preview state shown on this screen
-- using the committed trim range provided by orchestration
-- conversion-related UI state
+- video and GIF preview display shown on this screen
+- trim, resize, speed, filter, and text controls presented in this screen area
+- local interaction state tied to rendered controls
 - processing feedback for the user
-- emitting conversion intent through callback props
+- emitting edit intent through callback props
 
 **Not responsible for**
 - duplicated validation already handled upstream
-- selection-time media admission checks (file type, size, browser support)
+- selection-time media admission checks such as file type, size, or browser support
 - generic logic that should be shared with other editors
 - backend conversion logic
+- long-lived GIF session continuity that belongs in hooks
 
 **Notes**
-- Watch for overlap with image-editing patterns if shared behavior grows.
-
----
-
-### `GifTrimEditor.jsx`
-
-**Purpose**
-Dedicated trim screen for GIF workflows.
-
-**Responsible for**
-- trim draft UI and slider interactions
-- previewing the selected trim interval
-- reset-to-full-duration behavior
-- explicit apply/cancel actions that emit trim intent to orchestration
-
-**Not responsible for**
-- final commit of trim state across editor screens
-- GIF conversion execution
-- upload/media admission checks
+- Keep this file screen-focused.
+- Put reusable GIF session orchestration in hooks rather than growing it here.
 
 ---
 
@@ -289,14 +300,15 @@ Preset filter selection screen for video workflows.
 
 **Responsible for**
 - rendering video preset options
-- requesting filtered preview variants
-- surfacing apply and preview errors for preset interactions
-- emitting the selected filtered result back to parent orchestration
+- collecting filter selection input
+- displaying filter-specific preview and apply UI state passed down from hooks
+- emitting the selected filter intent back to parent orchestration
 
 **Not responsible for**
 - GIF trim controls
 - overall editor screen orchestration
 - backend transport implementation details
+- direct service imports
 
 ---
 
@@ -340,10 +352,12 @@ Navigation screen for filter-related editing options.
 **Responsible for**
 - presenting available filter categories
 - routing the user to the chosen filter flow
+- rendering the filter-hub cancel action for returning to editor home
 
 **Not responsible for**
 - detailed implementation of each filter type
-- shared filter layout behavior handled elsewhere
+- preview or apply orchestration
+- backend communication
 
 ---
 
@@ -357,10 +371,12 @@ Shared layout wrapper for filter sub-screens.
 - title and header display
 - preview region layout
 - shared apply and cancel action layout
-- optional interactive preview wiring and overlay passthrough used by filter-specific UIs
+- optional overlay passthrough used by filter-specific UIs
 
 **Not responsible for**
 - filter-specific state or transformation logic
+- preview/apply orchestration logic
+- backend communication
 
 **Notes**
 - Use this as a shell, not as a place for filter logic.
@@ -375,10 +391,12 @@ UI for selecting predefined visual filter presets.
 **Responsible for**
 - preset option display
 - local preset selection
-- emitting the selected preset payload
+- displaying preview/apply/loading/error state provided by hooks
+- emitting user intent events (`select preset`, `apply`, `cancel`)
 
 **Not responsible for**
 - filter-processing implementation
+- preview/apply orchestration
 - unrelated editing controls
 
 ---
@@ -390,12 +408,35 @@ UI for manual color adjustment controls.
 
 **Responsible for**
 - slider-based adjustment controls
-- local adjustment state
-- emitting the color adjustment payload
+- rendering controlled adjustment values from hook-owned state
+- displaying preview/apply/loading/error state provided by hooks
+- emitting user intent events (`adjust`, `apply`, `cancel`)
 
 **Not responsible for**
 - preset selection logic
 - transformation implementation outside the UI contract
+- preview/apply orchestration owned by hooks
+
+---
+
+## Shared editor tool checklist
+
+When adding a new shared editor tool (image + GIF or a shared navigation surface), verify:
+
+1. **Ownership boundary**
+  - Component is UI-only and callback-driven.
+  - Hook owns async preview/apply orchestration and state continuity.
+2. **Action semantics**
+  - Tool-level footer follows depth contract:
+    - filter hub: `Cancel`
+    - nested sub-tool: `Back` + `Cancel` + `Apply`
+3. **Label/order consistency**
+  - Shared actions use existing labels (`Preset Filters`, `Text`, `Resize`, etc.).
+  - Shared actions preserve relative ordering used in existing flows.
+4. **Status handling**
+  - Loading and error states use `EditorStatus` and shared editor classes.
+5. **No direct service import in components**
+  - Backend service calls stay in hooks/services layers.
 
 ---
 
@@ -408,7 +449,7 @@ UI for adding text overlays to media.
 - text input controls
 - font and numeric size controls
 - interactive placement selection on the shared preview surface
-- constraining placement interaction to the rendered image bounds inside the preview container
+- constraining placement interaction to the rendered media bounds inside the preview container
 - showing a local overlay preview so users can position text before apply
 - emitting the text-edit payload
 
@@ -416,6 +457,7 @@ UI for adding text overlays to media.
 - rendering final media output
 - final text-validation authority
 - broader editor orchestration
+- backend submission logic
 
 ---
 
@@ -432,12 +474,15 @@ UI for choosing output size presets.
 **Not responsible for**
 - resize implementation logic
 - unrelated editing state
+- preview/apply orchestration owned by hooks
 
 ---
 
 ## Maintenance rules
 
-- Keep screen components focused on one screen or one interaction area.
-- Keep low-level interaction logic close to the component that uses it.
-- Extract shared non-UI logic when multiple components depend on it.
-- Avoid mixing orchestration, rendering, and helper logic in the same file when those concerns start to grow.
+- keep screen components focused on one screen or one interaction area
+- keep low-level interaction logic close to the component that uses it
+- extract shared non-UI logic when multiple components depend on it
+- avoid mixing orchestration, rendering, and helper logic in the same file when those concerns start to grow
+- keep long-lived workflow state in hooks, not in screen components
+- treat this document as the target structure files should move toward

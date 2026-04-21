@@ -1,3 +1,6 @@
+import EditorToolScreen from './EditorToolScreen'
+import EditorStatus from './EditorStatus'
+
 function FilterScreen({
   title,
   children,
@@ -14,51 +17,47 @@ function FilterScreen({
   previewOverlay = null,
   previewContainerRef = null,
   previewImageRef = null,
+  actions = null,
 }) {
   return (
-    <div className="preset-sizes-screen">
-      <div className="screen-header screen-header-column">
-        <h2 className="screen-title">{title}</h2>
-      </div>
-      <div
-        ref={previewContainerRef}
-        className={`preview-box ${previewInteractive ? 'preview-box-interactive' : ''}`}
-        onPointerDown={previewInteractive ? onPreviewPointerDown : undefined}
-        onPointerMove={previewInteractive ? onPreviewPointerMove : undefined}
-        onPointerUp={previewInteractive ? onPreviewPointerUp : undefined}
-        onPointerCancel={previewInteractive ? onPreviewPointerCancel : undefined}
-        onLostPointerCapture={previewInteractive ? onPreviewLostPointerCapture : undefined}
-      >
-        {imageSrc ? (
-          <img
-            ref={previewImageRef}
-            src={imageSrc}
-            alt="Preview"
-            className="preview-image"
-            draggable={previewInteractive ? false : undefined}
-          />
-        ) : videoSrc ? (
-          <video src={videoSrc} controls className="preview-image" />
-        ) : (
-          <span className="preview-label">Preview of Creation</span>
-        )}
+    <EditorToolScreen
+      title={title}
+      onCancel={onCancel}
+      onApply={onApply}
+      preview={(
+        <div
+          ref={previewContainerRef}
+          className={`preview-box editor-preview ${previewInteractive ? 'preview-box-interactive editor-preview--interactive' : ''}`}
+          onPointerDown={previewInteractive ? onPreviewPointerDown : undefined}
+          onPointerMove={previewInteractive ? onPreviewPointerMove : undefined}
+          onPointerUp={previewInteractive ? onPreviewPointerUp : undefined}
+          onPointerCancel={previewInteractive ? onPreviewPointerCancel : undefined}
+          onLostPointerCapture={previewInteractive ? onPreviewLostPointerCapture : undefined}
+        >
+          {imageSrc ? (
+            <img
+              ref={previewImageRef}
+              src={imageSrc}
+              alt="Preview"
+              className="preview-image editor-preview-media"
+              draggable={previewInteractive ? false : undefined}
+            />
+          ) : videoSrc ? (
+            <video src={videoSrc} controls className="preview-image editor-preview-media" />
+          ) : (
+            <EditorStatus centered>Preview of Creation</EditorStatus>
+          )}
 
-        {previewOverlay ? (
-          <div className="filter-screen-preview-overlay">
-            {previewOverlay}
-          </div>
-        ) : null}
-      </div>
-      <div className="card filter-main-buttons">{children}</div>
-      <div className="card-actions preset-sizes-screen-actions">
-        <button type="button" className="btn-secondary" onClick={onCancel}>
-          Cancel
-        </button>
-        <button type="button" className="btn-primary" onClick={onApply}>
-          Apply
-        </button>
-      </div>
-    </div>
+          {previewOverlay ? (
+            <div className="filter-screen-preview-overlay">
+              {previewOverlay}
+            </div>
+          ) : null}
+        </div>
+      )}
+      controls={<div className="card filter-main-buttons">{children}</div>}
+      actions={actions}
+    />
   )
 }
 

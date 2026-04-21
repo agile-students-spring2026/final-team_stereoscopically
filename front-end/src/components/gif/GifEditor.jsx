@@ -1,27 +1,62 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-
-const DEFAULT_GIF_RESIZE_PRESET = 'square'
-const GIF_RESIZE_PRESET_FRAME_CLASSES = {
-    square: 'gif-preview-frame--square',
-    landscape: 'gif-preview-frame--landscape',
-    portrait: 'gif-preview-frame--portrait',
-}
-const DEFAULT_GIF_RESIZE_BORDER_COLOR = '#000000'
+import { useCallback, useEffect, useRef, useState } from 'react'
+import { DEFAULT_GIF_SPEED_PLAYBACK_RATE } from './gifSpeedOptions'
+import { resolveGifTrimRange } from '../../hooks/useGifEditingSession'
+import EditorStatus from '../EditorStatus'
+import useVideoPreviewUrl from '../../hooks/useVideoPreviewUrl'
+import {
+    DEFAULT_GIF_RESIZE_BORDER_COLOR,
+    DEFAULT_GIF_RESIZE_PRESET,
+    DEFAULT_GIF_TEXT_OVERLAY_SETTINGS,
+    GIF_RESIZE_PRESET_FRAME_CLASSES,
+    GIF_TEXT_COLOR_REGEX,
+} from './gifEditorConstants'
+const clamp = (value, min, max) => Math.min(Math.max(value, min), max)
 
 const GifEditor = ({
     videoFile,
-    committedTrimStart = 0,
-    committedTrimEnd = 0,
-    committedResizePreset = DEFAULT_GIF_RESIZE_PRESET,
-    committedResizeBorderColor = DEFAULT_GIF_RESIZE_BORDER_COLOR,
+    gifSessionState,
     onCancel,
     onCreateGif,
     onOpenTrim,
     onOpenResize,
     onOpenFilters,
-    onExportGif,
 }) => {
-    const previewFrameClassName = GIF_RESIZE_PRESET_FRAME_CLASSES[committedResizePreset] || GIF_RESIZE_PRESET_FRAME_CLASSES[DEFAULT_GIF_RESIZE_PRESET]
+    const {
+        trimRange = { start: 0, end: 0 },
+        resizePreset = DEFAULT_GIF_RESIZE_PRESET,
+        resizeBorderColor = DEFAULT_GIF_RESIZE_BORDER_COLOR,
+        selectedSpeedPlaybackRate = DEFAULT_GIF_SPEED_PLAYBACK_RATE,
+        textOverlaySettings = DEFAULT_GIF_TEXT_OVERLAY_SETTINGS,
+    } = gifSessionState || {}
+
+    const previewText = typeof textOverlaySettings?.text === 'string'
+        ? textOverlaySettings.text
+        : DEFAULT_GIF_TEXT_OVERLAY_SETTINGS.text
+    const previewTextSize = clamp(
+        Number(textOverlaySettings?.size) || DEFAULT_GIF_TEXT_OVERLAY_SETTINGS.size,
+        8,
+        120,
+    )
+    const previewTextColor =
+        typeof textOverlaySettings?.color === 'string' && GIF_TEXT_COLOR_REGEX.test(textOverlaySettings.color)
+            ? textOverlaySettings.color
+            : DEFAULT_GIF_TEXT_OVERLAY_SETTINGS.color
+    const previewTextFontFamily =
+        typeof textOverlaySettings?.fontFamily === 'string' && textOverlaySettings.fontFamily.trim()
+            ? textOverlaySettings.fontFamily.trim()
+            : DEFAULT_GIF_TEXT_OVERLAY_SETTINGS.fontFamily
+    const previewTextPositionX = clamp(
+        Number(textOverlaySettings?.position?.x) || DEFAULT_GIF_TEXT_OVERLAY_SETTINGS.position.x,
+        0,
+        100,
+    )
+    const previewTextPositionY = clamp(
+        Number(textOverlaySettings?.position?.y) || DEFAULT_GIF_TEXT_OVERLAY_SETTINGS.position.y,
+        0,
+        100,
+    )
+
+    const previewFrameClassName = GIF_RESIZE_PRESET_FRAME_CLASSES[resizePreset] || GIF_RESIZE_PRESET_FRAME_CLASSES[DEFAULT_GIF_RESIZE_PRESET]
 
     const [isProcessing, setIsProcessing] = useState(false)
     const [statusMessage, setStatusMessage] = useState(null)
@@ -33,43 +68,20 @@ const GifEditor = ({
 
     const videoRef = useRef(null)
 
-    const resolveVideoUrl = (mediaValue) => {
-        if (!mediaValue) return null
-        if (typeof mediaValue === 'string') return mediaValue
-        if (typeof mediaValue === 'object') {
-            return mediaValue.url || mediaValue.src || mediaValue.source || mediaValue.fullUrl || null
-        }
-        return null
-    }
+    const handlePreviewUrlError = useCallback((error) => {
+        console.error('[GifEditor] Unable to create preview for uploaded video', error)
+    }, [])
 
-    const videoUrl = useMemo(() => {
-        if (!videoFile) return null
-        if (videoFile instanceof File) {
-            try {
-                return URL.createObjectURL(videoFile)
-            } catch (error) {
-                console.error('[GifEditor] Unable to create preview for uploaded video', error)
-                return null
-            }
-        }
-        return resolveVideoUrl(videoFile)
-    }, [videoFile])
+    const videoUrl = useVideoPreviewUrl(videoFile, { onObjectUrlError: handlePreviewUrlError })
 
     useEffect(() => {
-        if (!(videoFile instanceof File) || !videoUrl) return
-        return () => {
-            if (import.meta.env.PROD) {
-                URL.revokeObjectURL(videoUrl)
-            }
-        }
-    }, [videoFile, videoUrl])
-
-    useEffect(() => {
-        setStatusMessage(null)
-        setConversionError(null)
-        setDuration(0)
-        setTrimStart(0)
-        setTrimEnd(0)
+        queueMicrotask(() => {
+            setStatusMessage(null)
+            setConversionError(null)
+            setDuration(0)
+            setTrimStart(0)
+            setTrimEnd(0)
+        })
 
         if (videoRef.current) {
             videoRef.current.pause()
@@ -77,16 +89,11 @@ const GifEditor = ({
         }
     }, [videoFile])
 
-    const resolveCommittedTrim = useCallback((totalDuration) => {
-        const safeStart = Math.min(Math.max(committedTrimStart, 0), totalDuration)
-        const candidateEnd = committedTrimEnd > 0 ? committedTrimEnd : totalDuration
-        const safeEnd = Math.min(Math.max(candidateEnd, safeStart), totalDuration)
-
-        return {
-            start: safeStart,
-            end: safeEnd,
-        }
-    }, [committedTrimEnd, committedTrimStart])
+    useEffect(() => {
+        const video = videoRef.current
+        if (!video) return
+        video.playbackRate = selectedSpeedPlaybackRate
+    }, [selectedSpeedPlaybackRate])
 
     const resetTransientEditorState = useCallback(() => {
         setStatusMessage(null)
@@ -116,17 +123,7 @@ const GifEditor = ({
 
         try {
             if (!onCreateGif) throw new Error('GIF conversion is not available right now.')
-            const result = await onCreateGif(videoFile, trimStart, trimEnd, committedResizePreset, committedResizeBorderColor)
-
-            if (!result?.id) {
-                throw new Error('GIF conversion did not return a downloadable result.')
-            }
-
-            if (!onExportGif) {
-                throw new Error('GIF export is not available right now.')
-            }
-
-            await onExportGif(result.id)
+            await onCreateGif(videoFile, { trimStart, trimEnd })
             setStatusMessage(null)
         } catch (error) {
             setConversionError(error?.message || 'GIF conversion failed. Please try again.')
@@ -135,26 +132,25 @@ const GifEditor = ({
             setIsProcessing(false)
         }
     }
-    // No longer need to check support here; handled in EditorContainer
-
     return (
         <div className="video-editor-container">
             <h2 className="video-editor-title">GIF Editor</h2>
 
-            <div className="preview-box preview-box-video-resize preview-box-checkered">
+            <div className="preview-box editor-preview preview-box-video-resize editor-preview--resize preview-box-checkered editor-preview--checkered">
                 {videoUrl ? (
-                    <div className={`gif-preview-frame ${previewFrameClassName}`} style={{ backgroundColor: committedResizeBorderColor }}>
-                        <video ref={videoRef} src={videoUrl} controls className="preview-video gif-preview-video"
+                    <div className={`gif-preview-frame ${previewFrameClassName}`} style={{ backgroundColor: resizeBorderColor }}>
+                        <video ref={videoRef} src={videoUrl} controls className="preview-video editor-preview-media gif-preview-video"
                             onLoadedMetadata={() => {
                                 const total = Number.isFinite(videoRef.current?.duration)
-                                    ? videoRef.current.duration
-                                    : 0
-                                const nextTrim = resolveCommittedTrim(total)
+                                        ? videoRef.current.duration
+                                        : 0
+                                const nextTrim = resolveGifTrimRange(trimRange, total)
                                 setDuration(total)
                                 setTrimStart(nextTrim.start)
                                 setTrimEnd(nextTrim.end)
                                 if (videoRef.current) {
                                     videoRef.current.currentTime = nextTrim.start
+                                    videoRef.current.playbackRate = selectedSpeedPlaybackRate
                                 }
                             }}
                             onTimeUpdate={() => {
@@ -164,13 +160,29 @@ const GifEditor = ({
                                 }
                             }}
                         />
+                        {previewText.trim() ? (
+                            <div className="gif-text-overlay-preview" aria-hidden="true">
+                                <span
+                                    className="gif-text-overlay-preview-content"
+                                    style={{
+                                        left: `${previewTextPositionX}%`,
+                                        top: `${previewTextPositionY}%`,
+                                        color: previewTextColor,
+                                        fontSize: `${previewTextSize}px`,
+                                        fontFamily: previewTextFontFamily,
+                                    }}
+                                >
+                                    {previewText}
+                                </span>
+                            </div>
+                        ) : null}
                     </div>
                 ) : (
-                    <p className="preview-label">Upload a video to start editing.</p>
+                    <EditorStatus centered>Upload a video to start editing.</EditorStatus>
                 )}
             </div>
 
-            <div className="card video-editor-actions">
+            <div className="card video-editor-actions editor-actions editor-actions--stack">
                 <button type="button" className="btn-primary" onClick={onOpenTrim}>
                     Trim
                 </button>
@@ -182,7 +194,7 @@ const GifEditor = ({
                 </button>
             </div>
 
-            <div className="card-actions card-actions-spaced">
+            <div className="card-actions card-actions-spaced editor-actions editor-actions--inline">
                 <button type="button" className="btn-secondary" onClick={() => {
                     resetTransientEditorState()
                     onCancel?.()
@@ -195,22 +207,21 @@ const GifEditor = ({
                     onClick={handleConvertToGif}
                     disabled={isProcessing || !videoUrl || duration <= 0}
                 >
-                    {isProcessing ? 'Downloading...' : 'Download GIF'}
+                    {isProcessing ? 'Exporting...' : 'Export GIF'}
                 </button>
             </div>
 
             {statusMessage && (
-                <p className="preview-label" style={{ marginTop: '0.75rem' }}>
+                <EditorStatus tone="info" spaced>
                     {statusMessage}
-                </p>
+                </EditorStatus>
             )}
 
             {conversionError && (
-                <p className="preview-label" style={{ marginTop: '0.75rem', color: '#ff3b30' }}>
+                <EditorStatus tone="error" spaced>
                     {conversionError}
-                </p>
+                </EditorStatus>
             )}
-
         </div>
     )
 }

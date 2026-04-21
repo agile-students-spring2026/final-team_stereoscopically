@@ -67,6 +67,32 @@ describe('Media Services Unit Tests', () => {
         expect(res.data.type).to.equal('gif');
         expect(getActiveMediaOrDeleteExpired(res.data.id)).to.not.be.undefined;
       })
+
+      it('should successfully apply text overlay metadata during GIF trim flow', async function() {
+        this.timeout(10000);
+        const textOverlay = {
+          text: 'GIF Title',
+          size: 24,
+          color: '#ffffff',
+          position: { x: 50, y: 50 },
+        };
+
+        const res = await trimVideo(
+          makeReq(
+            {
+              trimStart: '0',
+              trimEnd: '1',
+              textOverlay: JSON.stringify(textOverlay),
+            },
+            makeVideoFile(),
+          ),
+        );
+        trackMedia(res.data?.id);
+
+        expect(res.status).to.equal(200);
+        expect(res.data.type).to.equal('gif');
+        expect(res.data.textOverlay).to.deep.equal(textOverlay);
+      })
     }
   })
 

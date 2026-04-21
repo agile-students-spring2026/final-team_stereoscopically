@@ -16,7 +16,10 @@ This backend provides image-processing endpoints for the StickerCreate app. It i
 
 ```bash
 npm install
+cp .env.example .env
 ```
+
+Configure `.env` with your MongoDB Atlas credentials before running the server.
 
 ## Scripts
 
@@ -38,7 +41,8 @@ Default server URL: `http://localhost:4000`
 
 ```json
 {
-  "status": "ok"
+  "status": "ok",
+  "database": "connected"
 }
 ```
 
@@ -304,12 +308,39 @@ Notes:
 
 - `trimStart` (seconds)
 - `trimEnd` (seconds)
+- `resizePreset` (optional: `square`, `landscape`, `portrait`)
+- `resizeBorderColor` (optional: `#RRGGBB`)
+- `textOverlay` (optional JSON string payload)
+
+`textOverlay` JSON shape:
+
+```json
+{
+  "text": "GIF Title",
+  "size": 24,
+  "color": "#FFFFFF",
+  "position": { "x": 50, "y": 50 }
+}
+```
+
+Notes:
+- `text` is trimmed for no-op behavior; empty text does not render.
+- `size` must be between `8` and `120`.
+- `position.x` and `position.y` are percentages in the range `0..100`.
+- when provided and valid, text is burned directly into GIF frames during trim conversion.
 
 **Validation/error responses**
 
 - `400 { "error": "No video file uploaded.", "code": "MISSING_FILE" }`
 - `400 { "error": "Invalid trim values.", "code": "INVALID_TRIM_VALUES" }`
 - `400 { "error": "trimEnd must be greater than trimStart.", "code": "INVALID_TRIM_RANGE" }`
+- `400 { "error": "Invalid resize preset. Use square, landscape, or portrait.", "code": "INVALID_RESIZE_PRESET" }`
+- `400 { "error": "Invalid resize border color. Use a #RRGGBB hex value.", "code": "INVALID_RESIZE_BORDER_COLOR" }`
+- `400 { "error": "Invalid text overlay payload.", "code": "INVALID_TEXT_OVERLAY" }`
+- `400 { "error": "Invalid text overlay text value.", "code": "INVALID_TEXT_OVERLAY_TEXT" }`
+- `400 { "error": "Invalid text overlay size. Must be between 8 and 120.", "code": "INVALID_TEXT_OVERLAY_SIZE" }`
+- `400 { "error": "Invalid text overlay color. Use a #RRGGBB hex value.", "code": "INVALID_TEXT_OVERLAY_COLOR" }`
+- `400 { "error": "Invalid text overlay position.", "code": "INVALID_TEXT_OVERLAY_POSITION" }`
 - `500 { "error": "Failed to trim video.", "code": "TRIM_FAILED" }`
 
 ### Apply preset video filter

@@ -1,73 +1,42 @@
-import { useEffect, useState } from 'react'
 import FilterScreen from '../FilterScreen'
-import { adjustImageFromBackend } from '../../services/backendImageService'
+import EditorStatus from '../EditorStatus'
 
-const pctToFactor = (pct) => Math.min(2, Math.max(0, pct / 100))
+const DEFAULT_COLOR_ADJUSTMENTS = Object.freeze({
+  brightness: 100,
+  contrast: 100,
+  saturation: 100,
+  sharpness: 100,
+})
 
-function ColorFilters({ imageSrc, mediaId, onApply, onCancel, applyError }) {
-  const [brightness, setBrightness] = useState(100)
-  const [contrast, setContrast] = useState(100)
-  const [saturation, setSaturation] = useState(100)
-  const [sharpness, setSharpness] = useState(100)
-  const [previewSrc, setPreviewSrc] = useState(imageSrc)
-  const [previewError, setPreviewError] = useState(null)
-
-  useEffect(() => {
-    setPreviewSrc(imageSrc)
-  }, [imageSrc])
-
-  useEffect(() => {
-    if (!mediaId) {
-      setPreviewError('Image is not ready on the server yet.')
-      return
-    }
-    setPreviewError(null)
-    let cancelled = false
-    const timer = setTimeout(async () => {
-      try {
-        const result = await adjustImageFromBackend({
-          mediaId,
-          brightness: pctToFactor(brightness),
-          contrast: pctToFactor(contrast),
-          saturation: pctToFactor(saturation),
-          sharpness: pctToFactor(sharpness),
-        })
-        if (cancelled || !result?.url) return
-        setPreviewSrc(`${result.url}?cb=${Date.now()}`)
-      } catch (err) {
-        if (!cancelled) {
-          setPreviewError(err?.message || 'Preview update failed.')
-        }
-      }
-    }, 220)
-    return () => {
-      cancelled = true
-      clearTimeout(timer)
-    }
-  }, [mediaId, brightness, contrast, saturation, sharpness])
-
-  const handleApply = async () => {
-    if (!mediaId) return
-    try {
-      const result = await adjustImageFromBackend({
-        mediaId,
-        brightness: pctToFactor(brightness),
-        contrast: pctToFactor(contrast),
-        saturation: pctToFactor(saturation),
-        sharpness: pctToFactor(sharpness),
-      })
-      await onApply?.(result)
-    } catch (err) {
-      setPreviewError(err?.message || 'Could not apply adjustments.')
-    }
-  }
+function ColorFilters({
+  imageSrc,
+  adjustments = DEFAULT_COLOR_ADJUSTMENTS,
+  previewSrc,
+  onAdjustmentsChange,
+  onApply,
+  onCancel,
+  applyError,
+  previewError,
+  isLoadingPreview = false,
+}) {
+  const brightness = adjustments?.brightness ?? DEFAULT_COLOR_ADJUSTMENTS.brightness
+  const contrast = adjustments?.contrast ?? DEFAULT_COLOR_ADJUSTMENTS.contrast
+  const saturation = adjustments?.saturation ?? DEFAULT_COLOR_ADJUSTMENTS.saturation
+  const sharpness = adjustments?.sharpness ?? DEFAULT_COLOR_ADJUSTMENTS.sharpness
 
   return (
     <FilterScreen
       title="Color Filters"
-      imageSrc={previewSrc}
-      onApply={handleApply}
+      imageSrc={previewSrc || imageSrc}
+      onApply={onApply}
       onCancel={onCancel}
+      previewOverlay={isLoadingPreview ? (
+        <div className="editor-preview-overlay editor-preview-overlay--loading">
+          <EditorStatus tone="loading" centered className="editor-preview-overlay__status">
+            Applying adjustments…
+          </EditorStatus>
+        </div>
+      ) : null}
     >
       <div className="color-filters-panel">
         {(previewError || applyError) && (
@@ -76,54 +45,58 @@ function ColorFilters({ imageSrc, mediaId, onApply, onCancel, applyError }) {
           </p>
         )}
         <div>
-          <label>
+          <label className="editor-range-field">
             Brightness: {brightness}%
             <input
               type="range"
               min="0"
               max="200"
               value={brightness}
-              onChange={(e) => setBrightness(Number(e.target.value))}
-              className="slider-wrapper"
+              onChange={(e) => onAdjustmentsChange?.({ brightness: Number(e.target.value) })}
+              className="slider-wrapper editor-slider"
+              disabled={isLoadingPreview}
             />
           </label>
         </div>
         <div>
-          <label>
+          <label className="editor-range-field">
             Contrast: {contrast}%
             <input
               type="range"
               min="0"
               max="200"
               value={contrast}
-              onChange={(e) => setContrast(Number(e.target.value))}
-              className="slider-wrapper"
+              onChange={(e) => onAdjustmentsChange?.({ contrast: Number(e.target.value) })}
+              className="slider-wrapper editor-slider"
+              disabled={isLoadingPreview}
             />
           </label>
         </div>
         <div>
-          <label>
+          <label className="editor-range-field">
             Saturation: {saturation}%
             <input
               type="range"
               min="0"
               max="200"
               value={saturation}
-              onChange={(e) => setSaturation(Number(e.target.value))}
-              className="slider-wrapper"
+              onChange={(e) => onAdjustmentsChange?.({ saturation: Number(e.target.value) })}
+              className="slider-wrapper editor-slider"
+              disabled={isLoadingPreview}
             />
           </label>
         </div>
         <div>
-          <label>
+          <label className="editor-range-field">
             Sharpness: {sharpness}%
             <input
               type="range"
               min="0"
               max="200"
               value={sharpness}
-              onChange={(e) => setSharpness(Number(e.target.value))}
-              className="slider-wrapper"
+              onChange={(e) => onAdjustmentsChange?.({ sharpness: Number(e.target.value) })}
+              className="slider-wrapper editor-slider"
+              disabled={isLoadingPreview}
             />
           </label>
         </div>
