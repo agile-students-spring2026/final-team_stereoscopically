@@ -1,4 +1,4 @@
-import { Creation } from '../models/CreationModel.js'
+import { Creation } from '../models/creationModel.js'
 
 const MAX_TITLE_LENGTH = 200
 
