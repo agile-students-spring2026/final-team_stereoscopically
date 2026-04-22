@@ -7,6 +7,7 @@ import { MEDIA_PURGE_INTERVAL_MS, PORT } from './src/config/constants.js'
 import { connectToDatabase } from './src/config/database.js'
 import { errorHandler, notFoundHandler } from './src/middleware/errorMiddleware.js'
 import mediaRoutes from './src/routes/mediaRoutes.js'
+import creationRoutes from './src/routes/creationRoutes.js'
 import { purgeExpiredMedia } from './src/services/mediaStore.js'
 
 const app = express()
@@ -14,6 +15,7 @@ const app = express()
 app.use(cors())
 app.use(express.json())
 app.use(mediaRoutes)
+app.use(creationRoutes) 
 app.use(notFoundHandler)
 app.use(errorHandler)
 
