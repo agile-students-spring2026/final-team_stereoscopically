@@ -135,10 +135,12 @@ const useImageEditingSession = ({
   useEffect(() => {
     queueMicrotask(() => {
       setSelectedImageFilterPreset(DEFAULT_IMAGE_FILTER_PRESET)
-      setPresetFilterPreviewSrc(sourceUrl || effectiveImageSrc)
+      // Prefer current editor canvas (text, preset, etc.); sourceUrl is only the first upload
+      const pipelineSrc = effectiveImageSrc || sourceUrl
+      setPresetFilterPreviewSrc(pipelineSrc)
       setPresetFilterError(null)
       setColorAdjustments(DEFAULT_COLOR_ADJUSTMENTS)
-      setColorFilterPreviewSrc(sourceUrl || effectiveImageSrc)
+      setColorFilterPreviewSrc(pipelineSrc)
       setColorFilterError(null)
     })
   }, [effectiveBackendMediaId, effectiveImageSrc, sourceUrl])
@@ -197,8 +199,9 @@ const useImageEditingSession = ({
 
   const loadPresetFilterPreview = useCallback(async (preset) => {
     const nextPreset = preset || DEFAULT_IMAGE_FILTER_PRESET
-    const filterMediaId = originalImageMediaIdRef.current || effectiveBackendMediaId
-    const baselinePreviewSrc = sourceUrl || effectiveImageSrc
+    // Current pipeline image (crop/resize/text). originalImageMediaIdRef is only for "reset to upload".
+    const filterMediaId = effectiveBackendMediaId
+    const baselinePreviewSrc = effectiveImageSrc || sourceUrl
     setPresetFilterError(null)
     const requestId = ++presetFilterRequestIdRef.current
 
@@ -251,11 +254,11 @@ const useImageEditingSession = ({
   }, [loadPresetFilterPreview])
 
   const applyImagePresetFilter = useCallback(async () => {
-    const filterMediaId = originalImageMediaIdRef.current || effectiveBackendMediaId
+    const filterMediaId = effectiveBackendMediaId
 
     if (selectedImageFilterPreset === DEFAULT_IMAGE_FILTER_PRESET) {
       setSelectedImageFilterPreset(DEFAULT_IMAGE_FILTER_PRESET)
-      setPresetFilterPreviewSrc(sourceUrl || effectiveImageSrc)
+      setPresetFilterPreviewSrc(effectiveImageSrc || sourceUrl)
       setPresetFilterError(null)
       return restoreOriginalImageFromSource()
     }
@@ -306,8 +309,8 @@ const useImageEditingSession = ({
 
   useEffect(() => {
     const normalized = normalizeColorAdjustments(colorAdjustments)
-    const adjustmentMediaId = originalImageMediaIdRef.current || effectiveBackendMediaId
-    const baselinePreviewSrc = sourceUrl || effectiveImageSrc
+    const adjustmentMediaId = effectiveBackendMediaId
+    const baselinePreviewSrc = effectiveImageSrc || sourceUrl
 
     if (isDefaultColorAdjustments(normalized)) {
       queueMicrotask(() => {
@@ -366,7 +369,7 @@ const useImageEditingSession = ({
   }, [])
 
   const applyColorAdjustments = useCallback(async () => {
-    const adjustmentMediaId = originalImageMediaIdRef.current || effectiveBackendMediaId
+    const adjustmentMediaId = effectiveBackendMediaId
     const normalized = normalizeColorAdjustments(colorAdjustments)
 
     if (isDefaultColorAdjustments(normalized)) {
