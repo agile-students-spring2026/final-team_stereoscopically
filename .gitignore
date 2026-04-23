@@ -41,6 +41,8 @@ Thumbs.db
 
 # Lock file so we don't bloat the git log stats
 package-lock.json
+!front-end/package-lock.json
+!back-end/package-lock.json
 
 # Logs
 logs
