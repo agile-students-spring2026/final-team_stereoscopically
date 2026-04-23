@@ -19,6 +19,10 @@ const ImageEditor = ({
   uploadError = null,
   isExporting = false,
   exportError = null,
+  onSaveForLater,
+  isSavingDraft = false,
+  saveDraftError = null,
+  saveDraftMessage = null,
   showResetCrop = false,
 }) => {
   // Track if cropper is active
@@ -132,6 +136,16 @@ const ImageEditor = ({
           {exportError}
         </EditorStatus>
       )}
+      {saveDraftError && (
+        <EditorStatus tone="error" spaced>
+          {saveDraftError}
+        </EditorStatus>
+      )}
+      {saveDraftMessage && !saveDraftError && (
+        <EditorStatus tone="info" spaced>
+          {saveDraftMessage}
+        </EditorStatus>
+      )}
 
       {imageLoadError && (
         <EditorStatus tone="error" spaced>
@@ -163,11 +177,19 @@ const ImageEditor = ({
           Filters
         </button>
       </div>
-      <div className="card-actions card-actions-spaced editor-actions editor-actions--inline">
+      <div className="card-actions card-actions-spaced editor-actions editor-actions--inline editor-actions--wrap">
         <button type="button" className="btn-secondary" onClick={onBack}>
           Cancel
         </button>
-        <button type="button" className="btn-primary" onClick={onExport || (() => {})} disabled={isExporting}>
+        <button
+          type="button"
+          className="btn-secondary"
+          onClick={onSaveForLater}
+          disabled={isUploading || isExporting || isSavingDraft}
+        >
+          {isSavingDraft ? 'Saving…' : 'Save for later'}
+        </button>
+        <button type="button" className="btn-primary" onClick={onExport || (() => {})} disabled={isExporting || isSavingDraft}>
           {isExporting ? 'Exporting...' : 'Export'}
         </button>
       </div>

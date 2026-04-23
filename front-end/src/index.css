@@ -5,8 +5,18 @@
   color: #333333;
   background-color: #f5f5f5;
 
+  /* App shell + editor (editing tools can use a wide column) */
+  --app-shell-max: min(98vw, 1600px);
+  --app-content-max-width: var(--app-shell-max);
+  --editor-max-width: var(--app-shell-max);
+
+  /* “Create New”: wide panel; still below full editor column on huge screens */
+  --create-new-panel-max: min(100%, 70rem);
+
+  /* Image editor + crop: keep a readable workbench width even when the app column is very wide */
+  --editor-image-workbench-max: min(100%, 30rem);
+
   /* Editor consistency tokens (Phase 1 foundation) */
-  --editor-max-width: 400px;
   --editor-radius-sm: 8px;
   --editor-radius-md: 12px;
   --editor-space-xs: 0.5rem;
