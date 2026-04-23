@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useCallback, useRef, useState } from 'react'
 import './App.css'
 import EditorContainer from './components/EditorContainer'
 import MyCreationsPage from './components/MyCreationsPage'
@@ -6,6 +6,12 @@ import MyCreationsPage from './components/MyCreationsPage'
 function App() {
   const [view, setView] = useState('create')
   const [creationsRefreshKey, setCreationsRefreshKey] = useState(0)
+  const loadDraftRef = useRef(null)
+
+  const handleSelectCreation = useCallback((creation) => {
+    setView('create')
+    setTimeout(() => loadDraftRef.current?.(creation), 0)
+  }, [])
 
   return (
     <div className="app-container">
@@ -30,10 +36,18 @@ function App() {
       </header>
       <main className="app-main">
         <div className="app-view" hidden={view !== 'create'}>
-          <EditorContainer onDraftSaved={() => setCreationsRefreshKey((k) => k + 1)} />
+          <EditorContainer 
+          onDraftSaved={() => setCreationsRefreshKey((k) => k + 1)} 
+          onSelectCreation={(registerFn) => {loadDraftRef.current = registerFn}}
+          
+          />
         </div>
         <div className="app-view" hidden={view !== 'creations'}>
-          <MyCreationsPage refreshKey={creationsRefreshKey} />
+          <MyCreationsPage 
+          refreshKey={creationsRefreshKey} 
+          onSelectCreation={handleSelectCreation}
+          
+          />
         </div>
       </main>
     </div>

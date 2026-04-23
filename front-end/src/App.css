@@ -1189,3 +1189,18 @@ input[type='range']::-moz-range-thumb {
   background: #e6f0ff;
   color: #1a4a8a;
 }
+
+.my-creations-item-title--link {
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  font: inherit;
+  color: var(--color-link, #0057cc);
+  text-decoration: underline;
+  text-align: left;
+}
+
+.my-creations-item-title--link:hover {
+  color: var(--color-link-hover, #003d99);
+}
