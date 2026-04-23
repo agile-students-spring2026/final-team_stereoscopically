@@ -122,7 +122,21 @@ function MyCreationsPage({ refreshKey = 0, onSelectCreation }) {
               <CreationPreviewThumb row={row} title={title} />
               <div className="my-creations-item-body">
                 <div className="my-creations-item-main">
-                  <span className="my-creations-item-title">{title}</span>
+                  {onSelectCreation ? (
+                    <button
+                      type='button'
+                      className="my-creations-item-title my-creations-item-title--link"
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        onSelectCreation(row)
+
+                      }}
+                      >
+                        {title}
+                      </button>
+                  ): (
+                    <span className="my-creations-item-title">{title}</span>
+                  )}
                   <span
                     className={
                       status === 'exported' ? 'my-creations-badge my-creations-badge--exported' : 'my-creations-badge my-creations-badge--draft'
