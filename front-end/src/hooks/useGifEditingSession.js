@@ -1,4 +1,4 @@
-import { useCallback, useRef, useState } from 'react'
+import { useCallback, useRef, useState, useMemo } from 'react'
 import { trimVideoService, applyVideoFilter, exportGifToBackend } from '../services/backendGifService'
 import { GIF_SPEED_PLAYBACK_RATES, DEFAULT_GIF_SPEED_PLAYBACK_RATE } from '../components/gif/gifSpeedOptions'
 import {
@@ -354,7 +354,7 @@ const useGifEditingSession = () => {
     const safePreset = VALID_GIF_RESIZE_PRESETS.has(payload.resizePreset)
       ? payload.resizePreset
       : DEFAULT_GIF_RESIZE_PRESET
-      
+
     setResizePreset(safePreset)
 
     const rawColor = typeof payload.resizeBorderColor === 'string'
@@ -414,7 +414,7 @@ const useGifEditingSession = () => {
     }
   }, [])
 
-  return {
+  return useMemo(() => ({
     // Trim state and actions
     trimRange,
     applyTrimRange,
@@ -462,9 +462,19 @@ const useGifEditingSession = () => {
     // Reset
     resetGifSession,
     restoreGifSession,
+
+    }), [
+      trimRange, applyTrimRange, resizePreset, resizeBorderColor, 
+      applyResizeSettings, selectedSpeedPlaybackRate, selectSpeed, 
+      applySpeed, textOverlaySettings, setGifTextOverlaySettings, 
+      updateGifTextOverlaySettings, applyGifTextOverlaySettings, 
+      resetGifTextOverlaySettings, activeTool, openGifTool, 
+      selectedFilterPreset, selectFilterPreset, filterPreviewUrl, 
+      filterPreviewResult, isLoadingFilterPreview, filterPreviewError, 
+      loadFilterPreview, applyVideoFilterAndReturn, isProcessing, 
+      statusMessage, exportError, createAndExportGif, 
+      resetGifSession, restoreGifSession
+    ])
   }
-
   
-}
-
 export default useGifEditingSession

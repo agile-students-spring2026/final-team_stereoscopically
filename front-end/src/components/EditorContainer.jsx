@@ -97,8 +97,6 @@ function EditorContainer({ onDraftSaved, onSelectCreation }) {
     applyTransformedImage,
   })
 
-  const { restoreGifSession } = gifSession
-
   const [screen, setScreen] = useState(SCREENS.EDITOR)
   const [activeDraftId, setActiveDraftId] = useState(null)
   const [saveForLaterError, setSaveForLaterError] = useState(null)
@@ -196,7 +194,7 @@ function EditorContainer({ onDraftSaved, onSelectCreation }) {
 
       return result
     },
-    [clearCropSession, gifSession, selectVideo]
+    [clearCropSession, gifSession, selectVideo, pendingVideoDraftPayload]
   )
 
   const handleCameraSelect = () => {
