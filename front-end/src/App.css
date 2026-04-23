@@ -24,9 +24,50 @@
   margin: 0;
 }
 
+.app-header--nav {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+  width: 100%;
+  max-width: var(--app-content-max-width);
+}
+
+.app-nav {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+}
+
+.app-nav-link {
+  font: inherit;
+  cursor: pointer;
+  padding: 0.4rem 0.85rem;
+  border-radius: 8px;
+  border: 1px solid #c9c9c9;
+  background: #fff;
+  color: #333;
+}
+
+.app-nav-link:hover {
+  background: #f0f0f0;
+}
+
+.app-nav-link--active {
+  border-color: #646cff;
+  color: #424bd4;
+  font-weight: 600;
+}
+
+.app-view[hidden] {
+  display: none !important;
+}
+
 .app-main {
   width: 100%;
-  max-width: 480px;
+  max-width: var(--app-content-max-width);
   display: flex;
   justify-content: center;
 }
@@ -37,7 +78,7 @@
 
 .card {
   width: 100%;
-  max-width: 400px;
+  max-width: var(--editor-max-width);
   padding: 2rem;
   border-radius: 12px;
   border: 1px solid #e0e0e0;
@@ -73,6 +114,10 @@
 .editor-actions--inline {
   flex-direction: row;
   align-items: center;
+  flex-wrap: wrap;
+}
+
+.editor-actions--wrap {
   flex-wrap: wrap;
 }
 
@@ -179,6 +224,48 @@
 /* ============================================================================
    CREATE NEW / UPLOAD SCREEN
    ============================================================================ */
+
+/* Default .card uses align-items: center so flex children shrink to content; that
+   left-aligns this screen. Stretch + horizontal margin centers the block and
+   full-width buttons. */
+.card.create-new {
+  /* Wider panel, three actions one per row (column) */
+  max-width: var(--create-new-panel-max);
+  width: 100%;
+  align-items: stretch;
+  margin-left: auto;
+  margin-right: auto;
+  box-sizing: border-box;
+  padding: 2.25rem 2rem;
+}
+
+.card.create-new .upload-options {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 1.1rem;
+}
+
+.card.create-new .upload-button {
+  display: block;
+  width: 100%;
+  box-sizing: border-box;
+  flex: none;
+  max-width: none;
+  min-width: 0;
+  padding: 0.95rem 1.75rem;
+}
+
+@media (min-width: 480px) {
+  .card.create-new {
+    padding: 2.75rem 2.5rem;
+  }
+}
+
+@media (min-width: 720px) {
+  .card.create-new {
+    padding: 2.75rem 3rem;
+  }
+}
 
 .upload-options {
   width: 100%;
@@ -442,7 +529,7 @@
 
 .screen-header {
   width: 100%;
-  max-width: 400px;
+  max-width: var(--editor-max-width);
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -484,6 +571,8 @@
   justify-content: center;
   margin-bottom: var(--editor-space-md);
   box-sizing: border-box;
+  /* Clip image/video to rounded corners (Preset Filters etc.) */
+  overflow: hidden;
 }
 
 .preview-box-interactive,
@@ -763,6 +852,14 @@ input[type='range']::-moz-range-thumb {
   align-items: center;
 }
 
+/* Image preview + crop: don’t let photos scale to the full ultra-wide app column (regression after shell widening) */
+.image-editor-container .preview-box,
+.image-editor-container .image-cropper {
+  max-width: var(--editor-image-workbench-max);
+  width: 100%;
+  box-sizing: border-box;
+}
+
 .image-editor-title,
 .video-editor-title,
 .editor-shell-title {
@@ -966,4 +1063,129 @@ input[type='range']::-moz-range-thumb {
   text-align: center;
   font-size: 0.9rem;
   color: #666;
+}
+
+/* ============================================================================
+   MY CREATIONS
+   ============================================================================ */
+
+.my-creations {
+  width: 100%;
+  max-width: var(--app-content-max-width);
+  box-sizing: border-box;
+}
+
+.my-creations-subtitle {
+  margin: 0 0 1rem 0;
+  text-align: center;
+  font-size: 0.9rem;
+  color: #555;
+}
+
+.my-creations--empty {
+  text-align: center;
+}
+
+.my-creations-empty-hint {
+  margin: 0;
+  line-height: 1.5;
+  color: #444;
+}
+
+.my-creations-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.my-creations-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+  border: 1px solid #e0e0e0;
+  border-radius: 10px;
+  background: #fff;
+  padding: 0.85rem 1rem;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06);
+}
+
+.my-creations-thumb-wrap {
+  flex-shrink: 0;
+  width: 4.5rem;
+  height: 4.5rem;
+  border-radius: 10px;
+  overflow: hidden;
+  background: #e8e8ef;
+  border: 1px solid #dcdce5;
+}
+
+.my-creations-thumb-wrap--placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(145deg, #eceef5, #dfe3ec);
+}
+
+.my-creations-thumb-placeholder-label {
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #5a5f70;
+}
+
+.my-creations-thumb {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.my-creations-item-body {
+  flex: 1;
+  min-width: 0;
+}
+
+.my-creations-item-main {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.my-creations-item-title {
+  font-weight: 600;
+  color: #222;
+  word-break: break-word;
+  flex: 1;
+  min-width: 0;
+}
+
+.my-creations-item-meta {
+  margin-top: 0.4rem;
+  font-size: 0.85rem;
+  color: #666;
+}
+
+.my-creations-badge {
+  flex-shrink: 0;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding: 0.2rem 0.5rem;
+  border-radius: 6px;
+}
+
+.my-creations-badge--draft {
+  background: #e8e8ef;
+  color: #444;
+}
+
+.my-creations-badge--exported {
+  background: #e6f0ff;
+  color: #1a4a8a;
 }
