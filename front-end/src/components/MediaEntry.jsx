@@ -1,4 +1,5 @@
 import { useRef } from 'react'
+import EditorStatus from './EditorStatus'
 
 const MediaEntry = ({
   onImageSelect,
@@ -48,7 +49,7 @@ const MediaEntry = ({
         <h2>Create New</h2>
 
         <div className="upload-options">
-          <label className="upload-button" style={{ display: 'inline-block', cursor: isLoading ? 'not-allowed' : 'pointer' }}>
+          <label className="upload-button" style={{ cursor: isLoading ? 'not-allowed' : 'pointer' }}>
             Upload Image
             <input
               ref={imageFileInputRef}
@@ -60,7 +61,7 @@ const MediaEntry = ({
             />
           </label>
 
-          <label className="upload-button" style={{ display: 'inline-block', cursor: isLoading ? 'not-allowed' : 'pointer' }}>
+          <label className="upload-button" style={{ cursor: isLoading ? 'not-allowed' : 'pointer' }}>
             Upload Video
             <input
               ref={videoFileInputRef}
@@ -85,15 +86,15 @@ const MediaEntry = ({
         </div>
 
         {statusMessage && (
-          <p role="status" className="upload-status">
+          <EditorStatus>
             {statusMessage}
-          </p>
+          </EditorStatus>
         )}
 
         {validationError && (
-          <p role="alert" className="upload-status" style={{ color: '#ff3b30' }}>
+          <EditorStatus tone="error">
             {validationError}
-          </p>
+          </EditorStatus>
         )}
       </div>
 

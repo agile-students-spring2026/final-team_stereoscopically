@@ -26,23 +26,23 @@ function PhotoPreview({ file, onRetake, onConfirm, onBack }) {
                 Preview {isVideo ? 'Video' : 'Photo'}
             </h2>
 
-            <div className="preview-box">
+            <div className="preview-box editor-preview">
                 {isVideo ? (
                     <video 
                         src={previewUrl} 
                         controls 
-                        className="preview-video" 
+                        className="preview-video editor-preview-media" 
                     />
                 ) : (
                     <img 
                         src={previewUrl} 
                         alt="Captured" 
-                        className="preview-video" 
+                        className="preview-video editor-preview-media" 
                     />
                 )}
             </div>
 
-            <div className="card video-editor-actions">
+            <div className="card video-editor-actions editor-actions editor-actions--stack">
                 <button
                     type="button"
                     className="btn-primary"
@@ -60,7 +60,7 @@ function PhotoPreview({ file, onRetake, onConfirm, onBack }) {
                 </button>
             </div>
 
-            <div className="card-actions card-actions-spaced">
+            <div className="card-actions card-actions-spaced editor-actions editor-actions--inline">
                 <button
                     type="button"
                     className="btn-secondary"

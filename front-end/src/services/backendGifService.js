@@ -23,7 +23,14 @@ export const convertVideoToGif = async (videoFile) => {
   }
 }
 
-export const trimVideoService = async (videoFile, trimStart, trimEnd, resizePreset, resizeBorderColor) => {
+export const trimVideoService = async (
+  videoFile,
+  trimStart,
+  trimEnd,
+  resizePreset,
+  resizeBorderColor,
+  textOverlaySettings,
+) => {
   if (!videoFile) {
     throw new Error('No video file provided for trimming')
   }
@@ -41,6 +48,14 @@ export const trimVideoService = async (videoFile, trimStart, trimEnd, resizePres
     fields.resizeBorderColor = resizeBorderColor
   }
 
+  if (
+    textOverlaySettings &&
+    typeof textOverlaySettings === 'object' &&
+    !Array.isArray(textOverlaySettings)
+  ) {
+    fields.textOverlay = JSON.stringify(textOverlaySettings)
+  }
+
   const payload = await postMultipart({
     path: '/api/trim/video',
     fileField: 'video',
@@ -54,6 +69,7 @@ export const trimVideoService = async (videoFile, trimStart, trimEnd, resizePres
     type: payload?.type ?? 'video',
     url: payload?.url ?? null,
     size: payload?.size ?? null,
+    textOverlay: payload?.textOverlay ?? null,
   }
 }
 
@@ -80,16 +96,21 @@ export const applyVideoFilter = async (videoFile, preset) => {
   }
 }
 
-export const exportGifToBackend = async (mediaId) => {
+export const exportGifToBackend = async (mediaId, playbackRate) => {
   if (!mediaId) throw new Error('Missing media ID for export')
 
-  const payload = await postJson({
+  const payload = { mediaId }
+  if (Number.isFinite(playbackRate)) {
+    payload.playbackRate = playbackRate
+  }
+
+  const responsePayload = await postJson({
     path: '/api/export/gif',
-    payload: { mediaId },
+    payload,
     fallbackErrorMessage: 'GIF export failed',
   })
 
-  const result = payload?.data ?? payload
+  const result = responsePayload?.data ?? responsePayload
   return {
     id: result?.id ?? null,
     url: result?.url ?? null,

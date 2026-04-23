@@ -1,8 +1,8 @@
+import { useCallback, useRef, useState } from 'react'
 import './App.css'
-import { useState } from 'react'
 import EditorContainer from './components/EditorContainer'
 import HomeView from './components/HomeView'
-import MyCreationsView from './components/MyCreationsView'
+import MyCreationsPage from './components/MyCreationsPage'
 
 const APP_VIEWS = {
   HOME: 'home',
@@ -12,14 +12,33 @@ const APP_VIEWS = {
 
 function App() {
   const [activeView, setActiveView] = useState(APP_VIEWS.HOME)
+  const [creationsRefreshKey, setCreationsRefreshKey] = useState(0)
+  const loadDraftRef = useRef(null)
+
+  const handleSelectCreation = useCallback((creation) => {
+    setActiveView(APP_VIEWS.CREATE)
+    setTimeout(() => loadDraftRef.current?.(creation), 0)
+  }, [])
 
   const renderActiveView = () => {
     if (activeView === APP_VIEWS.CREATE) {
-      return <EditorContainer />
+      return (
+        <EditorContainer
+          onDraftSaved={() => setCreationsRefreshKey((k) => k + 1)}
+          onSelectCreation={(registerFn) => {
+            loadDraftRef.current = registerFn
+          }}
+        />
+      )
     }
 
     if (activeView === APP_VIEWS.MY_CREATIONS) {
-      return <MyCreationsView onCreateNew={() => setActiveView(APP_VIEWS.CREATE)} />
+      return (
+        <MyCreationsPage
+          refreshKey={creationsRefreshKey}
+          onSelectCreation={handleSelectCreation}
+        />
+      )
     }
 
     return <HomeView />
