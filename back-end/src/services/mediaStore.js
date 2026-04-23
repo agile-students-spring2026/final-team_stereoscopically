@@ -1,44 +1,56 @@
-import { MEDIA_TTL_MS } from '../config/constants.js'
+import { ObjectId } from 'mongodb'
+import { getMediaBucket } from '../config/database.js'
 
-const inMemoryMediaStore = new Map()
+export const createMedia = async ({ buffer, filename, mimeType, metadata = {} }) => {
+	const bucket = getMediaBucket()
 
-const now = () => Date.now()
+	return await new Promise((resolve, reject) => {
+		const uploadStream = bucket.openUploadStream(filename, {
+			contentType: mimeType,
+			metadata: {
+				...metadata,
+				mimeType,
+			},
+		})
 
-const withExpiry = (media) => ({
-	...media,
-	expiresAt: now() + MEDIA_TTL_MS,
-})
+		uploadStream.end(buffer)
 
-export const createMedia = (id, media) => {
-	inMemoryMediaStore.set(id, withExpiry(media))
+		uploadStream.on('finish', () => {
+			resolve({
+				id: uploadStream.id.toString(),
+				fileName: filename,
+				mimeType,
+			})
+		})
+
+		uploadStream.on('error', reject)
+	})
 }
 
-export const getMedia = (id) => inMemoryMediaStore.get(id)
-
-export const deleteMedia = (id) => {
-	inMemoryMediaStore.delete(id)
-}
-
-export const isMediaExpired = (media) => !media || media.expiresAt <= now()
-
-export const getActiveMediaOrDeleteExpired = (id) => {
-	const media = getMedia(id)
-	if (!media) {
+export const getMediaFileInfo = async (id) => {
+	if (!ObjectId.isValid(id)) {
 		return null
 	}
 
-	if (isMediaExpired(media)) {
-		deleteMedia(id)
-		return null
-	}
-
-	return media
+	const bucket = getMediaBucket()
+	const files = await bucket.find({ _id: new ObjectId(id) }).toArray()
+	return files[0] || null
 }
 
-export const purgeExpiredMedia = () => {
-	for (const [id, media] of inMemoryMediaStore.entries()) {
-		if (isMediaExpired(media)) {
-			deleteMedia(id)
-		}
+export const openMediaDownloadStream = (id) => {
+	if (!ObjectId.isValid(id)) {
+		throw new Error('Invalid media id.')
 	}
+
+	const bucket = getMediaBucket()
+	return bucket.openDownloadStream(new ObjectId(id))
+}
+
+export const deleteMedia = async (id) => {
+	if (!ObjectId.isValid(id)) {
+		return
+	}
+
+	const bucket = getMediaBucket()
+	await bucket.delete(new ObjectId(id))
 }

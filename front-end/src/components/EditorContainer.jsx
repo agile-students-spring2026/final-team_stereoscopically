@@ -14,6 +14,7 @@ import useMediaSelection, { MEDIA_SELECTION_CODES } from '../hooks/useMediaSelec
 import useGifEditingSession from '../hooks/useGifEditingSession'
 import useImageEditingSession from '../hooks/useImageEditingSession'
 import { convertBackendVideoResultToLocalMedia } from '../services/backendGifService'
+import { getBackendBaseUrl } from '../services/backendMediaClient'
 import CameraCapture from './CameraCapture'
 import PhotoPreview from './PhotoPreview'
 import VideoPresetFilters from './gif/VideoPresetFilters'
@@ -45,6 +46,7 @@ function EditorContainer({ onDraftSaved, onSelectCreation }) {
     previewUrl,
     sourceUrl,
     backendImageResult,
+    backendVideoResult,
     isUploading,
     uploadError,
     validationError,
@@ -114,7 +116,7 @@ function EditorContainer({ onDraftSaved, onSelectCreation }) {
   const handleImageSelect = async (file) => {
     if (!file) return
 
-  setOriginalVideoFile(null)
+    setOriginalVideoFile(null)
     setLastRejectedUploadType('image')
 
     const result = await selectImage(file)
@@ -147,6 +149,7 @@ function EditorContainer({ onDraftSaved, onSelectCreation }) {
   }
 
   const [unsupportedVideo, setUnsupportedVideo] = useState(null)
+
   const handleVideoSelect = useCallback(
     async (file, { preserveSelectedSpeed = false, preserveOriginalVideo = false } = {}) => {
       if (!file) return
@@ -178,17 +181,20 @@ function EditorContainer({ onDraftSaved, onSelectCreation }) {
       setFileTooLargeMessage(null)
       setUnsupportedVideo(null)
       clearCropSession()
+
       if (result?.applied) {
         setActiveDraftId(null)
         setSaveForLaterError(null)
         setSaveForLaterMessage(null)
-        if (pendingVideoDraftPayload){
+
+        if (pendingVideoDraftPayload) {
           gifSession.restoreGifSession(pendingVideoDraftPayload)
           setPendingVideoDraftPayload(null)
         } else {
           setActiveDraftId(null)
           gifSession.resetGifSession({ preserveSelectedSpeed })
         }
+
         setScreen(SCREENS.EDITOR)
       }
 
@@ -249,20 +255,64 @@ function EditorContainer({ onDraftSaved, onSelectCreation }) {
       setActiveDraftId(draftId)
       setSaveForLaterError(null)
       setSaveForLaterMessage(null)
-      setPendingVideoDraftPayload(payload)
-      setScreen(SCREENS.EDITOR)
+      setPendingVideoDraftPayload(null)
+
+      if (!payload.backendMediaId) {
+        setPendingVideoDraftPayload(payload)
+        setScreen(SCREENS.EDITOR)
+        return
+      }
+
+      setIsDraftLoading(true)
+
+      try {
+        setPendingVideoDraftPayload(payload)
+
+        const restoredResult = {
+          id: payload.backendMediaId,
+          url: `${getBackendBaseUrl()}/api/media/${payload.backendMediaId}`,
+          mimeType: 'video/mp4',
+        }
+
+        const { file } = await convertBackendVideoResultToLocalMedia(restoredResult, {
+          fallbackFileName: 'draft-video.mp4',
+          fallbackMimeType: 'video/mp4',
+          fetchErrorMessage: 'Failed to load draft video.',
+        })
+
+        const selection = await handleVideoSelect(file, {
+          preserveSelectedSpeed: true,
+          preserveOriginalVideo: false,
+        })
+
+        if (selection?.code !== MEDIA_SELECTION_CODES.OK) {
+          throw new Error('Draft video could not be restored.')
+        }
+
+        setScreen(SCREENS.EDITOR)
+      } catch {
+        setDraftLoadError('Could not restore draft video. The file may have expired.')
+        setPendingVideoDraftPayload(payload)
+        setActiveDraftId(null)
+      } finally {
+        setIsDraftLoading(false)
+      }
+
+      return
     }
-  }, [gifSession, resetImageEditingSessionState, resetSelection, restoreImageSession])
+  }, [gifSession, handleVideoSelect, resetImageEditingSessionState, resetSelection, restoreImageSession])
 
   useEffect(() => {
     onSelectCreation?.(handleLoadDraft)
-  }, [handleLoadDraft, onSelectCreation] )
+  }, [handleLoadDraft, onSelectCreation])
 
   const handleSaveForLaterImage = useCallback(async () => {
     if (!selectedMedia) return
+
     setSaveForLaterError(null)
     setSaveForLaterMessage(null)
     setIsSavingDraft(true)
+
     try {
       const title = defaultCreationTitle(selectedMedia)
       const editorPayload = buildImageCreationPayload({
@@ -273,14 +323,17 @@ function EditorContainer({ onDraftSaved, onSelectCreation }) {
         selectedPreset,
         letterboxColor,
       })
+
       const body = { title, editorPayload, status: 'draft' }
       const result = activeDraftId
         ? await updateCreation(activeDraftId, body)
         : await createCreation({ ...body, ownerKey: getOrCreateOwnerKey() })
+
       const id = result?._id ?? result?.id
       if (id) {
         setActiveDraftId(String(id))
       }
+
       setSaveForLaterMessage('Draft saved. View it in My Creations.')
       onDraftSaved?.()
     } catch (err) {
@@ -302,12 +355,21 @@ function EditorContainer({ onDraftSaved, onSelectCreation }) {
 
   const handleSaveForLaterVideo = useCallback(async () => {
     if (!selectedMedia) return
+
     setSaveForLaterError(null)
     setSaveForLaterMessage(null)
     setIsSavingDraft(true)
+
+    if (!backendVideoResult?.id) {
+      setSaveForLaterError('Video is not uploaded to the backend yet. Please wait and try saving again.')
+      setIsSavingDraft(false)
+      return
+    }
+
     try {
       const title = defaultCreationTitle(selectedMedia)
       const editorPayload = buildVideoCreationPayload({
+        backendMediaId: backendVideoResult.id,
         trimRange: gifSession.trimRange,
         resizePreset: gifSession.resizePreset,
         resizeBorderColor: gifSession.resizeBorderColor,
@@ -315,14 +377,17 @@ function EditorContainer({ onDraftSaved, onSelectCreation }) {
         textOverlaySettings: gifSession.textOverlaySettings,
         selectedFilterPreset: gifSession.selectedFilterPreset,
       })
+
       const body = { title, editorPayload, status: 'draft' }
       const result = activeDraftId
         ? await updateCreation(activeDraftId, body)
         : await createCreation({ ...body, ownerKey: getOrCreateOwnerKey() })
+
       const id = result?._id ?? result?.id
       if (id) {
         setActiveDraftId(String(id))
       }
+
       setSaveForLaterMessage('Draft saved. View it in My Creations.')
       onDraftSaved?.()
     } catch (err) {
@@ -332,6 +397,7 @@ function EditorContainer({ onDraftSaved, onSelectCreation }) {
     }
   }, [
     activeDraftId,
+    backendVideoResult?.id,
     gifSession.resizeBorderColor,
     gifSession.resizePreset,
     gifSession.selectedFilterPreset,
@@ -375,6 +441,7 @@ function EditorContainer({ onDraftSaved, onSelectCreation }) {
         preserveSelectedSpeed: true,
         preserveOriginalVideo: true,
       })
+
       if (selection?.code !== MEDIA_SELECTION_CODES.OK) {
         throw new Error('Filtered video could not be loaded in editor.')
       }
@@ -416,10 +483,10 @@ function EditorContainer({ onDraftSaved, onSelectCreation }) {
       cropSourceImageSrc={effectiveImageSrc}
       initialCropPx={lastCropBoxPx}
       onCropApply={handleCropApply}
-    onResetCrop={resetCropToOriginal}
+      onResetCrop={resetCropToOriginal}
       isUploading={isUploading}
       isExporting={isExporting}
-    isResettingCrop={isResettingCrop}
+      isResettingCrop={isResettingCrop}
       uploadError={uploadError}
       exportError={exportError}
       onBack={handleBackToUpload}
@@ -492,39 +559,41 @@ function EditorContainer({ onDraftSaved, onSelectCreation }) {
       return renderCameraPreview()
     }
 
-   return (
-   <>
-   {isDraftLoading && (
-    <EditorStatus tone="muted" centered>Loading draft…</EditorStatus>
-    )}
-    {draftLoadError && (
-      <EditorStatus tone="error" spaced>{draftLoadError}</EditorStatus> 
-      )}
-      {pendingVideoDraftPayload && (
-        <div className="draft-restore-banner">
-          <p className="draft-restore-banner__message">
-            Re-upload your video to continue editing this draft.
-          </p>
-          <button
-            type="button"
-            className="draft-restore-banner__cancel"
-            onClick={() => {
-             setPendingVideoDraftPayload(null)
-             setActiveDraftId(null)
-            }}
+    return (
+      <>
+        {isDraftLoading && (
+          <EditorStatus tone="muted" centered>Loading draft…</EditorStatus>
+        )}
+        {draftLoadError && (
+          <EditorStatus tone="error" spaced>{draftLoadError}</EditorStatus>
+        )}
+        {pendingVideoDraftPayload && (
+          <div className="draft-restore-banner">
+            <p className="draft-restore-banner__message">
+              Re-upload your video to continue editing this draft.
+            </p>
+            <button
+              type="button"
+              className="draft-restore-banner__cancel"
+              onClick={() => {
+                setPendingVideoDraftPayload(null)
+                setActiveDraftId(null)
+              }}
             >
               Cancel
-          </button>
-        </div>
-      )} 
-    {renderMediaEntry()}
-  </>
-  )}
+            </button>
+          </div>
+        )}
+        {renderMediaEntry()}
+      </>
+    )
+  }
 
   const renderVideoFlow = () => {
     const videoKey = selectedMedia
       ? `${selectedMedia.name ?? selectedMedia.id ?? 'video'}-${selectedMedia.lastModified ?? ''}-${selectedMedia.size ?? ''}`
       : 'video'
+
     return (
       <GifEditor
         key={videoKey}
@@ -640,7 +709,7 @@ function EditorContainer({ onDraftSaved, onSelectCreation }) {
       }
 
       if (gifSession.activeTool === gifSession.GIF_FLOW_TOOLS.PRESET_FILTERS) {
-  const sourceVideoForFilters = originalVideoFile || selectedMedia
+        const sourceVideoForFilters = originalVideoFile || selectedMedia
 
         return (
           <VideoPresetFilters

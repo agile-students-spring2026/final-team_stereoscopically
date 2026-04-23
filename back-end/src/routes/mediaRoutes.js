@@ -10,6 +10,7 @@ import {
 	getMediaHandler,
 	healthCheck,
 	uploadImageHandler,
+	uploadVideoHandler,
 	trimVideoHandler,
 	applyPresetVideoFilterHandler,
 	exportGifHandler,
@@ -30,5 +31,6 @@ router.get('/api/export/:id/download', downloadExportHandler)
 router.post('/api/trim/video', videoUpload.single('video'), trimVideoHandler)
 router.post('/api/filter/video', videoUpload.single('video'), applyPresetVideoFilterHandler)
 router.post('/api/export/gif', exportGifHandler)
+router.post('/api/upload/video', videoUpload.single('video'), uploadVideoHandler)
 
 export default router

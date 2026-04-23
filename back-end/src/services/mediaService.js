@@ -6,20 +6,55 @@ import { writeFileSync, unlinkSync } from 'fs'
 import { readFile, unlink, writeFile } from 'fs/promises'
 import { join } from 'path'
 ffmpeg.setFfmpegPath(ffmpegInstaller.path)
+
 import {
 	DEFAULT_GIF_RESIZE_BORDER_COLOR,
 	DEFAULT_GIF_RESIZE_PRESET,
 	GIF_RESIZE_PRESET_DIMENSIONS,
 	MAX_EXPORT_DIMENSION,
 } from '../config/constants.js'
-import { createMedia, getActiveMediaOrDeleteExpired } from './mediaStore.js'
+import { createMedia, getMediaFileInfo, openMediaDownloadStream } from './mediaStore.js'
 import { applyImageAdjustments, PRESET_ADJUSTMENTS } from './imageAdjustService.js'
 import { normalizeTextOverlayRequest, renderTextOverlayBuffer } from './textOverlayService.js'
 
-const createMediaId = (prefix = 'img') => `${prefix}_${Date.now()}_${Math.round(Math.random() * 1e9)}`
-
 const buildMediaUrl = (req, id) => `${req.protocol}://${req.get('host')}/api/media/${id}`
 const buildExportDownloadUrl = (req, id) => `${req.protocol}://${req.get('host')}/api/export/${id}/download`
+
+const streamToBuffer = async (stream) =>
+	await new Promise((resolve, reject) => {
+		const chunks = []
+		stream.on('data', (chunk) => chunks.push(chunk))
+		stream.on('end', () => resolve(Buffer.concat(chunks)))
+		stream.on('error', reject)
+	})
+
+const loadMedia = async (id) => {
+	const fileInfo = await getMediaFileInfo(id)
+	if (!fileInfo) {
+		return null
+	}
+
+	const buffer = await streamToBuffer(openMediaDownloadStream(id))
+
+	return {
+		buffer,
+		mimeType: fileInfo.metadata?.mimeType || fileInfo.contentType || 'application/octet-stream',
+		size: fileInfo.length,
+		fileName: fileInfo.filename,
+		metadata: fileInfo.metadata || {},
+	}
+}
+
+const saveMedia = async ({ buffer, mimeType, fileName, metadata = {} }) => {
+	const saved = await createMedia({
+		buffer,
+		filename: fileName || 'upload.bin',
+		mimeType,
+		metadata,
+	})
+
+	return saved.id
+}
 
 const parseLetterboxBackground = (raw) => {
 	if (raw == null || raw === '' || raw === 'transparent') {
@@ -267,16 +302,22 @@ const escapeGifDrawtextValue = (value) =>
 		.replaceAll('\r', '')
 		.replaceAll('\n', '\\n')
 
+const FONT_FILE = '/System/Library/Fonts/Supplemental/Arial.ttf'
+
 const buildGifDrawtextFilter = (textOverlay) => {
+
 	const xRatio = textOverlay.position.x / 100
 	const yRatio = textOverlay.position.y / 100
 	const fontColor = `0x${textOverlay.color.slice(1)}`
 	const escapedText = escapeGifDrawtextValue(textOverlay.text)
+	return `drawtext=fontfile='${FONT_FILE}':text='${escapedText}':fontsize=${textOverlay.size}:fontcolor=${fontColor}:x=(w*${xRatio.toFixed(6)})-(text_w/2):y=(h*${yRatio.toFixed(6)})-(text_h/2)`
 
-	return `drawtext=text='${escapedText}':fontsize=${textOverlay.size}:fontcolor=${fontColor}:x=(w*${xRatio.toFixed(6)})-(text_w/2):y=(h*${yRatio.toFixed(6)})-(text_h/2)`
 }
 
-export const uploadImage = (req) => {
+const staticImageOnly = (media) =>
+	media.mimeType?.startsWith('image/') && media.mimeType !== 'image/gif'
+
+export const uploadImage = async (req) => {
 	if (!req.file) {
 		return { error: { status: 400, error: 'No image file uploaded.', code: 'MISSING_FILE' } }
 	}
@@ -287,22 +328,67 @@ export const uploadImage = (req) => {
 		}
 	}
 
-	const mediaId = createMediaId('img')
-	createMedia(mediaId, {
-		buffer: req.file.buffer,
-		mimeType: req.file.mimetype,
-		size: req.file.size,
-	})
-
-	return {
-		status: 200,
-		data: {
-			id: mediaId,
-			type: 'image',
-			url: buildMediaUrl(req, mediaId),
+	try {
+		const mediaId = await saveMedia({
+			buffer: req.file.buffer,
 			mimeType: req.file.mimetype,
-			size: req.file.size,
-		},
+			fileName: req.file.originalname || 'upload.png',
+			metadata: {
+				kind: 'image',
+			},
+		})
+
+		return {
+			status: 200,
+			data: {
+				id: mediaId,
+				type: 'image',
+				url: buildMediaUrl(req, mediaId),
+				mimeType: req.file.mimetype,
+				size: req.file.size,
+			},
+		}
+	} catch (error) {
+		console.error('Upload image error:', error)
+		return { error: { status: 500, error: 'Failed to upload image.', code: 'UPLOAD_FAILED' } }
+	}
+}
+
+export const uploadVideo = async (req) => {
+	if (!req.file) {
+		return { error: { status: 400, error: 'No video file uploaded.', code: 'MISSING_FILE' } }
+	}
+
+	if (!req.file.mimetype?.startsWith('video/')) {
+		return {
+			error: { status: 400, error: 'Unsupported file type. Please upload a video.', code: 'INVALID_TYPE' },
+		}
+	}
+
+	try {
+		const mediaId = await saveMedia({
+			buffer: req.file.buffer,
+			mimeType: req.file.mimetype,
+			fileName: req.file.originalname || 'upload.mp4',
+			metadata: {
+				kind: 'video',
+				operation: 'upload',
+			},
+		})
+
+		return {
+			status: 200,
+			data: {
+				id: mediaId,
+				type: 'video',
+				url: buildMediaUrl(req, mediaId),
+				mimeType: req.file.mimetype,
+				size: req.file.size,
+			},
+		}
+	} catch (error) {
+		console.error('Upload video error:', error)
+		return { error: { status: 500, error: 'Failed to upload video.', code: 'UPLOAD_FAILED' } }
 	}
 }
 
@@ -313,9 +399,9 @@ export const cropImage = async (req) => {
 		return { error: { status: 400, error: 'Missing mediaId.', code: 'MISSING_MEDIA_ID' } }
 	}
 
-	const media = getActiveMediaOrDeleteExpired(mediaId)
+	const media = await loadMedia(mediaId)
 	if (!media) {
-		return { error: { status: 404, error: 'Media not found or expired.', code: 'MEDIA_NOT_FOUND' } }
+		return { error: { status: 404, error: 'Media not found.', code: 'MEDIA_NOT_FOUND' } }
 	}
 
 	const parsed = parseCropParams({ x, y, width, height, unit, scaleX, scaleY })
@@ -367,12 +453,15 @@ export const cropImage = async (req) => {
 			.png()
 			.toBuffer()
 
-		const cropId = createMediaId('img')
-		createMedia(cropId, {
+		const cropId = await saveMedia({
 			buffer: croppedBuffer,
 			mimeType: 'image/png',
-			size: croppedBuffer.length,
 			fileName: 'cropped.png',
+			metadata: {
+				kind: 'image',
+				sourceMediaId: mediaId,
+				operation: 'crop',
+			},
 		})
 
 		return {
@@ -424,9 +513,9 @@ export const exportImage = async (req) => {
 		return { error: { status: 400, error: 'Invalid export dimensions.', code: 'INVALID_DIMENSIONS' } }
 	}
 
-	const media = getActiveMediaOrDeleteExpired(mediaId)
+	const media = await loadMedia(mediaId)
 	if (!media) {
-		return { error: { status: 404, error: 'Media not found or expired.', code: 'MEDIA_NOT_FOUND' } }
+		return { error: { status: 404, error: 'Media not found.', code: 'MEDIA_NOT_FOUND' } }
 	}
 
 	if (!media.mimeType?.startsWith('image/') || media.mimeType === 'image/gif') {
@@ -467,14 +556,19 @@ export const exportImage = async (req) => {
 			.png()
 			.toBuffer()
 
-		const exportId = createMediaId('exp')
 		const fileName = `sticker-${targetWidth}x${targetHeight}.png`
-
-		createMedia(exportId, {
+		const exportId = await saveMedia({
 			buffer: exportedBuffer,
 			mimeType: 'image/png',
-			size: exportedBuffer.length,
 			fileName,
+			metadata: {
+				kind: 'image',
+				sourceMediaId: mediaId,
+				operation: 'export',
+				width: targetWidth,
+				height: targetHeight,
+				letterboxColor: letterboxColor ?? 'transparent',
+			},
 		})
 
 		return {
@@ -491,13 +585,11 @@ export const exportImage = async (req) => {
 				fileName,
 			},
 		}
-	} catch {
+	} catch (error) {
+		console.error('Export image error:', error)
 		return { error: { status: 500, error: 'Failed to export image.', code: 'EXPORT_FAILED' } }
 	}
 }
-
-const staticImageOnly = (media) =>
-	media.mimeType?.startsWith('image/') && media.mimeType !== 'image/gif'
 
 export const adjustImage = async (req) => {
 	const {
@@ -515,9 +607,9 @@ export const adjustImage = async (req) => {
 		return { error: { status: 400, error: 'Missing mediaId.', code: 'MISSING_MEDIA_ID' } }
 	}
 
-	const media = getActiveMediaOrDeleteExpired(mediaId)
+	const media = await loadMedia(mediaId)
 	if (!media) {
-		return { error: { status: 404, error: 'Media not found or expired.', code: 'MEDIA_NOT_FOUND' } }
+		return { error: { status: 404, error: 'Media not found.', code: 'MEDIA_NOT_FOUND' } }
 	}
 
 	if (!staticImageOnly(media)) {
@@ -550,13 +642,18 @@ export const adjustImage = async (req) => {
 
 	try {
 		const out = await applyImageAdjustments(media.buffer, opts)
-		const newId = createMediaId('img')
-		createMedia(newId, {
+		const newId = await saveMedia({
 			buffer: out,
 			mimeType: 'image/png',
-			size: out.length,
 			fileName: 'adjusted.png',
+			metadata: {
+				kind: 'image',
+				sourceMediaId: mediaId,
+				operation: 'adjust',
+				adjustments: opts,
+			},
 		})
+
 		const meta = await sharp(out).metadata()
 		return {
 			status: 200,
@@ -589,9 +686,9 @@ export const applyPresetImageFilter = async (req) => {
 		return { error: { status: 400, error: 'Invalid or unsupported preset.', code: 'INVALID_PRESET' } }
 	}
 
-	const media = getActiveMediaOrDeleteExpired(mediaId)
+	const media = await loadMedia(mediaId)
 	if (!media) {
-		return { error: { status: 404, error: 'Media not found or expired.', code: 'MEDIA_NOT_FOUND' } }
+		return { error: { status: 404, error: 'Media not found.', code: 'MEDIA_NOT_FOUND' } }
 	}
 
 	if (!staticImageOnly(media)) {
@@ -606,13 +703,18 @@ export const applyPresetImageFilter = async (req) => {
 
 	try {
 		const out = await applyImageAdjustments(media.buffer, presetOpts)
-		const newId = createMediaId('img')
-		createMedia(newId, {
+		const newId = await saveMedia({
 			buffer: out,
 			mimeType: 'image/png',
-			size: out.length,
 			fileName: `preset-${key}.png`,
+			metadata: {
+				kind: 'image',
+				sourceMediaId: mediaId,
+				operation: 'preset-filter',
+				preset: key,
+			},
 		})
+
 		const meta = await sharp(out).metadata()
 		return {
 			status: 200,
@@ -648,9 +750,9 @@ export const addTextToImage = async (req) => {
 		return { error: { status: 400, error: 'Missing mediaId.', code: 'MISSING_MEDIA_ID' } }
 	}
 
-	const media = getActiveMediaOrDeleteExpired(mediaId)
+	const media = await loadMedia(mediaId)
 	if (!media) {
-		return { error: { status: 404, error: 'Media not found or expired.', code: 'MEDIA_NOT_FOUND' } }
+		return { error: { status: 404, error: 'Media not found.', code: 'MEDIA_NOT_FOUND' } }
 	}
 
 	if (!media.mimeType?.startsWith('image/')) {
@@ -700,12 +802,15 @@ export const addTextToImage = async (req) => {
 			...parsed.value,
 		})
 
-		const textId = createMediaId('img')
-		createMedia(textId, {
+		const textId = await saveMedia({
 			buffer: renderedBuffer,
 			mimeType: 'image/png',
-			size: renderedBuffer.length,
 			fileName: 'text-overlay.png',
+			metadata: {
+				kind: 'image',
+				sourceMediaId: mediaId,
+				operation: 'text-overlay',
+			},
 		})
 
 		return {
@@ -733,10 +838,10 @@ export const addTextToImage = async (req) => {
 	}
 }
 
-export const getMediaContent = (id) => {
-	const media = getActiveMediaOrDeleteExpired(id)
+export const getMediaContent = async (id) => {
+	const media = await loadMedia(id)
 	if (!media) {
-		return { error: { status: 404, error: 'Media not found or expired.', code: 'MEDIA_NOT_FOUND' } }
+		return { error: { status: 404, error: 'Media not found.', code: 'MEDIA_NOT_FOUND' } }
 	}
 
 	return {
@@ -749,10 +854,10 @@ export const getMediaContent = (id) => {
 	}
 }
 
-export const getExportDownloadContent = (id) => {
-	const media = getActiveMediaOrDeleteExpired(id)
+export const getExportDownloadContent = async (id) => {
+	const media = await loadMedia(id)
 	if (!media) {
-		return { error: { status: 404, error: 'Media not found or expired.', code: 'MEDIA_NOT_FOUND' } }
+		return { error: { status: 404, error: 'Media not found.', code: 'MEDIA_NOT_FOUND' } }
 	}
 
 	return {
@@ -765,23 +870,24 @@ export const getExportDownloadContent = (id) => {
 		},
 	}
 }
+
 export const trimVideo = async (req) => {
 	const { trimStart, trimEnd, resizePreset, resizeBorderColor, textOverlay } = req.body ?? {}
 
-    if (!req.file) {
-        return { error: { status: 400, error: 'No video file uploaded.', code: 'MISSING_FILE' } }
-    }
+	if (!req.file) {
+		return { error: { status: 400, error: 'No video file uploaded.', code: 'MISSING_FILE' } }
+	}
 
-    const trimStartNum = Number(trimStart)
-    const trimEndNum = Number(trimEnd)
+	const trimStartNum = Number(trimStart)
+	const trimEndNum = Number(trimEnd)
 
-    if (!Number.isFinite(trimStartNum) || !Number.isFinite(trimEndNum)) {
-        return { error: { status: 400, error: 'Invalid trim values.', code: 'INVALID_TRIM_VALUES' } }
-    }
+	if (!Number.isFinite(trimStartNum) || !Number.isFinite(trimEndNum)) {
+		return { error: { status: 400, error: 'Invalid trim values.', code: 'INVALID_TRIM_VALUES' } }
+	}
 
-    if (trimStartNum < 0 || trimEndNum <= trimStartNum) {
-        return { error: { status: 400, error: 'trimEnd must be greater than trimStart.', code: 'INVALID_TRIM_RANGE' } }
-    }
+	if (trimStartNum < 0 || trimEndNum <= trimStartNum) {
+		return { error: { status: 400, error: 'trimEnd must be greater than trimStart.', code: 'INVALID_TRIM_RANGE' } }
+	}
 
 	const parsedResizePreset = resolveGifResizePreset(resizePreset)
 	if (parsedResizePreset.error) {
@@ -798,8 +904,11 @@ export const trimVideo = async (req) => {
 		return { error: parsedTextOverlay.error }
 	}
 
-    try {
-        const duration = trimEndNum - trimStartNum
+	let tmpInput = null
+	let tmpOutput = null
+
+	try {
+		const duration = trimEndNum - trimStartNum
 		const targetSize = GIF_RESIZE_PRESET_DIMENSIONS[parsedResizePreset.preset]
 		const ffmpegPadColor = `0x${parsedResizeBorderColor.borderColor.slice(1)}`
 		const filterChain = [
@@ -812,146 +921,160 @@ export const trimVideo = async (req) => {
 
 		const filterGraph = `${filterChain.join(',')},split[s0][s1]`
 
-		const tmpInput = join(tmpdir(), `input_${Date.now()}.mp4`)
-		const tmpOutput = join(tmpdir(), `output_${Date.now()}.gif`)
+		tmpInput = join(tmpdir(), `input_${Date.now()}.mp4`)
+		tmpOutput = join(tmpdir(), `output_${Date.now()}.gif`)
 
 		await writeFile(tmpInput, req.file.buffer)
 
-        await new Promise((resolve, reject) => {
-            ffmpeg(tmpInput)
-                .setStartTime(trimStartNum)
-                .setDuration(duration)
-                .complexFilter([
+		await new Promise((resolve, reject) => {
+			ffmpeg(tmpInput)
+				.setStartTime(trimStartNum)
+				.setDuration(duration)
+				.complexFilter([
 					filterGraph,
-                    '[s0]palettegen[p]',
-                    '[s1][p]paletteuse[out]',
-                ])
-                .outputOptions(['-map [out]', '-loop 0'])
-                .outputFormat('gif')
-                .on('error', (err) => reject(err))
-                .on('end', resolve)
-                .save(tmpOutput)
-        })
+					'[s0]palettegen[p]',
+					'[s1][p]paletteuse[out]',
+				])
+				.outputOptions(['-map [out]', '-loop 0'])
+				.outputFormat('gif')
+				.on('error', (err, stdout, stderr) => {
+					console.error('FFmpeg Trim Error:', err.message)
+					console.error('FFmpeg stderr:', stderr)
+					reject(new Error(stderr || err.message))
+				})
+				.on('end', resolve)
+				.save(tmpOutput)
+		})
 
-	const outputBuffer = await readFile(tmpOutput)
+		const outputBuffer = await readFile(tmpOutput)
 
-	await unlink(tmpInput).catch(() => {})
-	await unlink(tmpOutput).catch(() => {})
-
-        const trimId = createMediaId('gif')
-        createMedia(trimId, {
-            buffer: outputBuffer,
-            mimeType: 'image/gif',
-            size: outputBuffer.length,
-            fileName: 'output.gif',
-			textOverlay: parsedTextOverlay.value,
-        })
-
-        return {
-            status: 200,
-            data: {
-                id: trimId,
-                type: 'gif',
-                url: buildMediaUrl(req, trimId),
-                mimeType: 'image/gif',
-                size: outputBuffer.length,
+		const trimId = await saveMedia({
+			buffer: outputBuffer,
+			mimeType: 'image/gif',
+			fileName: 'output.gif',
+			metadata: {
+				kind: 'gif',
+				operation: 'trim-video',
 				resizePreset: parsedResizePreset.preset,
 				resizeBorderColor: parsedResizeBorderColor.borderColor,
 				textOverlay: parsedTextOverlay.value,
-            },
-        }
-    } catch (error) {
-        console.error('FFmpeg Trim Error:', error)
-        return { error: { status: 500, error: 'Failed to trim video.', code: 'TRIM_FAILED' } }
-    }
+			},
+		})
+
+		return {
+			status: 200,
+			data: {
+				id: trimId,
+				type: 'gif',
+				url: buildMediaUrl(req, trimId),
+				mimeType: 'image/gif',
+				size: outputBuffer.length,
+				resizePreset: parsedResizePreset.preset,
+				resizeBorderColor: parsedResizeBorderColor.borderColor,
+				textOverlay: parsedTextOverlay.value,
+			},
+		}
+	} catch (error) {
+		console.error('FFmpeg Trim Error:', error)
+		return { error: { status: 500, error: 'Failed to trim video.', code: 'TRIM_FAILED' } }
+	} finally {
+		if (tmpInput) {
+			await unlink(tmpInput).catch(() => {})
+		}
+		if (tmpOutput) {
+			await unlink(tmpOutput).catch(() => {})
+		}
+	}
 }
 
 export const applyPresetVideoFilter = async (req) => {
-    const { preset } = req.body ?? {}
+	const { preset } = req.body ?? {}
 
-    if (!req.file) {
-        return { error: { status: 400, error: 'No video file uploaded.', code: 'MISSING_FILE' } }
-    }
+	if (!req.file) {
+		return { error: { status: 400, error: 'No video file uploaded.', code: 'MISSING_FILE' } }
+	}
 
-    const key = typeof preset === 'string' ? preset.toLowerCase() : ''
-    const validPresets = ['noir', 'sepia', 'vivid', 'fade']
-    if (!validPresets.includes(key)) {
-        return { error: { status: 400, error: 'Invalid or unsupported preset.', code: 'INVALID_PRESET' } }
-    }
+	const key = typeof preset === 'string' ? preset.toLowerCase() : ''
+	const validPresets = ['noir', 'sepia', 'vivid', 'fade']
+	if (!validPresets.includes(key)) {
+		return { error: { status: 400, error: 'Invalid or unsupported preset.', code: 'INVALID_PRESET' } }
+	}
 
 	const ffmpegFilters = {
 		noir: 'hue=s=0,eq=contrast=1.4:brightness=-0.05',
-		// Use named coefficients for broader FFmpeg compatibility across builds.
 		sepia: 'colorchannelmixer=rr=0.393:rg=0.769:rb=0.189:gr=0.349:gg=0.686:gb=0.168:br=0.272:bg=0.534:bb=0.131',
 		vivid: 'eq=saturation=1.4:contrast=1.2:brightness=0.1',
 		fade: 'eq=contrast=0.8:brightness=0.1:saturation=0.8',
 	}
 
-    const tmpInput = join(tmpdir(), `input_${Date.now()}.mp4`)
-    writeFileSync(tmpInput, req.file.buffer)
+	const tmpInput = join(tmpdir(), `input_${Date.now()}.mp4`)
+	writeFileSync(tmpInput, req.file.buffer)
 
-    try {
-        const outputBuffer = await new Promise((resolve, reject) => {
-            const chunks = []
-            const command = ffmpeg(tmpInput)
-                .videoFilters(ffmpegFilters[key])
-                .outputFormat('mp4')
+	try {
+		const outputBuffer = await new Promise((resolve, reject) => {
+			const chunks = []
+			const command = ffmpeg(tmpInput)
+				.videoFilters(ffmpegFilters[key])
+				.outputFormat('mp4')
 				.outputOptions(['-movflags frag_keyframe+empty_moov', '-pix_fmt yuv420p'])
 
-            command.on('error', reject)
+			command.on('error', reject)
 
-            const passthrough = command.pipe()
-            passthrough.on('data', (chunk) => chunks.push(chunk))
-            passthrough.on('end', () => resolve(Buffer.concat(chunks)))
-            passthrough.on('error', reject)
-        })
+			const passthrough = command.pipe()
+			passthrough.on('data', (chunk) => chunks.push(chunk))
+			passthrough.on('end', () => resolve(Buffer.concat(chunks)))
+			passthrough.on('error', reject)
+		})
 
-        unlinkSync(tmpInput)
+		unlinkSync(tmpInput)
 
-        const filterId = createMediaId('vid')
-        createMedia(filterId, {
-            buffer: outputBuffer,
-            mimeType: 'video/mp4',
-            size: outputBuffer.length,
-            fileName: `filtered-${key}.mp4`,
-        })
+		const filterId = await saveMedia({
+			buffer: outputBuffer,
+			mimeType: 'video/mp4',
+			fileName: `filtered-${key}.mp4`,
+			metadata: {
+				kind: 'video',
+				operation: 'preset-video-filter',
+				preset: key,
+			},
+		})
 
-        return {
-            status: 200,
-            data: {
-                id: filterId,
-                type: 'video',
-                url: buildMediaUrl(req, filterId),
-                mimeType: 'video/mp4',
-                size: outputBuffer.length,
-                preset: key,
-            },
-        }
-    } catch (error) {
-        try { unlinkSync(tmpInput) } catch {}
-        console.error('Video Filter Error:', error)
-        return { error: { status: 500, error: 'Failed to apply video filter.', code: 'VIDEO_FILTER_FAILED' } }
-    }
+		return {
+			status: 200,
+			data: {
+				id: filterId,
+				type: 'video',
+				url: buildMediaUrl(req, filterId),
+				mimeType: 'video/mp4',
+				size: outputBuffer.length,
+				preset: key,
+			},
+		}
+	} catch (error) {
+		try { unlinkSync(tmpInput) } catch {}
+		console.error('Video Filter Error:', error)
+		return { error: { status: 500, error: 'Failed to apply video filter.', code: 'VIDEO_FILTER_FAILED' } }
+	}
 }
 
-export const exportGifService = (req) => {
-  const { mediaId } = req.body ?? {}
+export const exportGifService = async (req) => {
+	const { mediaId } = req.body ?? {}
 
-  if (!mediaId) {
-    return { error: { status: 400, error: 'Missing mediaId.', code: 'MISSING_MEDIA_ID' } }
-  }
+	if (!mediaId) {
+		return { error: { status: 400, error: 'Missing mediaId.', code: 'MISSING_MEDIA_ID' } }
+	}
 
-  const media = getActiveMediaOrDeleteExpired(mediaId)
-  if (!media) {
-    return { error: { status: 404, error: 'Media not found or expired.', code: 'MEDIA_NOT_FOUND' } }
-  }
+	const media = await loadMedia(mediaId)
+	if (!media) {
+		return { error: { status: 404, error: 'Media not found.', code: 'MEDIA_NOT_FOUND' } }
+	}
 
-  return {
-    status: 200,
-    data: {
-      id: mediaId,
-      url: buildMediaUrl(req, mediaId),
-      downloadUrl: buildExportDownloadUrl(req, mediaId),
-    },
-  }
+	return {
+		status: 200,
+		data: {
+			id: mediaId,
+			url: buildMediaUrl(req, mediaId),
+			downloadUrl: buildExportDownloadUrl(req, mediaId),
+		},
+	}
 }

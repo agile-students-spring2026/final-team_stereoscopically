@@ -7,6 +7,7 @@ import {
 	getExportDownloadContent,
 	getMediaContent,
 	uploadImage,
+	uploadVideo,
 	trimVideo,
 	applyPresetVideoFilter,
 	exportGifService,
@@ -32,9 +33,11 @@ export const healthCheck = (_req, res) => {
 	})
 }
 
-export const uploadImageHandler = (req, res) => {
-	const result = uploadImage(req)
+export const uploadImageHandler = async (req, res) => {
+
+	const result = await uploadImage(req)
 	return sendResult(res, result)
+
 }
 
 export const adjustImageHandler = async (req, res) => {
@@ -62,8 +65,24 @@ export const addTextImageHandler = async (req, res) => {
 	return sendResult(res, result)
 }
 
-export const getMediaHandler = (req, res) => {
-	const result = getMediaContent(req.params.id)
+export const getMediaHandler = async (req, res) => {
+
+	const result = await getMediaContent(req.params.id)
+	if (result.error) {
+		return res.status(result.error.status).json({
+			error: result.error.error,
+			code: result.error.code,
+		})
+	}
+	for (const [header, value] of Object.entries(result.headers ?? {})) {
+		res.setHeader(header, value)
+	}
+	return res.status(result.status).send(result.data)
+
+}
+
+export const downloadExportHandler = async (req, res) => {
+	const result = await getExportDownloadContent(req.params.id)
 	if (result.error) {
 		return res.status(result.error.status).json({
 			error: result.error.error,
@@ -78,20 +97,9 @@ export const getMediaHandler = (req, res) => {
 	return res.status(result.status).send(result.data)
 }
 
-export const downloadExportHandler = (req, res) => {
-	const result = getExportDownloadContent(req.params.id)
-	if (result.error) {
-		return res.status(result.error.status).json({
-			error: result.error.error,
-			code: result.error.code,
-		})
-	}
-
-	for (const [header, value] of Object.entries(result.headers ?? {})) {
-		res.setHeader(header, value)
-	}
-
-	return res.status(result.status).send(result.data)
+export const uploadVideoHandler = async (req, res) => {
+	const result = await uploadVideo(req)
+	return sendResult(res, result)
 }
 
 export const trimVideoHandler = async (req, res) => {

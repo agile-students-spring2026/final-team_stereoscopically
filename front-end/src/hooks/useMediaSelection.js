@@ -1,5 +1,6 @@
 import { useCallback, useState } from 'react'
 import { uploadImageToBackend } from '../services/backendImageService'
+import { uploadVideoToBackend } from '../services/backendGifService'
 import { isVideoTypeSupported } from '../utils/videoSupport'
 
 const MAX_UPLOAD_SIZE_BYTES = 50 * 1024 * 1024
@@ -35,10 +36,10 @@ const useMediaSelection = () => {
   const [sourceUrl, setSourceUrl] = useState(null)
   const [selectionError, setSelectionError] = useState(null)
   const [backendImageResult, setBackendImageResult] = useState(null)
+  const [backendVideoResult, setBackendVideoResult] = useState(null)
   const [isUploading, setIsUploading] = useState(false)
   const [uploadError, setUploadError] = useState(null)
   const [validationError, setValidationError] = useState(null)
-  
 
   const applyVideoSelection = useCallback((file) => {
     if (!file) return false
@@ -54,6 +55,7 @@ const useMediaSelection = () => {
     setValidationError(null)
     setUploadError(null)
     setBackendImageResult(null)
+    setBackendVideoResult(null)
 
     if (!file) {
       setValidationError('Please select an image file.')
@@ -87,16 +89,18 @@ const useMediaSelection = () => {
     } catch (error) {
       console.error('[useMediaSelection] Unable to upload image to backend', error)
       setUploadError(error?.message || 'Image upload failed. Please try again.')
-      return { applied: true, code: MEDIA_SELECTION_CODES.OK }
+      return { applied: true, code: MEDIA_SELECTION_CODES.APPLY_FAILED }
     } finally {
       setIsUploading(false)
     }
   }, [])
 
-  // selectVideo now expects a File (user input)
-  const selectVideo = useCallback((file) => {
+  const selectVideo = useCallback(async (file) => {
     setSelectionError(null)
     setValidationError(null)
+    setUploadError(null)
+    setBackendImageResult(null)
+    setBackendVideoResult(null)
 
     if (!file) {
       setSelectionError('Unable to select video file. Please try again.')
@@ -116,7 +120,19 @@ const useMediaSelection = () => {
       setSelectionError('Unable to select video file. Please try again.')
       return { applied: false, code: MEDIA_SELECTION_CODES.APPLY_FAILED }
     }
-    return { applied: true, code: MEDIA_SELECTION_CODES.OK }
+
+    setIsUploading(true)
+    try {
+      const uploadedMedia = await uploadVideoToBackend(file)
+      setBackendVideoResult(uploadedMedia)
+      return { applied: true, code: MEDIA_SELECTION_CODES.OK }
+    } catch (error) {
+      console.error('[useMediaSelection] Unable to upload video to backend', error)
+      setUploadError(error?.message || 'Video upload failed. Please try again.')
+      return { applied: true, code: MEDIA_SELECTION_CODES.APPLY_FAILED }
+    } finally {
+      setIsUploading(false)
+    }
   }, [applyVideoSelection])
 
   const resetSelection = useCallback(() => {
@@ -126,6 +142,7 @@ const useMediaSelection = () => {
     setSourceUrl(null)
     setSelectionError(null)
     setBackendImageResult(null)
+    setBackendVideoResult(null)
     setIsUploading(false)
     setUploadError(null)
     setValidationError(null)
@@ -138,7 +155,6 @@ const useMediaSelection = () => {
     setSelectedMedia(file)
     setPreviewUrl(nextPreviewUrl)
     if (nextBackendResult) setBackendImageResult(nextBackendResult)
-    // Leave sourceUrl untouched so resizes continue to use the original source
     return true
   }, [])
 
@@ -150,6 +166,7 @@ const useMediaSelection = () => {
     previewUrl,
     sourceUrl,
     backendImageResult,
+    backendVideoResult,
     isUploading,
     uploadError,
     validationError,

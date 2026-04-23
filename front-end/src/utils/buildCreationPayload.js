@@ -35,6 +35,7 @@ export const buildImageCreationPayload = ({
 })
 
 export const buildVideoCreationPayload = ({
+  backendMediaId,
   trimRange,
   resizePreset,
   resizeBorderColor,
@@ -44,6 +45,7 @@ export const buildVideoCreationPayload = ({
 } = {}) => ({
   kind: 'video',
   version: 1,
+  backendMediaId: backendMediaId ?? null,
   trimRange: trimRange ? { start: trimRange.start, end: trimRange.end } : { start: 0, end: 0 },
   resizePreset: resizePreset ?? null,
   resizeBorderColor: resizeBorderColor ?? null,
