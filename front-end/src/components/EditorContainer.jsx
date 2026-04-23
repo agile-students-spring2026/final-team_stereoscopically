@@ -112,6 +112,7 @@ function EditorContainer({ onDraftSaved, onSelectCreation }) {
   const [isDraftLoading, setIsDraftLoading] = useState(false)
   const [draftLoadError, setDraftLoadError] = useState(null)
   const [pendingVideoDraftPayload, setPendingVideoDraftPayload] = useState(null)
+  const [showPendingVideoDraftOverlay, setShowPendingVideoDraftOverlay] = useState(false)
 
   const handleImageSelect = async (file) => {
     if (!file) return
@@ -143,6 +144,7 @@ function EditorContainer({ onDraftSaved, onSelectCreation }) {
     setActiveDraftId(null)
     setSaveForLaterError(null)
     setSaveForLaterMessage(null)
+
     if (result?.applied) {
       setScreen(SCREENS.EDITOR)
     }
@@ -259,7 +261,6 @@ function EditorContainer({ onDraftSaved, onSelectCreation }) {
 
       if (!payload.backendMediaId) {
         setPendingVideoDraftPayload(payload)
-        setScreen(SCREENS.EDITOR)
         return
       }
 
@@ -305,6 +306,10 @@ function EditorContainer({ onDraftSaved, onSelectCreation }) {
   useEffect(() => {
     onSelectCreation?.(handleLoadDraft)
   }, [handleLoadDraft, onSelectCreation])
+
+  useEffect(() => {
+    setShowPendingVideoDraftOverlay(Boolean(pendingVideoDraftPayload))
+  }, [pendingVideoDraftPayload])
 
   const handleSaveForLaterImage = useCallback(async () => {
     if (!selectedMedia) return
@@ -567,23 +572,6 @@ function EditorContainer({ onDraftSaved, onSelectCreation }) {
         {draftLoadError && (
           <EditorStatus tone="error" spaced>{draftLoadError}</EditorStatus>
         )}
-        {pendingVideoDraftPayload && (
-          <div className="draft-restore-banner">
-            <p className="draft-restore-banner__message">
-              Re-upload your video to continue editing this draft.
-            </p>
-            <button
-              type="button"
-              className="draft-restore-banner__cancel"
-              onClick={() => {
-                setPendingVideoDraftPayload(null)
-                setActiveDraftId(null)
-              }}
-            >
-              Cancel
-            </button>
-          </div>
-        )}
         {renderMediaEntry()}
       </>
     )
@@ -692,13 +680,13 @@ function EditorContainer({ onDraftSaved, onSelectCreation }) {
   }
 
   const renderContent = () => {
-    if (!selectedMedia) {
-      return renderNoSelectionFlow()
-    }
+    let content
 
-    if (mediaType === 'video') {
+    if (!selectedMedia) {
+      content = renderNoSelectionFlow()
+    } else if (mediaType === 'video') {
       if (gifSession.activeTool === gifSession.GIF_FLOW_TOOLS.FILTERS_MAIN) {
-        return (
+        content = (
           <GifFilterMain
             onPresetFilters={() => gifSession.openGifTool(gifSession.GIF_FLOW_TOOLS.PRESET_FILTERS)}
             onTextOverlay={() => gifSession.openGifTool(gifSession.GIF_FLOW_TOOLS.TEXT)}
@@ -706,12 +694,10 @@ function EditorContainer({ onDraftSaved, onSelectCreation }) {
             onCancel={() => gifSession.openGifTool(gifSession.GIF_FLOW_TOOLS.EDITOR)}
           />
         )
-      }
-
-      if (gifSession.activeTool === gifSession.GIF_FLOW_TOOLS.PRESET_FILTERS) {
+      } else if (gifSession.activeTool === gifSession.GIF_FLOW_TOOLS.PRESET_FILTERS) {
         const sourceVideoForFilters = originalVideoFile || selectedMedia
 
-        return (
+        content = (
           <VideoPresetFilters
             videoFile={sourceVideoForFilters}
             selectedFilter={gifSession.selectedFilterPreset}
@@ -734,7 +720,7 @@ function EditorContainer({ onDraftSaved, onSelectCreation }) {
 
                 await handleVideoPresetApply(result)
               } catch {
-                // Errors are already surfaced via gifSession.exportError or previewError; no-op here
+                // Errors are already surfaced elsewhere
               }
             }}
             onCancel={() => gifSession.openGifTool(gifSession.GIF_FLOW_TOOLS.FILTERS_MAIN)}
@@ -743,10 +729,8 @@ function EditorContainer({ onDraftSaved, onSelectCreation }) {
             previewUrl={gifSession.filterPreviewUrl}
           />
         )
-      }
-
-      if (gifSession.activeTool === gifSession.GIF_FLOW_TOOLS.TEXT) {
-        return (
+      } else if (gifSession.activeTool === gifSession.GIF_FLOW_TOOLS.TEXT) {
+        content = (
           <GifTextOverlayEditor
             videoFile={selectedMedia}
             initialSettings={gifSession.textOverlaySettings}
@@ -756,10 +740,8 @@ function EditorContainer({ onDraftSaved, onSelectCreation }) {
             onCancel={() => gifSession.openGifTool(gifSession.GIF_FLOW_TOOLS.EDITOR)}
           />
         )
-      }
-
-      if (gifSession.activeTool === gifSession.GIF_FLOW_TOOLS.SPEED) {
-        return (
+      } else if (gifSession.activeTool === gifSession.GIF_FLOW_TOOLS.SPEED) {
+        content = (
           <GifSpeedControls
             videoFile={selectedMedia}
             selectedSpeedPlaybackRate={gifSession.selectedSpeedPlaybackRate}
@@ -769,10 +751,8 @@ function EditorContainer({ onDraftSaved, onSelectCreation }) {
             onCancel={() => gifSession.openGifTool(gifSession.GIF_FLOW_TOOLS.EDITOR)}
           />
         )
-      }
-
-      if (gifSession.activeTool === gifSession.GIF_FLOW_TOOLS.RESIZE) {
-        return (
+      } else if (gifSession.activeTool === gifSession.GIF_FLOW_TOOLS.RESIZE) {
+        content = (
           <GifResizePresets
             initialPreset={gifSession.resizePreset}
             initialBorderColor={gifSession.resizeBorderColor}
@@ -781,10 +761,8 @@ function EditorContainer({ onDraftSaved, onSelectCreation }) {
             onCancel={() => gifSession.openGifTool(gifSession.GIF_FLOW_TOOLS.EDITOR)}
           />
         )
-      }
-
-      if (gifSession.activeTool === gifSession.GIF_FLOW_TOOLS.TRIM) {
-        return (
+      } else if (gifSession.activeTool === gifSession.GIF_FLOW_TOOLS.TRIM) {
+        content = (
           <GifTrimEditor
             videoFile={selectedMedia}
             initialTrimStart={gifSession.trimRange.start}
@@ -793,12 +771,59 @@ function EditorContainer({ onDraftSaved, onSelectCreation }) {
             onCancel={() => gifSession.openGifTool(gifSession.GIF_FLOW_TOOLS.EDITOR)}
           />
         )
+      } else {
+        content = renderVideoFlow()
       }
-
-      return renderVideoFlow()
+    } else {
+      content = renderImageFlow()
     }
 
-    return renderImageFlow()
+    return (
+      <div style={{ position: 'relative' }}>
+        {content}
+
+        {showPendingVideoDraftOverlay && isDraftLoading && (
+          <div
+            style={{
+              position: 'absolute',
+              inset: 0,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              zIndex: 20,
+              background: 'rgba(255, 255, 255, 0.28)',
+              backdropFilter: 'blur(4px)',
+            }}
+          >
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.75rem',
+                padding: '0.9rem 1rem',
+                borderRadius: '14px',
+                background: 'rgba(17, 17, 17, 0.82)',
+                color: '#fff',
+                boxShadow: '0 10px 30px rgba(0, 0, 0, 0.18)',
+              }}
+            >
+              <span>Getting your draft video ready…</span>
+              <button
+                type="button"
+                className="draft-restore-banner__cancel"
+                onClick={() => {
+                  setPendingVideoDraftPayload(null)
+                  setActiveDraftId(null)
+                  setIsDraftLoading(false)
+                }}
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
+    )
   }
 
   return renderContent()
