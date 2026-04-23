@@ -1,4 +1,7 @@
 import { useCallback, useState } from 'react'
+import { createCreation, updateCreation } from '../services/creationsApi.js'
+import { buildImageCreationPayload, buildVideoCreationPayload, defaultCreationTitle } from '../utils/buildCreationPayload.js'
+import { getOrCreateOwnerKey } from '../utils/ownerKey.js'
 import MediaEntry from './MediaEntry'
 import ImageEditor from './image/ImageEditor'
 import FilterMain from './FilterMain'
@@ -34,7 +37,7 @@ const SCREENS = {
 const FILE_TOO_LARGE_MESSAGE = 'File is too large (max 50 MB).'
 const HEIC_UNSUPPORTED_MESSAGE = 'HEIC/HEIF files are not supported in this browser yet. Please upload JPG or PNG.'
 
-function EditorContainer() {
+function EditorContainer({ onDraftSaved }) {
   const {
     mediaType,
     selectedMedia,
@@ -63,13 +66,14 @@ function EditorContainer() {
     lastCropBoxPx,
     hasCropHistory,
     effectiveImageSrc,
-  selectedPreset,
-    resetImageEditingSessionState,
+    selectedPreset,
+    effectiveBackendMediaId,
+    colorAdjustments,
     selectedImageFilterPreset,
+    resetImageEditingSessionState,
     presetFilterPreviewSrc,
     isLoadingPresetFilterPreview,
     presetFilterError,
-    colorAdjustments,
     colorFilterPreviewSrc,
     isLoadingColorFilterPreview,
     colorFilterError,
@@ -92,6 +96,10 @@ function EditorContainer() {
   })
 
   const [screen, setScreen] = useState(SCREENS.EDITOR)
+  const [activeDraftId, setActiveDraftId] = useState(null)
+  const [saveForLaterError, setSaveForLaterError] = useState(null)
+  const [saveForLaterMessage, setSaveForLaterMessage] = useState(null)
+  const [isSavingDraft, setIsSavingDraft] = useState(false)
   const [fileTooLargeMessage, setFileTooLargeMessage] = useState(null)
   const [unsupportedImageMessage, setUnsupportedImageMessage] = useState(null)
   const [lastRejectedUploadType, setLastRejectedUploadType] = useState(null)
@@ -125,6 +133,9 @@ function EditorContainer() {
     setUnsupportedImageMessage(null)
     setFileTooLargeMessage(null)
     resetImageEditingSessionState()
+    setActiveDraftId(null)
+    setSaveForLaterError(null)
+    setSaveForLaterMessage(null)
     if (result?.applied) {
       setScreen(SCREENS.EDITOR)
     }
@@ -163,6 +174,9 @@ function EditorContainer() {
       setUnsupportedVideo(null)
       clearCropSession()
       if (result?.applied) {
+        setActiveDraftId(null)
+        setSaveForLaterError(null)
+        setSaveForLaterMessage(null)
         gifSession.resetGifSession({ preserveSelectedSpeed })
         setScreen(SCREENS.EDITOR)
       }
@@ -177,12 +191,99 @@ function EditorContainer() {
   }
 
   const handleBackToUpload = () => {
-  setOriginalVideoFile(null)
+    setOriginalVideoFile(null)
     resetSelection()
     resetImageEditingSessionState()
     gifSession.resetGifSession()
+    setActiveDraftId(null)
+    setSaveForLaterError(null)
+    setSaveForLaterMessage(null)
     setScreen(SCREENS.EDITOR)
   }
+
+  const handleSaveForLaterImage = useCallback(async () => {
+    if (!selectedMedia) return
+    setSaveForLaterError(null)
+    setSaveForLaterMessage(null)
+    setIsSavingDraft(true)
+    try {
+      const title = defaultCreationTitle(selectedMedia)
+      const editorPayload = buildImageCreationPayload({
+        backendMediaId: effectiveBackendMediaId,
+        lastCropBoxPx,
+        colorAdjustments,
+        selectedImageFilterPreset,
+        selectedPreset,
+        letterboxColor,
+      })
+      const body = { title, editorPayload, status: 'draft' }
+      const result = activeDraftId
+        ? await updateCreation(activeDraftId, body)
+        : await createCreation({ ...body, ownerKey: getOrCreateOwnerKey() })
+      const id = result?._id ?? result?.id
+      if (id) {
+        setActiveDraftId(String(id))
+      }
+      setSaveForLaterMessage('Draft saved. View it in My Creations.')
+      onDraftSaved?.()
+    } catch (err) {
+      setSaveForLaterError(err?.message || 'Could not save draft.')
+    } finally {
+      setIsSavingDraft(false)
+    }
+  }, [
+    activeDraftId,
+    colorAdjustments,
+    effectiveBackendMediaId,
+    lastCropBoxPx,
+    letterboxColor,
+    onDraftSaved,
+    selectedImageFilterPreset,
+    selectedMedia,
+    selectedPreset,
+  ])
+
+  const handleSaveForLaterVideo = useCallback(async () => {
+    if (!selectedMedia) return
+    setSaveForLaterError(null)
+    setSaveForLaterMessage(null)
+    setIsSavingDraft(true)
+    try {
+      const title = defaultCreationTitle(selectedMedia)
+      const editorPayload = buildVideoCreationPayload({
+        trimRange: gifSession.trimRange,
+        resizePreset: gifSession.resizePreset,
+        resizeBorderColor: gifSession.resizeBorderColor,
+        selectedSpeedPlaybackRate: gifSession.selectedSpeedPlaybackRate,
+        textOverlaySettings: gifSession.textOverlaySettings,
+        selectedFilterPreset: gifSession.selectedFilterPreset,
+      })
+      const body = { title, editorPayload, status: 'draft' }
+      const result = activeDraftId
+        ? await updateCreation(activeDraftId, body)
+        : await createCreation({ ...body, ownerKey: getOrCreateOwnerKey() })
+      const id = result?._id ?? result?.id
+      if (id) {
+        setActiveDraftId(String(id))
+      }
+      setSaveForLaterMessage('Draft saved. View it in My Creations.')
+      onDraftSaved?.()
+    } catch (err) {
+      setSaveForLaterError(err?.message || 'Could not save draft.')
+    } finally {
+      setIsSavingDraft(false)
+    }
+  }, [
+    activeDraftId,
+    gifSession.resizeBorderColor,
+    gifSession.resizePreset,
+    gifSession.selectedFilterPreset,
+    gifSession.selectedSpeedPlaybackRate,
+    gifSession.textOverlaySettings,
+    gifSession.trimRange,
+    onDraftSaved,
+    selectedMedia,
+  ])
 
   const handleOpenFilters = () => {
     setScreen(SCREENS.FILTERS_MAIN)
@@ -268,6 +369,10 @@ function EditorContainer() {
       onOpenFilters={handleOpenFilters}
       onSize={handleOpenSizes}
       onExport={handleExport}
+      onSaveForLater={handleSaveForLaterImage}
+      isSavingDraft={isSavingDraft}
+      saveDraftError={saveForLaterError}
+      saveDraftMessage={saveForLaterMessage}
       showResetCrop={hasCropHistory}
     />
   )
@@ -353,6 +458,10 @@ function EditorContainer() {
         onOpenTrim={() => gifSession.openGifTool(gifSession.GIF_FLOW_TOOLS.TRIM)}
         onOpenResize={() => gifSession.openGifTool(gifSession.GIF_FLOW_TOOLS.RESIZE)}
         onOpenFilters={() => gifSession.openGifTool(gifSession.GIF_FLOW_TOOLS.FILTERS_MAIN)}
+        onSaveForLater={handleSaveForLaterVideo}
+        isSavingDraft={isSavingDraft}
+        saveDraftError={saveForLaterError}
+        saveDraftMessage={saveForLaterMessage}
       />
     )
   }

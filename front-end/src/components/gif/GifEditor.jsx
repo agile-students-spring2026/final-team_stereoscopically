@@ -20,6 +20,10 @@ const GifEditor = ({
     onOpenTrim,
     onOpenResize,
     onOpenFilters,
+    onSaveForLater,
+    isSavingDraft = false,
+    saveDraftError = null,
+    saveDraftMessage = null,
 }) => {
     const {
         trimRange = { start: 0, end: 0 },
@@ -194,7 +198,7 @@ const GifEditor = ({
                 </button>
             </div>
 
-            <div className="card-actions card-actions-spaced editor-actions editor-actions--inline">
+            <div className="card-actions card-actions-spaced editor-actions editor-actions--inline editor-actions--wrap">
                 <button type="button" className="btn-secondary" onClick={() => {
                     resetTransientEditorState()
                     onCancel?.()
@@ -203,13 +207,32 @@ const GifEditor = ({
                 </button>
                 <button
                     type="button"
+                    className="btn-secondary"
+                    onClick={onSaveForLater}
+                    disabled={isProcessing || isSavingDraft || !videoUrl || duration <= 0}
+                >
+                    {isSavingDraft ? 'Saving…' : 'Save for later'}
+                </button>
+                <button
+                    type="button"
                     className="btn-primary"
                     onClick={handleConvertToGif}
-                    disabled={isProcessing || !videoUrl || duration <= 0}
+                    disabled={isProcessing || isSavingDraft || !videoUrl || duration <= 0}
                 >
                     {isProcessing ? 'Exporting...' : 'Export GIF'}
                 </button>
             </div>
+
+            {saveDraftError && (
+                <EditorStatus tone="error" spaced>
+                    {saveDraftError}
+                </EditorStatus>
+            )}
+            {saveDraftMessage && !saveDraftError && (
+                <EditorStatus tone="info" spaced>
+                    {saveDraftMessage}
+                </EditorStatus>
+            )}
 
             {statusMessage && (
                 <EditorStatus tone="info" spaced>
