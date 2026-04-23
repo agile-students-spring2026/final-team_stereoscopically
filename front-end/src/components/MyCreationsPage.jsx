@@ -40,7 +40,7 @@ const formatUpdated = (iso) => {
   }
 }
 
-function MyCreationsPage({ refreshKey = 0 }) {
+function MyCreationsPage({ refreshKey = 0, onSelectCreation }) {
   const [items, setItems] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
@@ -110,7 +110,15 @@ function MyCreationsPage({ refreshKey = 0 }) {
           const title = typeof row.title === 'string' && row.title.trim() ? row.title.trim() : 'Untitled'
           const status = row.status === 'exported' ? 'exported' : 'draft'
           return (
-            <li key={id} className="my-creations-item">
+            <li 
+            key={id} 
+            className={`my-creations-item${onSelectCreation ? ' my-creations-item--clickable' : ''}`}
+            onClick={() => onSelectCreation?.(row)}
+            role={onSelectCreation ? 'button' : undefined}
+            tabIndex={onSelectCreation ? 0 : undefined}
+            onKeyDown={onSelectCreation ? (e) => { if (e.key === 'Enter' || e.key === ' ') onSelectCreation(row) } : undefined}
+            
+            >
               <CreationPreviewThumb row={row} title={title} />
               <div className="my-creations-item-body">
                 <div className="my-creations-item-main">

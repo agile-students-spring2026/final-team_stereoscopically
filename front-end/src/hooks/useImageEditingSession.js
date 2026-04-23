@@ -746,6 +746,46 @@ const useImageEditingSession = ({
     }
   }, [applyTransformedImage, previewUrl, resetExportSessionState, sourceUrl])
 
+
+  const restoreImageSession = useCallback(async (payload = {}) => {
+    const {
+      backendMediaId,
+      lastCropBoxPx: cropPx,
+      colorAdjustments: ca,
+      selectedImageFilterPreset: filterPreset,
+      selectedPreset: preset,
+      letterboxColor: lbColor,
+    } = payload
+
+    if (!backendMediaId) return false
+
+    try {
+      setExportError(null)
+      const url = `${getBackendBaseUrl()}/api/media/${backendMediaId}`
+      const result = { id: backendMediaId, url, mimeType: 'image/png' }
+
+      const { file, objectUrl } = await convertBackendImageResultToLocalMedia(result, {
+        fallbackFileName: 'draft.png',
+        fallbackMimeType: 'image/png',
+        fetchErrorMessage: 'Failed to load draft image.',
+      })
+
+      applyTransformedImage(file, objectUrl, result)
+      setLastCropBoxPx(cropPx ?? null)
+      setColorAdjustments(ca ? normalizeColorAdjustments(ca) : DEFAULT_COLOR_ADJUSTMENTS)
+      setSelectedImageFilterPreset(filterPreset || DEFAULT_IMAGE_FILTER_PRESET)
+      setSelectedPreset(preset ?? null)
+      setLetterboxColor(lbColor ?? 'transparent')
+      setLatestExportResult(null)
+      setLastExportLetterbox(null)
+      return true
+    } catch (err) {
+      console.error('restoreImageSession failed:', err)
+      setExportError(err?.message || 'Could not load draft image.')
+      return false
+    }
+  }, [applyTransformedImage])
+
   return {
     selectedPreset,
     latestExportResult,
@@ -782,6 +822,7 @@ const useImageEditingSession = ({
     applyImagePresetFilter,
     updateColorAdjustments,
     applyColorAdjustments,
+    restoreImageSession,
   }
 }
 
