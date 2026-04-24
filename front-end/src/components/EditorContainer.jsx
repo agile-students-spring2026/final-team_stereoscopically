@@ -106,7 +106,6 @@ function EditorContainer({ onDraftSaved, onSelectCreation }) {
   const [activeDraftTitle, setActiveDraftTitle] = useState(null)
   const [imageDraftSourceMediaId, setImageDraftSourceMediaId] = useState(null)
   const [videoDraftSourceMediaId, setVideoDraftSourceMediaId] = useState(null)
-  // Text overlay state: tracks the last applied text settings and the media ID before text was baked.
   const [appliedTextOverlay, setAppliedTextOverlay] = useState(null)
   const [preTextWorkingMediaId, setPreTextWorkingMediaId] = useState(null)
   const [saveForLaterError, setSaveForLaterError] = useState(null)
@@ -121,6 +120,17 @@ function EditorContainer({ onDraftSaved, onSelectCreation }) {
   const [draftLoadError, setDraftLoadError] = useState(null)
   const [pendingVideoDraftPayload, setPendingVideoDraftPayload] = useState(null)
   const [showDraftLoadCancel, setShowDraftLoadCancel] = useState(false)
+  const [unsupportedVideo, setUnsupportedVideo] = useState(null)
+
+  const effectiveImageDraftSourceMediaId =
+    imageDraftSourceMediaId ||
+    (mediaType === 'image' ? backendImageResult?.id : null)
+
+  const effectiveVideoDraftSourceMediaId =
+    videoDraftSourceMediaId ||
+    (mediaType === 'video' ? backendVideoResult?.id : null)
+
+  const shouldShowDraftLoadCancel = isDraftLoading && showDraftLoadCancel
 
   const handleImageSelect = async (file) => {
     if (!file) return
@@ -162,8 +172,6 @@ function EditorContainer({ onDraftSaved, onSelectCreation }) {
       setScreen(SCREENS.EDITOR)
     }
   }
-
-  const [unsupportedVideo, setUnsupportedVideo] = useState(null)
 
   const handleVideoSelect = useCallback(
     async (file, { preserveSelectedSpeed = false, preserveOriginalVideo = false, preserveDraftIdentity = false } = {}) => {
@@ -221,7 +229,7 @@ function EditorContainer({ onDraftSaved, onSelectCreation }) {
 
       return result
     },
-    [clearCropSession, gifSession, pendingVideoDraftPayload, selectVideo]
+    [clearCropSession, gifSession, pendingVideoDraftPayload, selectVideo],
   )
 
   const handleCameraSelect = () => {
@@ -242,6 +250,7 @@ function EditorContainer({ onDraftSaved, onSelectCreation }) {
     setSaveForLaterMessage(null)
     setAppliedTextOverlay(null)
     setPreTextWorkingMediaId(null)
+    setShowDraftLoadCancel(false)
     setScreen(SCREENS.EDITOR)
   }
 
@@ -250,6 +259,8 @@ function EditorContainer({ onDraftSaved, onSelectCreation }) {
     if (!payload) return
 
     setDraftLoadError(null)
+    setShowDraftLoadCancel(false)
+
     const draftId = String(creation._id ?? creation.id)
     const nextDraftTitle = typeof creation?.title === 'string' && creation.title.trim()
       ? creation.title.trim()
@@ -329,7 +340,7 @@ function EditorContainer({ onDraftSaved, onSelectCreation }) {
             restoredFile = converted.file
             break
           } catch {
-            // Try next candidate id (working -> source fallback).
+            // Try next candidate id.
           }
         }
 
@@ -347,8 +358,6 @@ function EditorContainer({ onDraftSaved, onSelectCreation }) {
           throw new Error('Draft video could not be restored.')
         }
 
-        // When the working video has a filter baked in (working ≠ source), restore the original
-        // unfiltered video as originalVideoFile so re-selecting a filter doesn't double-apply.
         if (sourceMediaId && workingMediaId && sourceMediaId !== workingMediaId) {
           try {
             const sourceResult = {
@@ -363,7 +372,7 @@ function EditorContainer({ onDraftSaved, onSelectCreation }) {
             })
             setOriginalVideoFile(sourceFile)
           } catch {
-            // Non-critical — originalVideoFile stays as the working video.
+            // Non-critical. originalVideoFile stays as the working video.
           }
         }
 
@@ -383,26 +392,11 @@ function EditorContainer({ onDraftSaved, onSelectCreation }) {
   }, [gifSession, handleVideoSelect, resetImageEditingSessionState, resetSelection, restoreImageSession])
 
   useEffect(() => {
-    if (mediaType === 'image' && backendImageResult?.id && !imageDraftSourceMediaId) {
-      setImageDraftSourceMediaId(backendImageResult.id)
-    }
-  }, [backendImageResult?.id, imageDraftSourceMediaId, mediaType])
-
-  useEffect(() => {
-    if (mediaType === 'video' && backendVideoResult?.id && !videoDraftSourceMediaId) {
-      setVideoDraftSourceMediaId(backendVideoResult.id)
-    }
-  }, [backendVideoResult?.id, mediaType, videoDraftSourceMediaId])
-
-  useEffect(() => {
     onSelectCreation?.(handleLoadDraft)
   }, [handleLoadDraft, onSelectCreation])
 
   useEffect(() => {
-    if (!isDraftLoading) {
-      setShowDraftLoadCancel(false)
-      return
-    }
+    if (!isDraftLoading) return undefined
 
     const timer = window.setTimeout(() => {
       setShowDraftLoadCancel(true)
@@ -421,8 +415,8 @@ function EditorContainer({ onDraftSaved, onSelectCreation }) {
     try {
       const title = activeDraftTitle || defaultCreationTitle(selectedMedia)
       const editorPayload = buildImageCreationPayload({
-        sourceMediaId: imageDraftSourceMediaId || effectiveBackendMediaId,
-        workingMediaId: effectiveBackendMediaId || imageDraftSourceMediaId,
+        sourceMediaId: effectiveImageDraftSourceMediaId || effectiveBackendMediaId,
+        workingMediaId: effectiveBackendMediaId || effectiveImageDraftSourceMediaId,
         preEditWorkingMediaId: editBaseMediaId || null,
         preTextWorkingMediaId: preTextWorkingMediaId || null,
         textOverlay: appliedTextOverlay || null,
@@ -454,12 +448,15 @@ function EditorContainer({ onDraftSaved, onSelectCreation }) {
   }, [
     activeDraftId,
     activeDraftTitle,
+    appliedTextOverlay,
     colorAdjustments,
+    editBaseMediaId,
     effectiveBackendMediaId,
-    imageDraftSourceMediaId,
+    effectiveImageDraftSourceMediaId,
     lastCropBoxPx,
     letterboxColor,
     onDraftSaved,
+    preTextWorkingMediaId,
     selectedImageFilterPreset,
     selectedMedia,
     selectedPreset,
@@ -472,7 +469,7 @@ function EditorContainer({ onDraftSaved, onSelectCreation }) {
     setSaveForLaterMessage(null)
     setIsSavingDraft(true)
 
-    const sourceMediaId = videoDraftSourceMediaId || backendVideoResult?.id || null
+    const sourceMediaId = effectiveVideoDraftSourceMediaId || null
     const workingMediaId = backendVideoResult?.id || sourceMediaId
 
     if (!workingMediaId) {
@@ -516,6 +513,7 @@ function EditorContainer({ onDraftSaved, onSelectCreation }) {
     activeDraftId,
     activeDraftTitle,
     backendVideoResult?.id,
+    effectiveVideoDraftSourceMediaId,
     gifSession.resizeBorderColor,
     gifSession.resizePreset,
     gifSession.selectedFilterPreset,
@@ -524,7 +522,6 @@ function EditorContainer({ onDraftSaved, onSelectCreation }) {
     gifSession.trimRange,
     onDraftSaved,
     selectedMedia,
-    videoDraftSourceMediaId,
   ])
 
   const handleOpenFilters = () => {
@@ -566,7 +563,7 @@ function EditorContainer({ onDraftSaved, onSelectCreation }) {
         throw new Error('Filtered video could not be loaded in editor.')
       }
     },
-    [handleVideoSelect, gifSession, originalVideoFile]
+    [handleVideoSelect, gifSession, originalVideoFile],
   )
 
   const handleGifTrimApply = useCallback((nextRange) => {
@@ -598,7 +595,6 @@ function EditorContainer({ onDraftSaved, onSelectCreation }) {
   }
 
   const handleAddTextScreenApply = async (textRequest) => {
-    // Capture the clean pre-text base on first apply (or keep the existing one for re-edits).
     const baseForText = preTextWorkingMediaId || effectiveBackendMediaId
     if (!preTextWorkingMediaId && effectiveBackendMediaId) {
       setPreTextWorkingMediaId(effectiveBackendMediaId)
@@ -774,14 +770,14 @@ function EditorContainer({ onDraftSaved, onSelectCreation }) {
           />
         )
       case SCREENS.ADD_TEXT: {
-        // When a draft has saved text, show the pre-text image so the user edits on a clean base.
         const preTextImageSrc = preTextWorkingMediaId
           ? `${getBackendBaseUrl()}/api/media/${encodeURIComponent(preTextWorkingMediaId)}`
           : effectiveImageSrc
-        // Convert backend font size (px) back to the UI slider scale (÷5).
+
         const initialUiFontSize = appliedTextOverlay?.fontSize
           ? Math.max(2, Math.round(appliedTextOverlay.fontSize / 5))
           : undefined
+
         return (
           <AddText
             imageSrc={preTextImageSrc}
@@ -871,7 +867,7 @@ function EditorContainer({ onDraftSaved, onSelectCreation }) {
 
                 await handleVideoPresetApply(result)
               } catch {
-                // Errors are already surfaced elsewhere
+                // Errors are already surfaced elsewhere.
               }
             }}
             onCancel={() => gifSession.openGifTool(gifSession.GIF_FLOW_TOOLS.FILTERS_MAIN)}
@@ -940,7 +936,7 @@ function EditorContainer({ onDraftSaved, onSelectCreation }) {
               <p className="draft-restore-banner__text">
                 Opening draft…
               </p>
-              {showDraftLoadCancel && (
+              {shouldShowDraftLoadCancel && (
                 <button
                   type="button"
                   className="draft-restore-banner__cancel"
@@ -949,6 +945,7 @@ function EditorContainer({ onDraftSaved, onSelectCreation }) {
                     setActiveDraftId(null)
                     setActiveDraftTitle(null)
                     setIsDraftLoading(false)
+                    setShowDraftLoadCancel(false)
                   }}
                 >
                   Cancel
