@@ -79,6 +79,10 @@ function App() {
         <MyCreationsPage
           refreshKey={creationsRefreshKey}
           onSelectCreation={handleSelectCreation}
+          isAuthenticated={isAuthenticated}
+          onGoSignIn={() => setAppScreen(APP_SCREENS.SIGN_IN)}
+          onGoSignUp={() => setAppScreen(APP_SCREENS.SIGN_UP)}
+          onSignOut={() => { setIsAuthenticated(false); setAppScreen(APP_SCREENS.LANDING) }}
         />
       )
     }

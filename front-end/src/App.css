@@ -1664,3 +1664,250 @@ input[type='range']::-moz-range-thumb {
 .auth-switch-link:hover {
   color: #3e47cf;
 }
+
+/* ============================================================================
+   PROFILE PAGE
+   ============================================================================ */
+
+.profile-page {
+  width: 100%;
+  max-width: var(--app-content-max-width);
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.profile-header {
+  background: #fff;
+  border: 1px solid #e0e0e0;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.profile-avatar {
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  background-color: #e4e4ee;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.profile-avatar-initials {
+  font-size: 1.4rem;
+  font-weight: 650;
+  color: #646cff;
+  letter-spacing: 0.03em;
+}
+
+.profile-name {
+  font-size: 1.1rem;
+  font-weight: 650;
+  margin: 0;
+  color: #111;
+}
+
+.profile-bio {
+  font-size: 0.88rem;
+  color: #777;
+  margin: 0;
+  text-align: center;
+}
+
+.profile-socials {
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+  margin-top: 0.15rem;
+}
+
+.profile-social-link {
+  font-size: 0.82rem;
+  color: #646cff;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  font-family: inherit;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.profile-social-link:hover {
+  color: #3e47cf;
+}
+
+.profile-section {
+  background: #fff;
+  border: 1px solid #e0e0e0;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  overflow: hidden;
+}
+
+.profile-section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.85rem 1.1rem;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.profile-section-title {
+  font-size: 0.95rem;
+  font-weight: 650;
+  margin: 0;
+}
+
+.profile-section-count {
+  font-size: 0.82rem;
+  color: #999;
+}
+
+.profile-section-body {
+  padding: 0.25rem 0;
+}
+
+.profile-section-empty {
+  padding: 1.25rem 1.1rem;
+  font-size: 0.88rem;
+  color: #999;
+  margin: 0;
+}
+
+.profile-drafts-list {
+  padding: 0.75rem 1.1rem;
+}
+
+.profile-account {
+  background: #fff;
+  border: 1px solid #e0e0e0;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  overflow: hidden;
+}
+
+.profile-account-title {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #aaa;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  padding: 0.85rem 1.1rem 0.4rem;
+  margin: 0;
+}
+
+.profile-account-actions {
+  display: flex;
+  flex-direction: column;
+}
+
+.profile-account-action {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.85rem 1.1rem;
+  background: none;
+  border: none;
+  border-top: 1px solid #f0f0f0;
+  width: 100%;
+  text-align: left;
+  font-family: inherit;
+  font-size: 0.95rem;
+  color: #222;
+  cursor: pointer;
+}
+
+.profile-account-action:hover {
+  background-color: #f8f8f8;
+}
+
+.profile-account-action--danger {
+  color: #ff3b30;
+}
+
+.profile-account-action--danger:hover {
+  background-color: #fff5f5;
+}
+
+.profile-account-action-arrow {
+  color: #ccc;
+  font-size: 0.9rem;
+}
+
+/* Guest profile gate */
+
+.profile-guest {
+  width: 100%;
+  max-width: var(--app-content-max-width);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding-top: 2rem;
+}
+
+.profile-guest-card {
+  background: #fff;
+  border: 1px solid #e0e0e0;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  padding: 2rem 1.5rem;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+  text-align: center;
+}
+
+.profile-guest-icon {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background-color: #e8e8ee;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 0.25rem;
+}
+
+.profile-guest-icon-glyph {
+  font-size: 1.6rem;
+  color: #bbb;
+}
+
+.profile-guest-title {
+  font-size: 1.05rem;
+  font-weight: 650;
+  margin: 0;
+  color: #222;
+}
+
+.profile-guest-subtitle {
+  font-size: 0.88rem;
+  color: #888;
+  margin: 0;
+  line-height: 1.5;
+}
+
+.profile-guest-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  width: 100%;
+  max-width: 220px;
+  margin-top: 0.5rem;
+}
+
+.profile-guest-actions .btn-primary,
+.profile-guest-actions .btn-secondary {
+  width: 100%;
+  padding: 0.7rem 1.2rem;
+}

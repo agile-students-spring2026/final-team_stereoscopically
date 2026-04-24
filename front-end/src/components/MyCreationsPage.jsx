@@ -54,7 +54,38 @@ const formatUpdated = (iso) => {
   }
 }
 
-function MyCreationsPage({ refreshKey = 0, onSelectCreation }) {
+function GuestProfileView({ onGoSignIn, onGoSignUp }) {
+  return (
+    <div className="profile-guest">
+      <div className="profile-guest-card">
+        <div className="profile-guest-icon" aria-hidden="true">
+          <span className="profile-guest-icon-glyph">○</span>
+        </div>
+        <h2 className="profile-guest-title">Sign in to see your profile</h2>
+        <p className="profile-guest-subtitle">
+          Create an account or sign in to save your stickers and manage your profile.
+        </p>
+        <div className="profile-guest-actions">
+          <button type="button" className="btn-primary" onClick={onGoSignIn}>
+            Sign In
+          </button>
+          <button type="button" className="btn-secondary" onClick={onGoSignUp}>
+            Sign Up
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function MyCreationsPage({
+  refreshKey = 0,
+  onSelectCreation,
+  isAuthenticated = false,
+  onGoSignIn,
+  onGoSignUp,
+  onSignOut,
+}) {
   const [items, setItems] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
@@ -63,6 +94,11 @@ function MyCreationsPage({ refreshKey = 0, onSelectCreation }) {
   const [deleteDialogError, setDeleteDialogError] = useState(null)
 
   useEffect(() => {
+    if (!isAuthenticated) {
+      setLoading(false)
+      return undefined
+    }
+
     let cancelled = false
     const ownerKey = getOrCreateOwnerKey()
 
@@ -90,7 +126,7 @@ function MyCreationsPage({ refreshKey = 0, onSelectCreation }) {
     return () => {
       cancelled = true
     }
-  }, [refreshKey])
+  }, [refreshKey, isAuthenticated])
 
   const requestDelete = useCallback((e, row) => {
     e?.stopPropagation?.()
@@ -139,36 +175,26 @@ function MyCreationsPage({ refreshKey = 0, onSelectCreation }) {
     return () => window.removeEventListener('keydown', onKey)
   }, [pendingDelete, isDeleting])
 
-  if (loading) {
-    return (
-      <div className="my-creations" role="region" aria-label="My Creations">
-        <p className="editor-status editor-status--loading editor-status--centered">Loading…</p>
-      </div>
-    )
+  if (!isAuthenticated) {
+    return <GuestProfileView onGoSignIn={onGoSignIn} onGoSignUp={onGoSignUp} />
   }
 
-  if (error) {
-    return (
-      <div className="my-creations" role="region" aria-label="My Creations">
-        <p className="editor-status editor-status--error editor-status--spaced">{error}</p>
-      </div>
-    )
-  }
-
-  if (!items.length) {
-    return (
-      <div className="my-creations my-creations--empty" role="region" aria-label="My Creations">
-        <p className="my-creations-empty-hint">
-          No saved stickers yet. Use <strong>Save for later</strong> in the editor to keep a draft here.
+  const renderDraftsContent = () => {
+    if (loading) {
+      return <p className="profile-section-empty editor-status editor-status--loading">Loading…</p>
+    }
+    if (error) {
+      return <p className="profile-section-empty editor-status editor-status--error">{error}</p>
+    }
+    if (!items.length) {
+      return (
+        <p className="profile-section-empty">
+          No drafts yet. Use <strong>Save for later</strong> in the editor.
         </p>
-      </div>
-    )
-  }
-
-  return (
-    <div className="my-creations" role="region" aria-label="My Creations">
-      <p className="my-creations-subtitle">Drafts and exported stickers from this browser.</p>
-      <ul className="my-creations-list">
+      )
+    }
+    return (
+      <ul className="my-creations-list profile-drafts-list">
         {items.map((row) => {
           const id = row._id ?? row.id
           const title = typeof row.title === 'string' && row.title.trim() ? row.title.trim() : 'Untitled'
@@ -231,6 +257,74 @@ function MyCreationsPage({ refreshKey = 0, onSelectCreation }) {
           )
         })}
       </ul>
+    )
+  }
+
+  return (
+    <div className="profile-page" role="region" aria-label="Profile">
+      <div className="profile-header">
+        <div className="profile-avatar" aria-hidden="true">
+          <span className="profile-avatar-initials">SC</span>
+        </div>
+        <p className="profile-name">Your Name</p>
+        <p className="profile-bio">No bio yet.</p>
+        <div className="profile-socials">
+          <button type="button" className="profile-social-link">
+            Instagram
+          </button>
+          <button type="button" className="profile-social-link">
+            Twitter
+          </button>
+        </div>
+      </div>
+
+      <div className="profile-section">
+        <div className="profile-section-header">
+          <h3 className="profile-section-title">Drafts</h3>
+          {!loading && !error && (
+            <span className="profile-section-count">{items.length}</span>
+          )}
+        </div>
+        <div className="profile-section-body">{renderDraftsContent()}</div>
+      </div>
+
+      <div className="profile-section">
+        <div className="profile-section-header">
+          <h3 className="profile-section-title">Creations</h3>
+          <span className="profile-section-count">0</span>
+        </div>
+        <p className="profile-section-empty">Exported stickers will appear here.</p>
+      </div>
+
+      <div className="profile-section">
+        <div className="profile-section-header">
+          <h3 className="profile-section-title">Likes</h3>
+          <span className="profile-section-count">0</span>
+        </div>
+        <p className="profile-section-empty">Stickers you like will appear here.</p>
+      </div>
+
+      <div className="profile-account">
+        <p className="profile-account-title">Account</p>
+        <div className="profile-account-actions">
+          <button type="button" className="profile-account-action">
+            <span>Change Email</span>
+            <span className="profile-account-action-arrow" aria-hidden="true">›</span>
+          </button>
+          <button type="button" className="profile-account-action">
+            <span>Change Password</span>
+            <span className="profile-account-action-arrow" aria-hidden="true">›</span>
+          </button>
+          <button
+            type="button"
+            className="profile-account-action profile-account-action--danger"
+            onClick={onSignOut}
+          >
+            Sign Out
+          </button>
+        </div>
+      </div>
+
       {pendingDelete ? (
         <div
           className="my-creations-modal-backdrop"
