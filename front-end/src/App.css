@@ -286,21 +286,25 @@
 }
 
 .home-shell {
-  width: var(--app-content-max-width);
+  width: 100%;
+  max-width: var(--app-content-max-width);
   display: flex;
   flex-direction: column;
   align-items: center;
 }
 
 .home-card {
-  width: var(--app-content-max-width);
+  width: 100%;
+  max-width: var(--app-content-max-width);
   align-items: stretch;
   min-height: 240px;
+  box-sizing: border-box;
 }
 
 .home-card h2 {
   margin-bottom: 0.75rem;
 }
+
 .home-card .editor-status {
   margin-top: 0.75rem;
 }
