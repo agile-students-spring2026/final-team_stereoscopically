@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { deleteCreation, fetchCreations } from '../services/creationsApi.js'
 import { getCreationKindLabel, getCreationPreviewUrl } from '../utils/creationPreviewUrl.js'
 import { getOrCreateOwnerKey } from '../utils/ownerKey.js'
@@ -213,6 +213,13 @@ function MyCreationsPage({
     return () => window.removeEventListener('keydown', onKey)
   }, [pendingDelete, isDeleting])
 
+  const showConnectionsBeforeActivity = friendRequests.length > 0
+
+  const totalConnections = useMemo(
+    () => friendRequests.length + friends.length,
+    [friendRequests.length, friends.length]
+  )
+
   if (!isAuthenticated) {
     return <GuestProfileView onGoSignIn={onGoSignIn} onGoSignUp={onGoSignUp} />
   }
@@ -412,6 +419,39 @@ function MyCreationsPage({
     )
   }
 
+  const draftsSection = (
+    <div className="profile-section profile-section--drafts">
+      <div className="profile-section-header">
+        <h3 className="profile-section-title">Drafts</h3>
+        {!loading && !error ? <span className="profile-section-count">{items.length}</span> : null}
+      </div>
+
+      <div className="profile-section-body">{renderDraftsContent()}</div>
+    </div>
+  )
+
+  const activitySection = (
+    <div className="profile-section profile-section--activity">
+      <div className="profile-section-header">
+        <h3 className="profile-section-title">Activity</h3>
+        <span className="profile-section-count">0</span>
+      </div>
+
+      <div className="profile-section-body">{renderActivityContent()}</div>
+    </div>
+  )
+
+  const connectionsSection = (
+    <div className="profile-section profile-section--connections">
+      <div className="profile-section-header">
+        <h3 className="profile-section-title">Connections</h3>
+        <span className="profile-section-count">{totalConnections}</span>
+      </div>
+
+      <div className="profile-section-body">{renderConnectionsContent()}</div>
+    </div>
+  )
+
   return (
     <div className="profile-page" role="region" aria-label="Profile">
       <div className="profile-header">
@@ -433,32 +473,9 @@ function MyCreationsPage({
         </div>
       </div>
 
-      <div className="profile-section profile-section--connections">
-        <div className="profile-section-header">
-          <h3 className="profile-section-title">Connections</h3>
-          <span className="profile-section-count">{friendRequests.length + friends.length}</span>
-        </div>
-
-        <div className="profile-section-body">{renderConnectionsContent()}</div>
-      </div>
-
-      <div className="profile-section profile-section--drafts">
-        <div className="profile-section-header">
-          <h3 className="profile-section-title">Drafts</h3>
-          {!loading && !error ? <span className="profile-section-count">{items.length}</span> : null}
-        </div>
-
-        <div className="profile-section-body">{renderDraftsContent()}</div>
-      </div>
-
-      <div className="profile-section profile-section--activity">
-        <div className="profile-section-header">
-          <h3 className="profile-section-title">Activity</h3>
-          <span className="profile-section-count">0</span>
-        </div>
-
-        <div className="profile-section-body">{renderActivityContent()}</div>
-      </div>
+      {draftsSection}
+      {showConnectionsBeforeActivity ? connectionsSection : activitySection}
+      {showConnectionsBeforeActivity ? activitySection : connectionsSection}
 
       <div className="profile-account">
         <p className="profile-account-title">Account</p>
