@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { postJson, postMultipart } from '../../src/services/backendMediaClient'
+import { deleteJson, postJson, postMultipart } from '../../src/services/backendMediaClient'
 
 describe('backendMediaClient', () => {
   afterEach(() => {
@@ -51,5 +51,19 @@ describe('backendMediaClient', () => {
         fallbackErrorMessage: 'GIF export failed',
       })
     ).rejects.toThrow('Bad request payload')
+  })
+
+  it('calls deleteJson with DELETE and returns JSON on success', async () => {
+    const mockFetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({ success: true, id: '507f1f77bcf86cd799439011' }),
+    })
+    vi.stubGlobal('fetch', mockFetch)
+
+    const payload = await deleteJson({ path: '/api/creations/507f1f77bcf86cd799439011' })
+
+    expect(payload).toEqual({ success: true, id: '507f1f77bcf86cd799439011' })
+    const [, options] = mockFetch.mock.calls[0]
+    expect(options.method).toBe('DELETE')
   })
 })

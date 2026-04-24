@@ -1340,7 +1340,6 @@ input[type='range']::-moz-range-thumb {
 }
 
 .my-creations-item-meta {
-  margin-top: 0.4rem;
   font-size: 0.85rem;
   color: #666;
 }
@@ -1378,4 +1377,129 @@ input[type='range']::-moz-range-thumb {
 
 .my-creations-item-title--link:hover {
   color: var(--color-link-hover, #003d99);
+}
+
+.my-creations-item-row2 {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-top: 0.35rem;
+  flex-wrap: wrap;
+}
+
+.my-creations-item-row2 .my-creations-item-meta {
+  margin-top: 0;
+  flex: 1;
+  min-width: 0;
+}
+
+.my-creations-delete {
+  flex-shrink: 0;
+  font: inherit;
+  font-size: 0.85rem;
+  font-weight: 600;
+  padding: 0.35rem 0.65rem;
+  border-radius: 8px;
+  border: 1px solid #c4c4d0;
+  background: #fff;
+  color: #8a1a1a;
+  cursor: pointer;
+}
+
+.my-creations-delete:hover {
+  background: #fff5f5;
+  border-color: #c08080;
+}
+
+.my-creations-delete:focus {
+  outline: 2px solid #0057cc;
+  outline-offset: 1px;
+}
+
+.my-creations-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 2000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  background: rgba(0, 0, 0, 0.45);
+  box-sizing: border-box;
+}
+
+.my-creations-modal {
+  width: 100%;
+  max-width: 22rem;
+  background: #fff;
+  border-radius: 12px;
+  padding: 1.25rem 1.25rem 1.1rem;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.2);
+  border: 1px solid #e0e0e8;
+}
+
+.my-creations-modal-title {
+  margin: 0 0 0.65rem 0;
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #1a1a1a;
+}
+
+.my-creations-modal-text {
+  margin: 0 0 1rem 0;
+  line-height: 1.45;
+  font-size: 0.95rem;
+  color: #333;
+}
+
+.my-creations-modal-quot {
+  font-weight: 600;
+  color: #222;
+  word-break: break-word;
+}
+
+.my-creations-modal-error {
+  margin: 0 0 0.9rem 0;
+  font-size: 0.9rem;
+  color: #9a1a1a;
+}
+
+.my-creations-modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.my-creations-modal-btn {
+  font: inherit;
+  font-size: 0.95rem;
+  font-weight: 600;
+  padding: 0.45rem 1rem;
+  border-radius: 8px;
+  border: 1px solid #c4c4d0;
+  background: #fff;
+  color: #222;
+  cursor: pointer;
+  min-width: 5.5rem;
+}
+
+.my-creations-modal-btn:hover:not(:disabled) {
+  background: #f3f3f6;
+}
+
+.my-creations-modal-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.my-creations-modal-btn--danger {
+  background: #8a1a1a;
+  border-color: #6f1515;
+  color: #fff;
+}
+
+.my-creations-modal-btn--danger:hover:not(:disabled) {
+  background: #a32222;
 }

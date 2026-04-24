@@ -101,6 +101,26 @@ export const getJson = async ({ path, fallbackErrorMessage = 'Request failed' })
   return response.json()
 }
 
+export const deleteJson = async ({ path, fallbackErrorMessage = 'Request failed' }) => {
+  const endpoint = `${getBackendBaseUrl()}${path}`
+
+  let response
+  try {
+    response = await fetch(endpoint, { method: 'DELETE' })
+  } catch {
+    throw new Error('Unable to reach backend. Please make sure the backend server is running.')
+  }
+
+  if (!response.ok) {
+    const message = await parseErrorMessage(response, fallbackErrorMessage)
+    const error = new Error(message)
+    error.status = response.status
+    throw error
+  }
+
+  return response.json()
+}
+
 export const patchJson = async ({ path, payload, fallbackErrorMessage = 'Request failed' }) => {
   const endpoint = `${getBackendBaseUrl()}${path}`
 
