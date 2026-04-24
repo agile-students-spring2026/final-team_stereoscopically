@@ -1,8 +1,8 @@
 import { buildDraftMediaIds } from './draftMediaIds.js'
 
 /**
- * JSON-serializable snapshot of the current editor session (for draft persistence).
- * Opening drafts is handled in a separate task; this is storage-oriented metadata.
+ * JSON-serializable snapshot of the current editor session.
+ * Drafts should preserve editable operation state, not just flattened output.
  */
 
 const stripExtension = (name) => {
@@ -21,37 +21,57 @@ export const defaultCreationTitle = (file) => {
 export const buildImageCreationPayload = ({
   sourceMediaId,
   workingMediaId,
-  preEditWorkingMediaId,
-  preTextWorkingMediaId,
-  textOverlay,
+  previewMediaId,
+  selectedPreset,
+  letterboxColor,
   lastCropBoxPx,
   colorAdjustments,
   selectedImageFilterPreset,
-  selectedPreset,
-  letterboxColor,
+  textOverlay,
 } = {}) => {
   const mediaIds = buildDraftMediaIds({ sourceMediaId, workingMediaId })
 
   return {
     kind: 'image',
-    version: 2,
+    version: 3,
     ...mediaIds,
+    previewMediaId: previewMediaId ?? null,
+
     // Legacy alias for backward compatibility while clients migrate.
     backendMediaId: mediaIds.workingMediaId,
-    preEditWorkingMediaId: preEditWorkingMediaId ?? null,
-    preTextWorkingMediaId: preTextWorkingMediaId ?? null,
-    textOverlay: textOverlay ?? null,
+
+    editState: {
+      crop: lastCropBoxPx ?? null,
+      resize: selectedPreset
+        ? {
+            preset: selectedPreset,
+            letterboxColor: letterboxColor ?? 'transparent',
+          }
+        : null,
+      presetFilter: selectedImageFilterPreset ?? 'default',
+      colorAdjustments: colorAdjustments ?? {
+        brightness: 100,
+        contrast: 100,
+        saturation: 100,
+        hue: 0,
+      },
+      textOverlays: textOverlay ? [textOverlay] : [],
+    },
+
+    // Keep these temporarily for migration / compatibility
     lastCropBoxPx: lastCropBoxPx ?? null,
     colorAdjustments: colorAdjustments ?? null,
     selectedImageFilterPreset: selectedImageFilterPreset ?? 'default',
     selectedPreset: selectedPreset ?? null,
     letterboxColor: letterboxColor ?? 'transparent',
+    textOverlay: textOverlay ?? null,
   }
 }
 
 export const buildVideoCreationPayload = ({
   sourceMediaId,
   workingMediaId,
+  previewMediaId,
   trimRange,
   resizePreset,
   resizeBorderColor,
@@ -63,10 +83,29 @@ export const buildVideoCreationPayload = ({
 
   return {
     kind: 'video',
-    version: 2,
+    version: 3,
     ...mediaIds,
+    previewMediaId: previewMediaId ?? null,
+
     // Legacy alias for backward compatibility while clients migrate.
     backendMediaId: mediaIds.workingMediaId,
+
+    editState: {
+      trim: trimRange
+        ? { start: trimRange.start, end: trimRange.end }
+        : { start: 0, end: 0 },
+      resize: resizePreset
+        ? {
+            preset: resizePreset,
+            borderColor: resizeBorderColor ?? null,
+          }
+        : null,
+      speed: selectedSpeedPlaybackRate ?? 1,
+      presetFilter: selectedFilterPreset ?? 'default',
+      textOverlays: textOverlaySettings ? [textOverlaySettings] : [],
+    },
+
+    // Keep these temporarily for migration / compatibility
     trimRange: trimRange ? { start: trimRange.start, end: trimRange.end } : { start: 0, end: 0 },
     resizePreset: resizePreset ?? null,
     resizeBorderColor: resizeBorderColor ?? null,

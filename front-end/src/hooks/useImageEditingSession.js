@@ -778,71 +778,82 @@ const useImageEditingSession = ({
   }, [applyTransformedImage, previewUrl, resetExportSessionState, sourceUrl])
 
 
-  const restoreImageSession = useCallback(async (payload = {}) => {
-    const {
-      lastCropBoxPx: cropPx,
-      colorAdjustments: ca,
-      selectedImageFilterPreset: filterPreset,
-      selectedPreset: preset,
-      letterboxColor: lbColor,
-      preEditWorkingMediaId,
-    } = payload
+const restoreImageSession = useCallback(async (payload = {}) => {
+  const editState = payload?.editState ?? {}
 
-    const { sourceMediaId, workingMediaId } = resolveDraftMediaIds(payload)
-    const candidateIds = [workingMediaId, sourceMediaId].filter(Boolean)
-    const uniqueCandidateIds = [...new Set(candidateIds)]
+  const cropPx = editState?.crop ?? payload?.lastCropBoxPx ?? null
+  const colorState =
+    editState?.colorAdjustments ??
+    payload?.colorAdjustments ??
+    DEFAULT_COLOR_ADJUSTMENTS
+  const filterPreset =
+    editState?.presetFilter ??
+    payload?.selectedImageFilterPreset ??
+    DEFAULT_IMAGE_FILTER_PRESET
+  const resizeState = editState?.resize ?? null
+  const preset = resizeState?.preset ?? payload?.selectedPreset ?? null
+  const lbColor =
+    resizeState?.letterboxColor ??
+    payload?.letterboxColor ??
+    'transparent'
+  const preEditWorkingMediaId = payload?.preEditWorkingMediaId ?? null
 
-    if (!uniqueCandidateIds.length) return false
+  const { sourceMediaId, workingMediaId } = resolveDraftMediaIds(payload)
+  const candidateIds = [workingMediaId, sourceMediaId].filter(Boolean)
+  const uniqueCandidateIds = [...new Set(candidateIds)]
 
-    try {
-      setExportError(null)
-      let restoredResult = null
-      let restoredFile = null
-      let restoredObjectUrl = null
+  if (!uniqueCandidateIds.length) return false
 
-      for (const mediaId of uniqueCandidateIds) {
-        try {
-          const url = `${getBackendBaseUrl()}/api/media/${mediaId}`
-          const result = { id: mediaId, url, mimeType: 'image/png' }
-          const converted = await convertBackendImageResultToLocalMedia(result, {
-            fallbackFileName: 'draft.png',
-            fallbackMimeType: 'image/png',
-            fetchErrorMessage: 'Failed to load draft image.',
-          })
+  try {
+    setExportError(null)
+    let restoredResult = null
+    let restoredFile = null
+    let restoredObjectUrl = null
 
-          restoredResult = result
-          restoredFile = converted.file
-          restoredObjectUrl = converted.objectUrl
-          break
-        } catch {
-          // Try next candidate id (working -> source fallback).
-        }
+    for (const mediaId of uniqueCandidateIds) {
+      try {
+        const url = `${getBackendBaseUrl()}/api/media/${mediaId}`
+        const result = { id: mediaId, url, mimeType: 'image/png' }
+        const converted = await convertBackendImageResultToLocalMedia(result, {
+          fallbackFileName: 'draft.png',
+          fallbackMimeType: 'image/png',
+          fetchErrorMessage: 'Failed to load draft image.',
+        })
+
+        restoredResult = result
+        restoredFile = converted.file
+        restoredObjectUrl = converted.objectUrl
+        break
+      } catch {
+        // try next candidate
       }
-
-      if (!restoredResult || !restoredFile || !restoredObjectUrl) {
-        throw new Error('Could not restore draft image.')
-      }
-
-      // Suppress the filter/color reset useEffect that fires when effectiveBackendMediaId changes.
-      skipFilterResetRef.current = true
-      applyTransformedImage(restoredFile, restoredObjectUrl, restoredResult)
-      originalImageMediaIdRef.current = sourceMediaId || restoredResult.id
-      // Restore pre-decoration base so re-selecting a filter uses the clean pre-filter image.
-      editBaseMediaIdRef.current = preEditWorkingMediaId || null
-      setLastCropBoxPx(cropPx ?? null)
-      setColorAdjustments(ca ? normalizeColorAdjustments(ca) : DEFAULT_COLOR_ADJUSTMENTS)
-      setSelectedImageFilterPreset(filterPreset || DEFAULT_IMAGE_FILTER_PRESET)
-      setSelectedPreset(preset ?? null)
-      setLetterboxColor(lbColor ?? 'transparent')
-      setLatestExportResult(null)
-      setLastExportLetterbox(null)
-      return true
-    } catch (err) {
-      console.error('restoreImageSession failed:', err)
-      setExportError(err?.message || 'Could not load draft image.')
-      return false
     }
-  }, [applyTransformedImage])
+
+    if (!restoredResult || !restoredFile || !restoredObjectUrl) {
+      throw new Error('Could not restore draft image.')
+    }
+
+    skipFilterResetRef.current = true
+    applyTransformedImage(restoredFile, restoredObjectUrl, restoredResult)
+
+    originalImageMediaIdRef.current = sourceMediaId || restoredResult.id
+    editBaseMediaIdRef.current = preEditWorkingMediaId || null
+
+    setLastCropBoxPx(cropPx)
+    setColorAdjustments(normalizeColorAdjustments(colorState))
+    setSelectedImageFilterPreset(filterPreset)
+    setSelectedPreset(preset)
+    setLetterboxColor(lbColor)
+    setLatestExportResult(null)
+    setLastExportLetterbox(null)
+
+    return true
+  } catch (err) {
+    console.error('restoreImageSession failed:', err)
+    setExportError(err?.message || 'Could not load draft image.')
+    return false
+  }
+}, [applyTransformedImage])
 
   return {
     selectedPreset,

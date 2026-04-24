@@ -14,7 +14,7 @@ describe('buildCreationPayload', () => {
       selectedImageFilterPreset: 'sepia',
     })
 
-    expect(payload.version).toBe(2)
+    expect(payload.version).toBe(3)
     expect(payload.sourceMediaId).toBe('src_img_1')
     expect(payload.workingMediaId).toBe('work_img_1')
     expect(payload.backendMediaId).toBe('work_img_1')
@@ -24,7 +24,7 @@ describe('buildCreationPayload', () => {
   it('builds video payload with defaults and media id fallback', () => {
     const payload = buildVideoCreationPayload({ sourceMediaId: 'src_vid_1' })
 
-    expect(payload.version).toBe(2)
+    expect(payload.version).toBe(3)
     expect(payload.sourceMediaId).toBe('src_vid_1')
     expect(payload.workingMediaId).toBe('src_vid_1')
     expect(payload.backendMediaId).toBe('src_vid_1')
