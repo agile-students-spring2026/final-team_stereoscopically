@@ -23,6 +23,7 @@ function CreationPreviewThumb({ row, title }) {
         </div>
       )
     }
+
     return (
       <div className="my-creations-thumb-wrap">
         <img
@@ -36,6 +37,7 @@ function CreationPreviewThumb({ row, title }) {
   }
 
   const placeholderLabel = kind === 'video' ? 'Video' : kind === 'image' ? 'Image' : 'Sticker'
+
   return (
     <div className="my-creations-thumb-wrap my-creations-thumb-wrap--placeholder" aria-hidden="true">
       <span className="my-creations-thumb-placeholder-label">{placeholderLabel}</span>
@@ -45,6 +47,7 @@ function CreationPreviewThumb({ row, title }) {
 
 const formatUpdated = (iso) => {
   if (!iso) return '—'
+
   try {
     const d = new Date(iso)
     if (Number.isNaN(d.getTime())) return '—'
@@ -61,14 +64,18 @@ function GuestProfileView({ onGoSignIn, onGoSignUp }) {
         <div className="profile-guest-icon" aria-hidden="true">
           <span className="profile-guest-icon-glyph">○</span>
         </div>
+
         <h2 className="profile-guest-title">Sign in to see your profile</h2>
+
         <p className="profile-guest-subtitle">
           Create an account or sign in to save your stickers and manage your profile.
         </p>
+
         <div className="profile-guest-actions">
           <button type="button" className="btn-primary" onClick={onGoSignIn}>
             Sign In
           </button>
+
           <button type="button" className="btn-secondary" onClick={onGoSignUp}>
             Sign Up
           </button>
@@ -87,7 +94,7 @@ function MyCreationsPage({
   onSignOut,
 }) {
   const [items, setItems] = useState([])
-  const [loading, setLoading] = useState(true)
+  const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
   const [pendingDelete, setPendingDelete] = useState(null)
   const [isDeleting, setIsDeleting] = useState(false)
@@ -95,7 +102,6 @@ function MyCreationsPage({
 
   useEffect(() => {
     if (!isAuthenticated) {
-      setLoading(false)
       return undefined
     }
 
@@ -103,10 +109,16 @@ function MyCreationsPage({
     const ownerKey = getOrCreateOwnerKey()
 
     const load = async () => {
+      await Promise.resolve()
+
+      if (cancelled) return
+
       setLoading(true)
       setError(null)
+
       try {
         const data = await fetchCreations(ownerKey)
+
         if (!cancelled) {
           setItems(Array.isArray(data) ? data : [])
         }
@@ -123,6 +135,7 @@ function MyCreationsPage({
     }
 
     load()
+
     return () => {
       cancelled = true
     }
@@ -130,9 +143,12 @@ function MyCreationsPage({
 
   const requestDelete = useCallback((e, row) => {
     e?.stopPropagation?.()
+
     const id = row?._id ?? row?.id
     if (id == null) return
+
     const rawTitle = typeof row?.title === 'string' && row.title.trim() ? row.title.trim() : 'Untitled'
+
     setDeleteDialogError(null)
     setPendingDelete({ id: String(id), title: rawTitle })
   }, [])
@@ -140,7 +156,9 @@ function MyCreationsPage({
   const cancelDelete = useCallback(
     (e) => {
       e?.stopPropagation?.()
+
       if (isDeleting) return
+
       setPendingDelete(null)
       setDeleteDialogError(null)
     },
@@ -149,10 +167,13 @@ function MyCreationsPage({
 
   const confirmDelete = useCallback(async () => {
     if (!pendingDelete || isDeleting) return
+
     setIsDeleting(true)
     setDeleteDialogError(null)
+
     try {
       await deleteCreation(pendingDelete.id)
+
       setItems((prev) => prev.filter((row) => String(row._id ?? row.id) !== pendingDelete.id))
       setPendingDelete(null)
     } catch (err) {
@@ -164,6 +185,7 @@ function MyCreationsPage({
 
   useEffect(() => {
     if (!pendingDelete) return undefined
+
     const onKey = (e) => {
       if (e.key === 'Escape' && !isDeleting) {
         e.preventDefault()
@@ -171,7 +193,9 @@ function MyCreationsPage({
         setDeleteDialogError(null)
       }
     }
+
     window.addEventListener('keydown', onKey)
+
     return () => window.removeEventListener('keydown', onKey)
   }, [pendingDelete, isDeleting])
 
@@ -183,9 +207,11 @@ function MyCreationsPage({
     if (loading) {
       return <p className="profile-section-empty editor-status editor-status--loading">Loading…</p>
     }
+
     if (error) {
       return <p className="profile-section-empty editor-status editor-status--error">{error}</p>
     }
+
     if (!items.length) {
       return (
         <p className="profile-section-empty">
@@ -193,12 +219,14 @@ function MyCreationsPage({
         </p>
       )
     }
+
     return (
       <ul className="my-creations-list profile-drafts-list">
         {items.map((row) => {
           const id = row._id ?? row.id
           const title = typeof row.title === 'string' && row.title.trim() ? row.title.trim() : 'Untitled'
           const status = row.status === 'exported' ? 'exported' : 'draft'
+
           return (
             <li
               key={id}
@@ -209,12 +237,16 @@ function MyCreationsPage({
               onKeyDown={
                 onSelectCreation
                   ? (e) => {
-                      if (e.key === 'Enter' || e.key === ' ') onSelectCreation(row)
+                      if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault()
+                        onSelectCreation(row)
+                      }
                     }
                   : undefined
               }
             >
               <CreationPreviewThumb row={row} title={title} />
+
               <div className="my-creations-item-body">
                 <div className="my-creations-item-main">
                   {onSelectCreation ? (
@@ -231,6 +263,7 @@ function MyCreationsPage({
                   ) : (
                     <span className="my-creations-item-title">{title}</span>
                   )}
+
                   <span
                     className={
                       status === 'exported'
@@ -241,8 +274,10 @@ function MyCreationsPage({
                     {status === 'exported' ? 'Exported' : 'Draft'}
                   </span>
                 </div>
+
                 <div className="my-creations-item-row2">
                   <div className="my-creations-item-meta">Updated {formatUpdated(row.updatedAt)}</div>
+
                   <button
                     type="button"
                     className="my-creations-delete"
@@ -266,12 +301,15 @@ function MyCreationsPage({
         <div className="profile-avatar" aria-hidden="true">
           <span className="profile-avatar-initials">SC</span>
         </div>
+
         <p className="profile-name">Your Name</p>
         <p className="profile-bio">No bio yet.</p>
+
         <div className="profile-socials">
           <button type="button" className="profile-social-link">
             Instagram
           </button>
+
           <button type="button" className="profile-social-link">
             Twitter
           </button>
@@ -281,10 +319,10 @@ function MyCreationsPage({
       <div className="profile-section">
         <div className="profile-section-header">
           <h3 className="profile-section-title">Drafts</h3>
-          {!loading && !error && (
-            <span className="profile-section-count">{items.length}</span>
-          )}
+
+          {!loading && !error && <span className="profile-section-count">{items.length}</span>}
         </div>
+
         <div className="profile-section-body">{renderDraftsContent()}</div>
       </div>
 
@@ -293,6 +331,7 @@ function MyCreationsPage({
           <h3 className="profile-section-title">Creations</h3>
           <span className="profile-section-count">0</span>
         </div>
+
         <p className="profile-section-empty">Exported stickers will appear here.</p>
       </div>
 
@@ -301,20 +340,28 @@ function MyCreationsPage({
           <h3 className="profile-section-title">Likes</h3>
           <span className="profile-section-count">0</span>
         </div>
+
         <p className="profile-section-empty">Stickers you like will appear here.</p>
       </div>
 
       <div className="profile-account">
         <p className="profile-account-title">Account</p>
+
         <div className="profile-account-actions">
           <button type="button" className="profile-account-action">
             <span>Change Email</span>
-            <span className="profile-account-action-arrow" aria-hidden="true">›</span>
+            <span className="profile-account-action-arrow" aria-hidden="true">
+              ›
+            </span>
           </button>
+
           <button type="button" className="profile-account-action">
             <span>Change Password</span>
-            <span className="profile-account-action-arrow" aria-hidden="true">›</span>
+            <span className="profile-account-action-arrow" aria-hidden="true">
+              ›
+            </span>
           </button>
+
           <button
             type="button"
             className="profile-account-action profile-account-action--danger"
@@ -326,11 +373,7 @@ function MyCreationsPage({
       </div>
 
       {pendingDelete ? (
-        <div
-          className="my-creations-modal-backdrop"
-          role="presentation"
-          onClick={cancelDelete}
-        >
+        <div className="my-creations-modal-backdrop" role="presentation" onClick={cancelDelete}>
           <div
             className="my-creations-modal"
             role="dialog"
@@ -341,19 +384,28 @@ function MyCreationsPage({
             <h2 id="my-creations-delete-heading" className="my-creations-modal-title">
               Delete this creation?
             </h2>
+
             <p className="my-creations-modal-text">
               <span className="my-creations-modal-quot">&ldquo;{pendingDelete.title}&rdquo;</span> will be removed. This
               cannot be undone.
             </p>
+
             {deleteDialogError ? (
               <p className="my-creations-modal-error" role="alert">
                 {deleteDialogError}
               </p>
             ) : null}
+
             <div className="my-creations-modal-actions">
-              <button type="button" className="my-creations-modal-btn" onClick={cancelDelete} disabled={isDeleting}>
+              <button
+                type="button"
+                className="my-creations-modal-btn"
+                onClick={cancelDelete}
+                disabled={isDeleting}
+              >
                 Cancel
               </button>
+
               <button
                 type="button"
                 className="my-creations-modal-btn my-creations-modal-btn--danger"

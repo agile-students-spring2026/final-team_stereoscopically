@@ -286,7 +286,7 @@
 }
 
 .home-shell {
-  width: 100%;
+  width: var(--app-content-max-width);
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -294,7 +294,7 @@
 
 .home-card {
   align-items: stretch;
-  max-width: var(--app-content-max-width);
+  width: var(--app-content-max-width);
   min-height: 240px;
 }
 
@@ -310,7 +310,7 @@
    left-aligns this screen. Stretch + horizontal margin centers the block and
    full-width buttons. */
 .card.create-new {
-  width: 100%;
+  width: var(--app-content-max-width);
   align-items: stretch;
   margin-left: auto;
   margin-right: auto;
