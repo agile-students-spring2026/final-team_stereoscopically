@@ -307,6 +307,8 @@ const useImageEditingSession = ({
         URL.revokeObjectURL(previewUrl)
       }
 
+      // Keep selectedImageFilterPreset and colorAdjustments alive after the working image changes.
+      skipFilterResetRef.current = true
       applyTransformedImage(file, objectUrl, result)
       setLatestExportResult(null)
       setLastExportLetterbox(null)
@@ -427,6 +429,8 @@ const useImageEditingSession = ({
         URL.revokeObjectURL(previewUrl)
       }
 
+      // Keep colorAdjustments (and selectedImageFilterPreset) alive after the working image changes.
+      skipFilterResetRef.current = true
       applyTransformedImage(file, objectUrl, result)
       setLatestExportResult(null)
       setLastExportLetterbox(null)
