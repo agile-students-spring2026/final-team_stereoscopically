@@ -153,7 +153,9 @@ const useImageEditingSession = ({
       setColorAdjustments(DEFAULT_COLOR_ADJUSTMENTS)
       setColorFilterPreviewSrc(pipelineSrc)
       setColorFilterError(null)
-      editBaseMediaIdRef.current = null
+      // editBaseMediaIdRef is intentionally NOT cleared here — it must survive filter apply
+      // so that re-selecting a different filter always starts from the same pre-decoration base.
+      // It is only cleared by explicit operations: crop, full reset, or a new image load.
     })
   }, [effectiveBackendMediaId, effectiveImageSrc, sourceUrl])
 

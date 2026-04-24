@@ -1,4 +1,5 @@
 import { Creation } from '../models/creationModel.js'
+import { deleteMedia } from '../services/mediaStore.js'
 
 const MAX_TITLE_LENGTH = 200
 
@@ -102,6 +103,19 @@ export const deleteCreation = async (req, res) => {
         if (!creation) {
             return res.status(404).json({ error: 'Creation not found.', code: 'NOT_FOUND' })
         }
+
+        const payload = creation.editorPayload ?? {}
+        const mediaIds = new Set([
+            payload.sourceMediaId,
+            payload.workingMediaId,
+            payload.backendMediaId,
+            payload.preEditWorkingMediaId,
+            payload.preTextWorkingMediaId,
+            creation.exportAssetId,
+        ].filter(Boolean))
+
+        await Promise.allSettled([...mediaIds].map((mediaId) => deleteMedia(mediaId)))
+
         return res.status(200).json({ success: true, id })
     } catch (error) {
         console.error('deleteCreation error:', error)
