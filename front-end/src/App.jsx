@@ -1,8 +1,18 @@
 import { useCallback, useRef, useState } from 'react'
 import './App.css'
+import AuthLanding from './components/AuthLanding'
 import EditorContainer from './components/EditorContainer'
 import HomeView from './components/HomeView'
 import MyCreationsPage from './components/MyCreationsPage'
+import SignInPage from './components/SignInPage'
+import SignUpPage from './components/SignUpPage'
+
+const APP_SCREENS = {
+  LANDING: 'landing',
+  SIGN_IN: 'sign-in',
+  SIGN_UP: 'sign-up',
+  APP: 'app',
+}
 
 const APP_VIEWS = {
   HOME: 'home',
@@ -11,6 +21,8 @@ const APP_VIEWS = {
 }
 
 function App() {
+  const [appScreen, setAppScreen] = useState(APP_SCREENS.LANDING)
+  const [isAuthenticated, setIsAuthenticated] = useState(false)
   const [activeView, setActiveView] = useState(APP_VIEWS.HOME)
   const [creationsRefreshKey, setCreationsRefreshKey] = useState(0)
   const loadDraftRef = useRef(null)
@@ -19,6 +31,36 @@ function App() {
     setActiveView(APP_VIEWS.CREATE)
     setTimeout(() => loadDraftRef.current?.(creation), 0)
   }, [])
+
+  if (appScreen === APP_SCREENS.LANDING) {
+    return (
+      <AuthLanding
+        onSignIn={() => setAppScreen(APP_SCREENS.SIGN_IN)}
+        onSignUp={() => setAppScreen(APP_SCREENS.SIGN_UP)}
+        onGuest={() => setAppScreen(APP_SCREENS.APP)}
+      />
+    )
+  }
+
+  if (appScreen === APP_SCREENS.SIGN_IN) {
+    return (
+      <SignInPage
+        onSignIn={() => { setIsAuthenticated(true); setAppScreen(APP_SCREENS.APP) }}
+        onBack={() => setAppScreen(APP_SCREENS.LANDING)}
+        onGoSignUp={() => setAppScreen(APP_SCREENS.SIGN_UP)}
+      />
+    )
+  }
+
+  if (appScreen === APP_SCREENS.SIGN_UP) {
+    return (
+      <SignUpPage
+        onSignUp={() => { setIsAuthenticated(true); setAppScreen(APP_SCREENS.APP) }}
+        onBack={() => setAppScreen(APP_SCREENS.LANDING)}
+        onGoSignIn={() => setAppScreen(APP_SCREENS.SIGN_IN)}
+      />
+    )
+  }
 
   const renderActiveView = () => {
     if (activeView === APP_VIEWS.CREATE) {
