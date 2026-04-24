@@ -4,6 +4,8 @@
 
 This document defines responsibility boundaries for the back-end code in `back-end/`.
 
+For persistence rules and data-shape guarantees, see `back-end/docs/database-contract.md`.
+
 It covers:
 - what belongs in each back-end folder
 - what each layer is responsible for
