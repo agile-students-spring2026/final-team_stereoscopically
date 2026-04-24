@@ -99,6 +99,8 @@ function MyCreationsPage({
   const [pendingDelete, setPendingDelete] = useState(null)
   const [isDeleting, setIsDeleting] = useState(false)
   const [deleteDialogError, setDeleteDialogError] = useState(null)
+  const [friendRequests, setFriendRequests] = useState([])
+  const [friends, setFriends] = useState([])
 
   useEffect(() => {
     if (!isAuthenticated) {
@@ -165,6 +167,18 @@ function MyCreationsPage({
     [isDeleting]
   )
 
+  const handleAcceptRequest = useCallback((id) => {
+    const req = friendRequests.find((r) => r.id === id)
+    if (req) {
+      setFriends((prev) => [...prev, req])
+    }
+    setFriendRequests((prev) => prev.filter((r) => r.id !== id))
+  }, [friendRequests])
+
+  const handleDeclineRequest = useCallback((id) => {
+    setFriendRequests((prev) => prev.filter((r) => r.id !== id))
+  }, [])
+
   const confirmDelete = useCallback(async () => {
     if (!pendingDelete || isDeleting) return
 
@@ -213,11 +227,7 @@ function MyCreationsPage({
     }
 
     if (!items.length) {
-      return (
-        <p className="profile-section-empty">
-          No saved stickers yet.
-        </p>
-      )
+      return <p className="profile-section-empty">No saved stickers yet.</p>
     }
 
     return (
@@ -295,6 +305,113 @@ function MyCreationsPage({
     )
   }
 
+  const renderConnectionsContent = () => {
+    if (friendRequests.length === 0 && friends.length === 0) {
+      return <p className="profile-section-empty">No connections yet.</p>
+    }
+
+    return (
+      <div className="profile-connections">
+        <div className="profile-connections-block">
+          <div className="profile-connections-subheader">
+            <h4 className="profile-connections-subtitle">Friend Requests</h4>
+            <span className="profile-connections-subcount">{friendRequests.length}</span>
+          </div>
+
+          {friendRequests.length === 0 ? (
+            <p className="profile-section-empty profile-section-empty--compact">
+              No incoming friend requests.
+            </p>
+          ) : (
+            <ul className="profile-friend-list">
+              {friendRequests.map((req) => (
+                <li key={req.id} className="profile-friend-item">
+                  <div className="profile-friend-avatar" aria-hidden="true">
+                    {req.name.charAt(0).toUpperCase()}
+                  </div>
+
+                  <div className="profile-friend-info">
+                    <span className="profile-friend-name">{req.name}</span>
+                    {req.handle ? <span className="profile-friend-handle">{req.handle}</span> : null}
+                  </div>
+
+                  <div className="profile-friend-actions">
+                    <button
+                      type="button"
+                      className="profile-friend-btn profile-friend-btn--accept"
+                      onClick={() => handleAcceptRequest(req.id)}
+                    >
+                      Accept
+                    </button>
+                    <button
+                      type="button"
+                      className="profile-friend-btn profile-friend-btn--decline"
+                      onClick={() => handleDeclineRequest(req.id)}
+                    >
+                      Decline
+                    </button>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+
+        <div className="profile-connections-block">
+          <div className="profile-connections-subheader">
+            <h4 className="profile-connections-subtitle">Friends</h4>
+            <span className="profile-connections-subcount">{friends.length}</span>
+          </div>
+
+          {friends.length === 0 ? (
+            <p className="profile-section-empty profile-section-empty--compact">No friends yet.</p>
+          ) : (
+            <ul className="profile-friend-list">
+              {friends.map((friend) => (
+                <li key={friend.id} className="profile-friend-item">
+                  <div className="profile-friend-avatar" aria-hidden="true">
+                    {friend.name.charAt(0).toUpperCase()}
+                  </div>
+
+                  <div className="profile-friend-info">
+                    <span className="profile-friend-name">{friend.name}</span>
+                    {friend.handle ? <span className="profile-friend-handle">{friend.handle}</span> : null}
+                  </div>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      </div>
+    )
+  }
+
+  const renderActivityContent = () => {
+    return (
+      <div className="profile-activity-grid">
+        <div className="profile-activity-card">
+          <div className="profile-activity-card-header">
+            <h4 className="profile-activity-card-title">Creations</h4>
+            <span className="profile-activity-card-count">0</span>
+          </div>
+          <p className="profile-section-empty profile-section-empty--compact">
+            Exported stickers will appear here.
+          </p>
+        </div>
+
+        <div className="profile-activity-card">
+          <div className="profile-activity-card-header">
+            <h4 className="profile-activity-card-title">Likes</h4>
+            <span className="profile-activity-card-count">0</span>
+          </div>
+          <p className="profile-section-empty profile-section-empty--compact">
+            Stickers you like will appear here.
+          </p>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="profile-page" role="region" aria-label="Profile">
       <div className="profile-header">
@@ -316,31 +433,31 @@ function MyCreationsPage({
         </div>
       </div>
 
-      <div className="profile-section">
+      <div className="profile-section profile-section--connections">
+        <div className="profile-section-header">
+          <h3 className="profile-section-title">Connections</h3>
+          <span className="profile-section-count">{friendRequests.length + friends.length}</span>
+        </div>
+
+        <div className="profile-section-body">{renderConnectionsContent()}</div>
+      </div>
+
+      <div className="profile-section profile-section--drafts">
         <div className="profile-section-header">
           <h3 className="profile-section-title">Drafts</h3>
-          {!loading && !error && <span className="profile-section-count">{items.length}</span>}
+          {!loading && !error ? <span className="profile-section-count">{items.length}</span> : null}
         </div>
 
         <div className="profile-section-body">{renderDraftsContent()}</div>
       </div>
 
-      <div className="profile-section">
+      <div className="profile-section profile-section--activity">
         <div className="profile-section-header">
-          <h3 className="profile-section-title">Creations</h3>
+          <h3 className="profile-section-title">Activity</h3>
           <span className="profile-section-count">0</span>
         </div>
 
-        <p className="profile-section-empty">Exported stickers will appear here.</p>
-      </div>
-
-      <div className="profile-section">
-        <div className="profile-section-header">
-          <h3 className="profile-section-title">Likes</h3>
-          <span className="profile-section-count">0</span>
-        </div>
-
-        <p className="profile-section-empty">Stickers you like will appear here.</p>
+        <div className="profile-section-body">{renderActivityContent()}</div>
       </div>
 
       <div className="profile-account">
