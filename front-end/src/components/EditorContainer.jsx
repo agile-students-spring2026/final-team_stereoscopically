@@ -562,6 +562,9 @@ function EditorContainer({ onDraftSaved, onSelectCreation }) {
       if (selection?.code !== MEDIA_SELECTION_CODES.OK) {
         throw new Error('Filtered video could not be loaded in editor.')
       }
+
+      gifSession.openGifTool(gifSession.GIF_FLOW_TOOLS.EDITOR)
+      setScreen(SCREENS.EDITOR)
     },
     [handleVideoSelect, gifSession, originalVideoFile],
   )

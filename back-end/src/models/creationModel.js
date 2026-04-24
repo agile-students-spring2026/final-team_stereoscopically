@@ -28,6 +28,10 @@ const creationSchema = new mongoose.Schema(
 			type: String,
 			default: null,
 		},
+		trackedMediaIds: {
+			type: [String],
+			default: [],
+		},
 	},
 	{
 		timestamps: true,
@@ -37,4 +41,3 @@ const creationSchema = new mongoose.Schema(
 creationSchema.index({ ownerKey: 1, updatedAt: -1 })
 
 export const Creation = mongoose.model('Creation', creationSchema)
-
