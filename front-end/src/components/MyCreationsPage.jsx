@@ -88,7 +88,7 @@ function GuestProfileView({ onGoSignIn, onGoSignUp }) {
 function MyCreationsPage({
   refreshKey = 0,
   onSelectCreation,
-  isAuthenticated = false,
+  isAuthenticated = true,
   onGoSignIn,
   onGoSignUp,
   onSignOut,
@@ -124,7 +124,7 @@ function MyCreationsPage({
         }
       } catch (e) {
         if (!cancelled) {
-          setError(e?.message || 'Failed to load creations.')
+          setError(e?.message || 'Could not load creations.')
           setItems([])
         }
       } finally {
@@ -215,7 +215,7 @@ function MyCreationsPage({
     if (!items.length) {
       return (
         <p className="profile-section-empty">
-          No drafts yet. Use <strong>Save for later</strong> in the editor.
+          No saved stickers yet.
         </p>
       )
     }
@@ -319,7 +319,6 @@ function MyCreationsPage({
       <div className="profile-section">
         <div className="profile-section-header">
           <h3 className="profile-section-title">Drafts</h3>
-
           {!loading && !error && <span className="profile-section-count">{items.length}</span>}
         </div>
 
