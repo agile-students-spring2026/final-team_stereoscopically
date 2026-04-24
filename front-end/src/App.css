@@ -1826,20 +1826,6 @@ input[type='range']::-moz-range-thumb {
   padding: 0.75rem 1.05rem;
 }
 
-/* Section ordering emphasis */
-
-.profile-section--connections {
-  order: 1;
-}
-
-.profile-section--drafts {
-  order: 2;
-}
-
-.profile-section--activity {
-  order: 3;
-}
-
 /* ============================================================================
    CONNECTIONS
    ============================================================================ */
