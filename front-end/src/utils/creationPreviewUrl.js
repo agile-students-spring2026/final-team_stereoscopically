@@ -1,4 +1,5 @@
 import { getBackendBaseUrl } from '../services/backendMediaClient.js'
+import { resolveDraftMediaIds } from './draftMediaIds.js'
 
 /**
  * URL for a small list preview, or null to show a kind placeholder.
@@ -14,8 +15,11 @@ export const getCreationPreviewUrl = (creation) => {
   const p = creation.editorPayload
   if (!p || typeof p !== 'object') return null
 
-  if (p.kind === 'image' && typeof p.backendMediaId === 'string' && p.backendMediaId.trim()) {
-    return `${getBackendBaseUrl()}/api/media/${encodeURIComponent(p.backendMediaId.trim())}`
+  if (p.kind === 'image') {
+    const { resumeMediaId } = resolveDraftMediaIds(p)
+    if (resumeMediaId) {
+      return `${getBackendBaseUrl()}/api/media/${encodeURIComponent(resumeMediaId)}`
+    }
   }
 
   return null

@@ -29,6 +29,14 @@ const isHeicFile = (file) => {
   )
 }
 
+const isGifFile = (file) => {
+  if (!file) return false
+  const lowerName = file.name?.toLowerCase() || ''
+  const lowerType = file.type?.toLowerCase() || ''
+
+  return lowerName.endsWith('.gif') || lowerType === 'image/gif'
+}
+
 const useMediaSelection = () => {
   const [mediaType, setMediaType] = useState(null)
   const [selectedMedia, setSelectedMedia] = useState(null)
@@ -62,7 +70,7 @@ const useMediaSelection = () => {
       return { applied: false, code: MEDIA_SELECTION_CODES.EMPTY_FILE }
     }
 
-    if (isHeicFile(file)) {
+    if (isHeicFile(file) || isGifFile(file)) {
       return { applied: false, code: MEDIA_SELECTION_CODES.UNSUPPORTED_IMAGE }
     }
 

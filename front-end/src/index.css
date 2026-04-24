@@ -5,16 +5,16 @@
   color: #333333;
   background-color: #f5f5f5;
 
-  /* App shell + editor (editing tools can use a wide column) */
-  --app-shell-max: min(98vw, 1600px);
+  /* App shell + editor: keep cards compact and consistent (no full-page stretch) */
+  --app-shell-max: min(34rem, calc(100vw - 2rem));
   --app-content-max-width: var(--app-shell-max);
   --editor-max-width: var(--app-shell-max);
 
-  /* “Create New”: wide panel; still below full editor column on huge screens */
-  --create-new-panel-max: min(100%, 70rem);
+  /* Create New can be a bit wider than standard cards, but still bounded */
+  --create-new-panel-max: min(38rem, calc(100vw - 2rem));
 
-  /* Image editor + crop: keep a readable workbench width even when the app column is very wide */
-  --editor-image-workbench-max: min(100%, 30rem);
+  /* Image editor workbench should remain slightly narrower than shell */
+  --editor-image-workbench-max: min(100%, 26rem);
 
   /* Editor consistency tokens (Phase 1 foundation) */
   --editor-radius-sm: 8px;
@@ -28,6 +28,7 @@
   --editor-status-color-muted: #666666;
   --editor-status-color-error: #ff3b30;
   --editor-status-color-info: #2f6feb;
+  --app-bottom-nav-height: 84px;
 }
 
 body {

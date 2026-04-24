@@ -49,7 +49,7 @@ function App() {
       <header className="app-header">
         <h1 className="app-title">StickerCreate</h1>
       </header>
-      <main className="app-main">
+      <main className={`app-main ${activeView === APP_VIEWS.CREATE ? 'app-main--create' : ''}`}>
         {renderActiveView()}
       </main>
       <div className="app-bottom-nav-shell">

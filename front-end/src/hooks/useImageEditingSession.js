@@ -9,6 +9,7 @@ import {
   exportImageFromBackend,
 } from '../services/backendImageService'
 import { downloadFile } from '../utils/downloadFile'
+import { resolveDraftMediaIds } from '../utils/draftMediaIds.js'
 
 const MIN_BACKEND_FONT_SIZE = 8
 const MAX_BACKEND_FONT_SIZE = 2000
@@ -749,7 +750,6 @@ const useImageEditingSession = ({
 
   const restoreImageSession = useCallback(async (payload = {}) => {
     const {
-      backendMediaId,
       lastCropBoxPx: cropPx,
       colorAdjustments: ca,
       selectedImageFilterPreset: filterPreset,
@@ -757,20 +757,43 @@ const useImageEditingSession = ({
       letterboxColor: lbColor,
     } = payload
 
-    if (!backendMediaId) return false
+    const { sourceMediaId, workingMediaId } = resolveDraftMediaIds(payload)
+    const candidateIds = [workingMediaId, sourceMediaId].filter(Boolean)
+    const uniqueCandidateIds = [...new Set(candidateIds)]
+
+    if (!uniqueCandidateIds.length) return false
 
     try {
       setExportError(null)
-      const url = `${getBackendBaseUrl()}/api/media/${backendMediaId}`
-      const result = { id: backendMediaId, url, mimeType: 'image/png' }
+      let restoredResult = null
+      let restoredFile = null
+      let restoredObjectUrl = null
 
-      const { file, objectUrl } = await convertBackendImageResultToLocalMedia(result, {
-        fallbackFileName: 'draft.png',
-        fallbackMimeType: 'image/png',
-        fetchErrorMessage: 'Failed to load draft image.',
-      })
+      for (const mediaId of uniqueCandidateIds) {
+        try {
+          const url = `${getBackendBaseUrl()}/api/media/${mediaId}`
+          const result = { id: mediaId, url, mimeType: 'image/png' }
+          const converted = await convertBackendImageResultToLocalMedia(result, {
+            fallbackFileName: 'draft.png',
+            fallbackMimeType: 'image/png',
+            fetchErrorMessage: 'Failed to load draft image.',
+          })
 
-      applyTransformedImage(file, objectUrl, result)
+          restoredResult = result
+          restoredFile = converted.file
+          restoredObjectUrl = converted.objectUrl
+          break
+        } catch {
+          // Try next candidate id (working -> source fallback).
+        }
+      }
+
+      if (!restoredResult || !restoredFile || !restoredObjectUrl) {
+        throw new Error('Could not restore draft image.')
+      }
+
+      applyTransformedImage(restoredFile, restoredObjectUrl, restoredResult)
+      originalImageMediaIdRef.current = sourceMediaId || restoredResult.id
       setLastCropBoxPx(cropPx ?? null)
       setColorAdjustments(ca ? normalizeColorAdjustments(ca) : DEFAULT_COLOR_ADJUSTMENTS)
       setSelectedImageFilterPreset(filterPreset || DEFAULT_IMAGE_FILTER_PRESET)
