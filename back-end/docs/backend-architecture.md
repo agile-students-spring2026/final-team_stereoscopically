@@ -19,7 +19,8 @@ It covers:
 - Upload handling: Multer
 - Image processing: Sharp
 - Video processing: fluent-ffmpeg (+ @ffmpeg-installer/ffmpeg)
-- Storage model: in-memory media store with TTL expiration
+- Database: MongoDB Atlas (via Mongoose)
+- Binary storage model: GridFS (`media.files` + `media.chunks`)
 
 ---
 
@@ -60,7 +61,7 @@ Not responsible for:
 
 Responsible for:
 - upload/crop/export business logic
-- media store access and TTL-aware media retrieval
+- media store access and media retrieval by ID
 - backend validation for crop/export payloads
 
 Not responsible for:
@@ -79,7 +80,10 @@ Not responsible for:
 ### `src/config`
 
 Responsible for:
-- shared configuration constants (size limits, TTL, max dimensions, port)
+- shared configuration constants (size limits, max dimensions, port)
+
+Also includes:
+- legacy TTL constants that are no longer the primary storage lifecycle mechanism
 
 Not responsible for:
 - request handling or business logic
@@ -179,7 +183,7 @@ Responsible for:
 - app creation
 - middleware registration
 - route mounting
-- TTL purge interval setup
+- database connection bootstrap
 - server startup
 
 ### `src/config/constants.js`
@@ -191,10 +195,12 @@ Responsible for:
 - `PORT`
 - `MAX_UPLOAD_SIZE_BYTES`
 - `MAX_EXPORT_DIMENSION`
-- `MEDIA_TTL_MS`
-- `MEDIA_PURGE_INTERVAL_MS`
 - `DEFAULT_GIF_RESIZE_PRESET`
 - `GIF_RESIZE_PRESET_DIMENSIONS`
+
+Legacy constants retained for compatibility:
+- `MEDIA_TTL_MS`
+- `MEDIA_PURGE_INTERVAL_MS`
 
 ### `src/routes/mediaRoutes.js`
 
@@ -245,12 +251,12 @@ Responsible for:
 ### `src/services/mediaStore.js`
 
 Purpose:
-In-memory media store utilities.
+GridFS media store utilities.
 
 Responsible for:
 - create/read/delete media entries
-- TTL expiration checks
-- purge of expired entries
+- ObjectId-safe media lookup
+- opening GridFS download streams
 
 ### `src/middleware/uploadMiddleware.js`
 
