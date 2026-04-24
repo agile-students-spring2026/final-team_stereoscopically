@@ -63,7 +63,7 @@ function GifTrimEditor({
               ref={videoRef}
               src={videoUrl}
               controls
-              className="preview-video"
+              className="editor-preview-media"
               onLoadedMetadata={() => {
                 const total = Number.isFinite(videoRef.current?.duration)
                   ? videoRef.current.duration

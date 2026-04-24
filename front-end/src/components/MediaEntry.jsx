@@ -49,7 +49,7 @@ const MediaEntry = ({
         <h2>Create New</h2>
 
         <div className="upload-options">
-          <label className="upload-button" style={{ cursor: isLoading ? 'not-allowed' : 'pointer' }}>
+          <label className="btn-primary" style={{ cursor: isLoading ? 'not-allowed' : 'pointer' }}>
             Upload Image
             <input
               ref={imageFileInputRef}
@@ -61,7 +61,7 @@ const MediaEntry = ({
             />
           </label>
 
-          <label className="upload-button" style={{ cursor: isLoading ? 'not-allowed' : 'pointer' }}>
+          <label className="btn-primary" style={{ cursor: isLoading ? 'not-allowed' : 'pointer' }}>
             Upload Video
             <input
               ref={videoFileInputRef}
@@ -75,7 +75,7 @@ const MediaEntry = ({
 
           <button
             type="button"
-            className="upload-button"
+            className="btn-primary"
             onClick={() => {
               if (!isCameraDisabled) onCameraSelect?.()
             }}

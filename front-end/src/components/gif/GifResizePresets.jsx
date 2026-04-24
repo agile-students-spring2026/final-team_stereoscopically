@@ -54,13 +54,13 @@ function GifResizePresets({
       title="Resize"
       subtitle="Choose a size and border color, then apply."
       preview={(
-        <div className="card gif-resize-preview-card preview-box-checkered editor-preview--checkered">
+        <div className="card gif-resize-preview-card editor-preview--checkered">
           {videoUrl ? (
             <div
               className={`gif-preview-frame ${previewFrameClassName}`}
               style={{ backgroundColor: selectedBorderColor }}
             >
-              <video src={videoUrl} controls className="preview-video editor-preview-media gif-preview-video" />
+              <video src={videoUrl} controls className="editor-preview-media gif-preview-video" />
             </div>
           ) : (
             <EditorStatus centered>Upload a video to preview resize.</EditorStatus>

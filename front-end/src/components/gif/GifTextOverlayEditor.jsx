@@ -189,7 +189,7 @@ function GifTextOverlayEditor({ videoFile, initialSettings, onBack, onCancel, on
       preview={(
         <div
           ref={previewContainerRef}
-          className="preview-box editor-preview preview-box-video editor-preview--video preview-box-checkered editor-preview--checkered preview-box-interactive editor-preview--interactive"
+          className="editor-preview editor-preview--video editor-preview--checkered editor-preview--interactive"
           onPointerDown={handlePreviewPointerDown}
           onPointerMove={handlePreviewPointerMove}
           onPointerUp={releasePreviewCapture}
@@ -200,7 +200,7 @@ function GifTextOverlayEditor({ videoFile, initialSettings, onBack, onCancel, on
             <video
               ref={previewVideoRef}
               src={videoUrl}
-              className="preview-video editor-preview-media"
+              className="editor-preview-media"
               autoPlay
               loop
               muted

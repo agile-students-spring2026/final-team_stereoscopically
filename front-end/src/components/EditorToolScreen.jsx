@@ -29,9 +29,9 @@ function EditorToolScreen({
       {hideActions
         ? null
         : (actions ? (
-            <div className="card-actions editor-actions editor-actions--inline editor-tool-screen-actions">{actions}</div>
+            <div className="editor-actions editor-actions--inline editor-tool-screen-actions">{actions}</div>
           ) : (
-            <div className="card-actions editor-actions editor-actions--inline editor-tool-screen-actions">
+            <div className="editor-actions editor-actions--inline editor-tool-screen-actions">
               <button type="button" className="btn-secondary" onClick={onCancel}>
                 {cancelLabel}
               </button>

@@ -54,7 +54,7 @@ function PresetSizes({
       title="Resize"
       subtitle="Choose a size and border color, then apply."
       preview={(
-        <div className="card gif-resize-preview-card preview-box-checkered editor-preview--checkered">
+        <div className="card gif-resize-preview-card editor-preview--checkered">
           {imageSrc ? (
             <div
               className="image-resize-preview-frame"
@@ -63,7 +63,7 @@ function PresetSizes({
                 backgroundColor: selectedBorderColor,
               }}
             >
-              <img src={imageSrc} alt="Resize preview" className="preview-image editor-preview-media image-resize-preview-media" />
+              <img src={imageSrc} alt="Resize preview" className="editor-preview-media image-resize-preview-media" />
             </div>
           ) : (
             <EditorStatus centered>Upload an image to preview resize.</EditorStatus>

@@ -75,9 +75,6 @@
   box-sizing: border-box;
 }
 
-.app-main--create {
-  max-width: var(--create-new-panel-max);
-}
 
 .app-bottom-nav-shell {
   position: fixed;
@@ -161,20 +158,14 @@
   text-align: center;
 }
 
-.card-actions {
-  display: flex;
-  gap: 0.5rem;
-  justify-content: center;
-}
-
-.card-actions-spaced {
-  margin-top: 1.25rem;
-}
-
 .editor-actions {
   display: flex;
   gap: var(--editor-space-xs);
   justify-content: center;
+}
+
+.editor-actions--spaced {
+  margin-top: 1.25rem;
 }
 
 .editor-actions--inline {
@@ -188,9 +179,7 @@
 }
 
 .editor-actions--stack,
-.editor-tool-list,
-.image-editor-actions,
-.video-editor-actions {
+.editor-tool-list {
   align-items: stretch;
   flex-direction: column;
   gap: var(--editor-space-sm);
@@ -199,11 +188,7 @@
 .editor-actions--stack .btn-primary,
 .editor-actions--stack .btn-secondary,
 .editor-tool-list .btn-primary,
-.editor-tool-list .btn-secondary,
-.image-editor-actions .btn-primary,
-.image-editor-actions .btn-secondary,
-.video-editor-actions .btn-primary,
-.video-editor-actions .btn-secondary {
+.editor-tool-list .btn-secondary {
   width: 100%;
   display: block;
   text-align: center;
@@ -259,9 +244,7 @@
   box-sizing: border-box;
 }
 
-.editor-status,
-.upload-status,
-.preview-label {
+.editor-status {
   margin: 0;
   color: var(--editor-status-color-muted);
   font-size: 0.9rem;
@@ -327,8 +310,6 @@
    left-aligns this screen. Stretch + horizontal margin centers the block and
    full-width buttons. */
 .card.create-new {
-  /* Wider panel, three actions one per row (column) */
-  max-width: var(--create-new-panel-max);
   width: 100%;
   align-items: stretch;
   margin-left: auto;
@@ -344,7 +325,7 @@
   gap: 1.1rem;
 }
 
-.card.create-new .upload-button {
+.card.create-new .btn-primary {
   display: block;
   width: 100%;
   box-sizing: border-box;
@@ -376,27 +357,6 @@
   align-items: stretch;
 }
 
-.upload-button {
-  display: inline-block;
-  background-color: #646cff;
-  color: white;
-  border: none;
-  border-radius: 6px;
-  padding: 0.75rem 1.5rem;
-  font-size: 1rem;
-  cursor: pointer;
-  transition: background-color 200ms ease;
-  text-align: center;
-  font-weight: 600;
-}
-
-.upload-button:hover {
-  background-color: #5a54d1;
-}
-
-.upload-button:active {
-  background-color: #4a44b1;
-}
 
 .draft-loading-host {
   position: relative;
@@ -476,6 +436,7 @@
 .btn-primary,
 .btn-secondary {
   min-width: 90px;
+  min-height: 44px;
   padding: 0.6rem 1.2rem;
   border-radius: 8px;
   border: 1px solid #000000;
@@ -727,7 +688,6 @@
   margin: 0;
 }
 
-.preview-box,
 .editor-preview {
   width: 100%;
   max-width: var(--editor-max-width);
@@ -744,7 +704,6 @@
   overflow: hidden;
 }
 
-.preview-box-interactive,
 .editor-preview--interactive {
   position: relative;
   overflow: hidden;
@@ -777,29 +736,21 @@
 }
 
 /* Lets letterbox / transparent margins read clearly (not “lost” on a solid white frame) */
-.preview-box-checkered,
 .editor-preview--checkered {
   background-color: #d9d9d9;
   background-image: repeating-conic-gradient(#ededed 0% 25%, #d9d9d9 0% 50%);
   background-size: 20px 20px;
 }
 
-.preview-box.preview-box-video {
-  height: var(--editor-preview-height-video);
-}
-
 .editor-preview.editor-preview--video {
   height: var(--editor-preview-height-video);
 }
 
-.preview-box.preview-box-video-resize,
 .editor-preview.editor-preview--resize {
   height: auto;
   padding: 0.75rem;
 }
 
-.preview-image,
-.preview-video,
 .editor-preview-media {
   width: 100%;
   height: 100%;
@@ -810,31 +761,16 @@
 
 .filter-main-buttons {
   width: 100%;
-  max-width: min(100%, 34rem);
-  padding: 1.1rem 1rem;
+  flex-direction: column;
   align-items: stretch;
+  gap: var(--editor-space-sm);
 }
 
-.filter-main-buttons .btn-primary {
+.filter-main-buttons .btn-primary,
+.filter-main-buttons .btn-secondary {
   width: 100%;
-  min-height: 48px;
-  font-size: 1rem;
+  display: block;
   text-align: center;
-}
-
-.filter-main-buttons .btn-primary + .btn-primary {
-  margin-top: 0.75rem;
-}
-
-.filter-main-buttons > .btn-secondary {
-  width: 100%;
-  min-height: 46px;
-  box-sizing: border-box;
-  text-align: center;
-}
-
-.filter-main-buttons > .btn-secondary + .btn-secondary {
-  margin-top: 0.75rem;
 }
 
 .editor-tool-screen-actions {
@@ -1018,8 +954,7 @@ input[type='range']::-moz-range-thumb {
    ============================================================================ */
 
 .image-editor-container,
-.video-editor-container,
-.editor-shell {
+.video-editor-container {
   width: 100%;
   max-width: var(--editor-max-width);
   display: flex;
@@ -1028,19 +963,11 @@ input[type='range']::-moz-range-thumb {
 }
 
 /* Image preview + crop: don’t let photos scale to the full ultra-wide app column (regression after shell widening) */
-.image-editor-container .preview-box,
+.image-editor-container .editor-preview,
 .image-editor-container .image-cropper {
   max-width: var(--editor-image-workbench-max);
   width: 100%;
   box-sizing: border-box;
-}
-
-.image-editor-title,
-.video-editor-title,
-.editor-shell-title {
-  font-size: 1.25rem;
-  margin: 0 0 var(--editor-space-md) 0;
-  text-align: center;
 }
 
 .session-notice {

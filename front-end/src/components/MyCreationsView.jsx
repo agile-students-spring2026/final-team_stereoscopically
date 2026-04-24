@@ -5,7 +5,7 @@ function MyCreationsView({ onCreateNew }) {
       <p className="my-creations-empty-state">
         Your saved creations will appear here once draft and save workflows are connected.
       </p>
-      <div className="card-actions card-actions-spaced">
+      <div className="editor-actions editor-actions--spaced">
         <button type="button" className="btn-primary" onClick={onCreateNew}>
           Create New
         </button>

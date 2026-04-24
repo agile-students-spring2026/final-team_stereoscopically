@@ -10,9 +10,6 @@
   --app-content-max-width: var(--app-shell-max);
   --editor-max-width: var(--app-shell-max);
 
-  /* Create New can be a bit wider than standard cards, but still bounded */
-  --create-new-panel-max: min(38rem, calc(100vw - 2rem));
-
   /* Image editor workbench should remain slightly narrower than shell */
   --editor-image-workbench-max: min(100%, 26rem);
 

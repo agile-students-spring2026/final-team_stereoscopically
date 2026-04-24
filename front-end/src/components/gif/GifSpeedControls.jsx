@@ -26,12 +26,12 @@ function GifSpeedControls({
       title="Speed"
       subtitle="Choose playback speed for this GIF."
       preview={videoUrl ? (
-        <div className="preview-box editor-preview preview-box-checkered editor-preview--checkered">
+        <div className="editor-preview editor-preview--checkered">
           <video
             ref={previewVideoRef}
             src={videoUrl}
             controls
-            className="preview-video editor-preview-media"
+            className="editor-preview-media"
             onLoadedMetadata={() => {
               if (previewVideoRef.current) {
                 previewVideoRef.current.playbackRate = selectedSpeedPlaybackRate
