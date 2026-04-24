@@ -4,14 +4,18 @@ import {
 	applyPresetImageFilter,
 	cropImage,
 	exportImage,
-	getExportDownloadContent,
-	getMediaContent,
 	uploadImage,
+} from '../services/imageMediaService.js'
+import {
 	uploadVideo,
 	trimVideo,
 	applyPresetVideoFilter,
 	exportGifService,
-} from '../services/mediaService.js'
+} from '../services/gifMediaService.js'
+import {
+	getExportDownloadContent,
+	getMediaContent,
+} from '../services/mediaReadService.js'
 import mongoose from 'mongoose'
 
 const sendResult = (res, result) => {
