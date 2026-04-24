@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react'
-import { fetchCreations } from '../services/creationsApi.js'
+import { useCallback, useEffect, useState } from 'react'
+import { deleteCreation, fetchCreations } from '../services/creationsApi.js'
 import { getCreationKindLabel, getCreationPreviewUrl } from '../utils/creationPreviewUrl.js'
 import { getOrCreateOwnerKey } from '../utils/ownerKey.js'
 
@@ -44,6 +44,9 @@ function MyCreationsPage({ refreshKey = 0, onSelectCreation }) {
   const [items, setItems] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
+  const [pendingDelete, setPendingDelete] = useState(null)
+  const [isDeleting, setIsDeleting] = useState(false)
+  const [deleteDialogError, setDeleteDialogError] = useState(null)
 
   useEffect(() => {
     let cancelled = false
@@ -74,6 +77,53 @@ function MyCreationsPage({ refreshKey = 0, onSelectCreation }) {
       cancelled = true
     }
   }, [refreshKey])
+
+  const requestDelete = useCallback((e, row) => {
+    e?.stopPropagation?.()
+    const id = row?._id ?? row?.id
+    if (id == null) return
+    const rawTitle = typeof row?.title === 'string' && row.title.trim() ? row.title.trim() : 'Untitled'
+    setDeleteDialogError(null)
+    setPendingDelete({ id: String(id), title: rawTitle })
+  }, [])
+
+  const cancelDelete = useCallback(
+    (e) => {
+      e?.stopPropagation?.()
+      if (isDeleting) return
+      setPendingDelete(null)
+      setDeleteDialogError(null)
+    },
+    [isDeleting]
+  )
+
+  const confirmDelete = useCallback(async () => {
+    if (!pendingDelete || isDeleting) return
+    setIsDeleting(true)
+    setDeleteDialogError(null)
+    try {
+      await deleteCreation(pendingDelete.id)
+      setItems((prev) => prev.filter((row) => String(row._id ?? row.id) !== pendingDelete.id))
+      setPendingDelete(null)
+    } catch (err) {
+      setDeleteDialogError(err?.message || 'Could not delete.')
+    } finally {
+      setIsDeleting(false)
+    }
+  }, [isDeleting, pendingDelete])
+
+  useEffect(() => {
+    if (!pendingDelete) return undefined
+    const onKey = (e) => {
+      if (e.key === 'Escape' && !isDeleting) {
+        e.preventDefault()
+        setPendingDelete(null)
+        setDeleteDialogError(null)
+      }
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [pendingDelete, isDeleting])
 
   if (loading) {
     return (
@@ -110,47 +160,104 @@ function MyCreationsPage({ refreshKey = 0, onSelectCreation }) {
           const title = typeof row.title === 'string' && row.title.trim() ? row.title.trim() : 'Untitled'
           const status = row.status === 'exported' ? 'exported' : 'draft'
           return (
-            <li 
-            key={id} 
-            className={`my-creations-item${onSelectCreation ? ' my-creations-item--clickable' : ''}`}
-            onClick={() => onSelectCreation?.(row)}
-            role={onSelectCreation ? 'button' : undefined}
-            tabIndex={onSelectCreation ? 0 : undefined}
-            onKeyDown={onSelectCreation ? (e) => { if (e.key === 'Enter' || e.key === ' ') onSelectCreation(row) } : undefined}
-            
+            <li
+              key={id}
+              className={`my-creations-item${onSelectCreation ? ' my-creations-item--clickable' : ''}`}
+              onClick={() => onSelectCreation?.(row)}
+              role={onSelectCreation ? 'button' : undefined}
+              tabIndex={onSelectCreation ? 0 : undefined}
+              onKeyDown={
+                onSelectCreation
+                  ? (e) => {
+                      if (e.key === 'Enter' || e.key === ' ') onSelectCreation(row)
+                    }
+                  : undefined
+              }
             >
               <CreationPreviewThumb row={row} title={title} />
               <div className="my-creations-item-body">
                 <div className="my-creations-item-main">
                   {onSelectCreation ? (
                     <button
-                      type='button'
+                      type="button"
                       className="my-creations-item-title my-creations-item-title--link"
                       onClick={(e) => {
                         e.stopPropagation()
                         onSelectCreation(row)
-
                       }}
-                      >
-                        {title}
-                      </button>
-                  ): (
+                    >
+                      {title}
+                    </button>
+                  ) : (
                     <span className="my-creations-item-title">{title}</span>
                   )}
                   <span
                     className={
-                      status === 'exported' ? 'my-creations-badge my-creations-badge--exported' : 'my-creations-badge my-creations-badge--draft'
+                      status === 'exported'
+                        ? 'my-creations-badge my-creations-badge--exported'
+                        : 'my-creations-badge my-creations-badge--draft'
                     }
                   >
                     {status === 'exported' ? 'Exported' : 'Draft'}
                   </span>
                 </div>
-                <div className="my-creations-item-meta">Updated {formatUpdated(row.updatedAt)}</div>
+                <div className="my-creations-item-row2">
+                  <div className="my-creations-item-meta">Updated {formatUpdated(row.updatedAt)}</div>
+                  <button
+                    type="button"
+                    className="my-creations-delete"
+                    onClick={(e) => requestDelete(e, row)}
+                    aria-label={`Delete ${title}`}
+                  >
+                    Delete
+                  </button>
+                </div>
               </div>
             </li>
           )
         })}
       </ul>
+      {pendingDelete ? (
+        <div
+          className="my-creations-modal-backdrop"
+          role="presentation"
+          onClick={cancelDelete}
+        >
+          <div
+            className="my-creations-modal"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="my-creations-delete-heading"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h2 id="my-creations-delete-heading" className="my-creations-modal-title">
+              Delete this creation?
+            </h2>
+            <p className="my-creations-modal-text">
+              <span className="my-creations-modal-quot">&ldquo;{pendingDelete.title}&rdquo;</span> will be removed. This
+              cannot be undone.
+            </p>
+            {deleteDialogError ? (
+              <p className="my-creations-modal-error" role="alert">
+                {deleteDialogError}
+              </p>
+            ) : null}
+            <div className="my-creations-modal-actions">
+              <button type="button" className="my-creations-modal-btn" onClick={cancelDelete} disabled={isDeleting}>
+                Cancel
+              </button>
+              <button
+                type="button"
+                className="my-creations-modal-btn my-creations-modal-btn--danger"
+                onClick={confirmDelete}
+                disabled={isDeleting}
+              >
+                {isDeleting ? 'Deleting…' : 'Delete'}
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </div>
   )
 }
