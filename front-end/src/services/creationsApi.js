@@ -1,4 +1,4 @@
-import { getJson, patchJson, postJson } from './backendMediaClient.js'
+import { deleteJson, getJson, patchJson, postJson } from './backendMediaClient.js'
 
 const encodeParam = (value) => encodeURIComponent(value)
 
@@ -23,4 +23,10 @@ export const updateCreation = (id, body) =>
     path: `/api/creations/${encodeURIComponent(id)}`,
     payload: body,
     fallbackErrorMessage: 'Could not update creation.',
+  })
+
+export const deleteCreation = (id) =>
+  deleteJson({
+    path: `/api/creations/${encodeURIComponent(id)}`,
+    fallbackErrorMessage: 'Could not delete creation.',
   })
