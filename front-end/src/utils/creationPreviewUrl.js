@@ -15,13 +15,16 @@ export const getCreationPreviewUrl = (creation) => {
   const p = creation.editorPayload
   if (!p || typeof p !== 'object') return null
 
-  if (p.kind === 'image' || p.kind === 'video') {
+  // Image drafts can preview from their resume media.
+  if (p.kind === 'image') {
     const { resumeMediaId } = resolveDraftMediaIds(p)
     if (resumeMediaId) {
       return `${getBackendBaseUrl()}/api/media/${encodeURIComponent(resumeMediaId)}`
     }
   }
 
+  // Video drafts should only preview an exported asset.
+  // Without exportAssetId, return null so the UI can show a video placeholder.
   return null
 }
 
