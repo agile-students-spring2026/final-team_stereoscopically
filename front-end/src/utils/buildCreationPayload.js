@@ -21,6 +21,9 @@ export const defaultCreationTitle = (file) => {
 export const buildImageCreationPayload = ({
   sourceMediaId,
   workingMediaId,
+  preEditWorkingMediaId,
+  preTextWorkingMediaId,
+  textOverlay,
   lastCropBoxPx,
   colorAdjustments,
   selectedImageFilterPreset,
@@ -35,6 +38,9 @@ export const buildImageCreationPayload = ({
     ...mediaIds,
     // Legacy alias for backward compatibility while clients migrate.
     backendMediaId: mediaIds.workingMediaId,
+    preEditWorkingMediaId: preEditWorkingMediaId ?? null,
+    preTextWorkingMediaId: preTextWorkingMediaId ?? null,
+    textOverlay: textOverlay ?? null,
     lastCropBoxPx: lastCropBoxPx ?? null,
     colorAdjustments: colorAdjustments ?? null,
     selectedImageFilterPreset: selectedImageFilterPreset ?? 'default',

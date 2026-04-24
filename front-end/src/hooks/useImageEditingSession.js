@@ -75,6 +75,10 @@ const useImageEditingSession = ({
   const lastPresetExportAtRef = useRef(0)
   const presetFilterRequestIdRef = useRef(0)
   const colorFilterRequestIdRef = useRef(0)
+  /** Suppresses the filter/color reset useEffect during session restoration. */
+  const skipFilterResetRef = useRef(false)
+  /** Base image for decorative edits (filter, color). Set before first edit; cleared on crop/reset. */
+  const editBaseMediaIdRef = useRef(null)
   const liveExportRef = useRef({
     selectedPreset: null,
     latestExportResult: null,
@@ -134,6 +138,12 @@ const useImageEditingSession = ({
   }, [backendImageResult?.id, mediaType, sourceUrl])
 
   useEffect(() => {
+    if (skipFilterResetRef.current) {
+      // Restore in progress — let restoreImageSession own the state; clear the flag so next
+      // natural image change goes through the normal reset path.
+      skipFilterResetRef.current = false
+      return
+    }
     queueMicrotask(() => {
       setSelectedImageFilterPreset(DEFAULT_IMAGE_FILTER_PRESET)
       // Prefer current editor canvas (text, preset, etc.); sourceUrl is only the first upload
@@ -143,6 +153,7 @@ const useImageEditingSession = ({
       setColorAdjustments(DEFAULT_COLOR_ADJUSTMENTS)
       setColorFilterPreviewSrc(pipelineSrc)
       setColorFilterError(null)
+      editBaseMediaIdRef.current = null
     })
   }, [effectiveBackendMediaId, effectiveImageSrc, sourceUrl])
 
@@ -157,6 +168,7 @@ const useImageEditingSession = ({
   const resetImageEditingSessionState = useCallback(() => {
     resetExportSessionState()
     setLastCropBoxPx(null)
+    editBaseMediaIdRef.current = null
   }, [resetExportSessionState])
 
   /** Clear cached preset export so the next resize/export uses the current pipeline image (#31 sync). */
@@ -200,8 +212,8 @@ const useImageEditingSession = ({
 
   const loadPresetFilterPreview = useCallback(async (preset) => {
     const nextPreset = preset || DEFAULT_IMAGE_FILTER_PRESET
-    // Current pipeline image (crop/resize/text). originalImageMediaIdRef is only for "reset to upload".
-    const filterMediaId = effectiveBackendMediaId
+    // Use the edit base (pre-decoration image) so re-selecting a different filter doesn't stack.
+    const filterMediaId = editBaseMediaIdRef.current || effectiveBackendMediaId
     const baselinePreviewSrc = effectiveImageSrc || sourceUrl
     setPresetFilterError(null)
     const requestId = ++presetFilterRequestIdRef.current
@@ -255,12 +267,17 @@ const useImageEditingSession = ({
   }, [loadPresetFilterPreview])
 
   const applyImagePresetFilter = useCallback(async () => {
-    const filterMediaId = effectiveBackendMediaId
+    // Capture edit base before applying so future re-selections start from the same clean state.
+    if (!editBaseMediaIdRef.current && effectiveBackendMediaId) {
+      editBaseMediaIdRef.current = effectiveBackendMediaId
+    }
+    const filterMediaId = editBaseMediaIdRef.current || effectiveBackendMediaId
 
     if (selectedImageFilterPreset === DEFAULT_IMAGE_FILTER_PRESET) {
       setSelectedImageFilterPreset(DEFAULT_IMAGE_FILTER_PRESET)
       setPresetFilterPreviewSrc(effectiveImageSrc || sourceUrl)
       setPresetFilterError(null)
+      editBaseMediaIdRef.current = null
       return restoreOriginalImageFromSource()
     }
 
@@ -310,7 +327,7 @@ const useImageEditingSession = ({
 
   useEffect(() => {
     const normalized = normalizeColorAdjustments(colorAdjustments)
-    const adjustmentMediaId = effectiveBackendMediaId
+    const adjustmentMediaId = editBaseMediaIdRef.current || effectiveBackendMediaId
     const baselinePreviewSrc = effectiveImageSrc || sourceUrl
 
     if (isDefaultColorAdjustments(normalized)) {
@@ -370,11 +387,15 @@ const useImageEditingSession = ({
   }, [])
 
   const applyColorAdjustments = useCallback(async () => {
-    const adjustmentMediaId = effectiveBackendMediaId
+    if (!editBaseMediaIdRef.current && effectiveBackendMediaId) {
+      editBaseMediaIdRef.current = effectiveBackendMediaId
+    }
+    const adjustmentMediaId = editBaseMediaIdRef.current || effectiveBackendMediaId
     const normalized = normalizeColorAdjustments(colorAdjustments)
 
     if (isDefaultColorAdjustments(normalized)) {
       setColorFilterError(null)
+      editBaseMediaIdRef.current = null
       return restoreOriginalImageFromSource()
     }
 
@@ -561,6 +582,7 @@ const useImageEditingSession = ({
       applyTransformedImage(file, objectUrl, result)
       resetExportSessionState()
       setLastCropBoxPx(cropRequest?.pixels || null)
+      editBaseMediaIdRef.current = null
     } catch (err) {
       console.error('Error applying crop in container:', err)
       setExportError('Could not process the cropped image.')
@@ -612,7 +634,9 @@ const useImageEditingSession = ({
 
   const handleAddTextApply = useCallback(async (textRequest) => {
     if (mediaType !== 'image') return false
-    if (!effectiveBackendMediaId) {
+    // Allow callers to supply a clean base (e.g. pre-text image) so re-edits don't stack.
+    const baseMediaId = textRequest?._overrideBaseMediaId || effectiveBackendMediaId
+    if (!baseMediaId) {
       setExportError('Image is not ready for text overlay yet. Please re-upload and try again.')
       return false
     }
@@ -631,7 +655,7 @@ const useImageEditingSession = ({
       setExportError(null)
 
       const result = await addTextToImageFromBackend({
-        mediaId: effectiveBackendMediaId,
+        mediaId: baseMediaId,
         text: textRequest?.text ?? '',
         x,
         y,
@@ -755,6 +779,7 @@ const useImageEditingSession = ({
       selectedImageFilterPreset: filterPreset,
       selectedPreset: preset,
       letterboxColor: lbColor,
+      preEditWorkingMediaId,
     } = payload
 
     const { sourceMediaId, workingMediaId } = resolveDraftMediaIds(payload)
@@ -792,8 +817,12 @@ const useImageEditingSession = ({
         throw new Error('Could not restore draft image.')
       }
 
+      // Suppress the filter/color reset useEffect that fires when effectiveBackendMediaId changes.
+      skipFilterResetRef.current = true
       applyTransformedImage(restoredFile, restoredObjectUrl, restoredResult)
       originalImageMediaIdRef.current = sourceMediaId || restoredResult.id
+      // Restore pre-decoration base so re-selecting a filter uses the clean pre-filter image.
+      editBaseMediaIdRef.current = preEditWorkingMediaId || null
       setLastCropBoxPx(cropPx ?? null)
       setColorAdjustments(ca ? normalizeColorAdjustments(ca) : DEFAULT_COLOR_ADJUSTMENTS)
       setSelectedImageFilterPreset(filterPreset || DEFAULT_IMAGE_FILTER_PRESET)
@@ -846,6 +875,8 @@ const useImageEditingSession = ({
     updateColorAdjustments,
     applyColorAdjustments,
     restoreImageSession,
+    // Ref value — read at call time; not reactive but always current for save operations.
+    get editBaseMediaId() { return editBaseMediaIdRef.current },
   }
 }
 

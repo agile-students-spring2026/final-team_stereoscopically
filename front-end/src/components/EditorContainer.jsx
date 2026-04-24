@@ -92,6 +92,7 @@ function EditorContainer({ onDraftSaved, onSelectCreation }) {
     updateColorAdjustments,
     applyColorAdjustments,
     restoreImageSession,
+    editBaseMediaId,
   } = useImageEditingSession({
     mediaType,
     backendImageResult,
@@ -105,6 +106,9 @@ function EditorContainer({ onDraftSaved, onSelectCreation }) {
   const [activeDraftTitle, setActiveDraftTitle] = useState(null)
   const [imageDraftSourceMediaId, setImageDraftSourceMediaId] = useState(null)
   const [videoDraftSourceMediaId, setVideoDraftSourceMediaId] = useState(null)
+  // Text overlay state: tracks the last applied text settings and the media ID before text was baked.
+  const [appliedTextOverlay, setAppliedTextOverlay] = useState(null)
+  const [preTextWorkingMediaId, setPreTextWorkingMediaId] = useState(null)
   const [saveForLaterError, setSaveForLaterError] = useState(null)
   const [saveForLaterMessage, setSaveForLaterMessage] = useState(null)
   const [isSavingDraft, setIsSavingDraft] = useState(false)
@@ -151,6 +155,8 @@ function EditorContainer({ onDraftSaved, onSelectCreation }) {
     setVideoDraftSourceMediaId(null)
     setSaveForLaterError(null)
     setSaveForLaterMessage(null)
+    setAppliedTextOverlay(null)
+    setPreTextWorkingMediaId(null)
 
     if (result?.applied) {
       setScreen(SCREENS.EDITOR)
@@ -234,6 +240,8 @@ function EditorContainer({ onDraftSaved, onSelectCreation }) {
     setVideoDraftSourceMediaId(null)
     setSaveForLaterError(null)
     setSaveForLaterMessage(null)
+    setAppliedTextOverlay(null)
+    setPreTextWorkingMediaId(null)
     setScreen(SCREENS.EDITOR)
   }
 
@@ -265,12 +273,16 @@ function EditorContainer({ onDraftSaved, onSelectCreation }) {
       setIsDraftLoading(false)
 
       if (ok) {
+        setAppliedTextOverlay(payload.textOverlay ?? null)
+        setPreTextWorkingMediaId(payload.preTextWorkingMediaId ?? null)
         setScreen(SCREENS.EDITOR)
       } else {
         setDraftLoadError('Could not restore draft image. The file may have expired.')
         setActiveDraftId(null)
         setActiveDraftTitle(null)
         setImageDraftSourceMediaId(null)
+        setAppliedTextOverlay(null)
+        setPreTextWorkingMediaId(null)
       }
       return
     }
@@ -335,6 +347,26 @@ function EditorContainer({ onDraftSaved, onSelectCreation }) {
           throw new Error('Draft video could not be restored.')
         }
 
+        // When the working video has a filter baked in (working ≠ source), restore the original
+        // unfiltered video as originalVideoFile so re-selecting a filter doesn't double-apply.
+        if (sourceMediaId && workingMediaId && sourceMediaId !== workingMediaId) {
+          try {
+            const sourceResult = {
+              id: sourceMediaId,
+              url: `${getBackendBaseUrl()}/api/media/${sourceMediaId}`,
+              mimeType: 'video/mp4',
+            }
+            const { file: sourceFile } = await convertBackendVideoResultToLocalMedia(sourceResult, {
+              fallbackFileName: 'source-video.mp4',
+              fallbackMimeType: 'video/mp4',
+              fetchErrorMessage: 'Failed to load source video.',
+            })
+            setOriginalVideoFile(sourceFile)
+          } catch {
+            // Non-critical — originalVideoFile stays as the working video.
+          }
+        }
+
         setIsDraftLoading(false)
         setScreen(SCREENS.EDITOR)
       } catch {
@@ -391,6 +423,9 @@ function EditorContainer({ onDraftSaved, onSelectCreation }) {
       const editorPayload = buildImageCreationPayload({
         sourceMediaId: imageDraftSourceMediaId || effectiveBackendMediaId,
         workingMediaId: effectiveBackendMediaId || imageDraftSourceMediaId,
+        preEditWorkingMediaId: editBaseMediaId || null,
+        preTextWorkingMediaId: preTextWorkingMediaId || null,
+        textOverlay: appliedTextOverlay || null,
         lastCropBoxPx,
         colorAdjustments,
         selectedImageFilterPreset,
@@ -542,6 +577,13 @@ function EditorContainer({ onDraftSaved, onSelectCreation }) {
     gifSession.applyResizeSettings(nextResizeSettings)
   }, [gifSession])
 
+  const handleCropApplyWrapped = useCallback(async (cropRequest) => {
+    const result = await handleCropApply(cropRequest)
+    setAppliedTextOverlay(null)
+    setPreTextWorkingMediaId(null)
+    return result
+  }, [handleCropApply])
+
   const handlePresetSizeApply = async ({ preset, letterboxColor: nextLetterboxColor }) => {
     const applied = await handleSizeSelect(preset, {
       letterboxColor: nextLetterboxColor,
@@ -556,8 +598,26 @@ function EditorContainer({ onDraftSaved, onSelectCreation }) {
   }
 
   const handleAddTextScreenApply = async (textRequest) => {
-    const applied = await handleAddTextApply(textRequest)
+    // Capture the clean pre-text base on first apply (or keep the existing one for re-edits).
+    const baseForText = preTextWorkingMediaId || effectiveBackendMediaId
+    if (!preTextWorkingMediaId && effectiveBackendMediaId) {
+      setPreTextWorkingMediaId(effectiveBackendMediaId)
+    }
+
+    const applied = await handleAddTextApply({
+      ...textRequest,
+      _overrideBaseMediaId: baseForText || undefined,
+    })
+
     if (applied) {
+      setAppliedTextOverlay({
+        text: textRequest?.text ?? '',
+        font: textRequest?.font || textRequest?.fontFamily || 'Arial',
+        color: textRequest?.color || '#111111',
+        fontSize: textRequest?.fontSize ?? null,
+        x: textRequest?.x ?? 0.5,
+        y: textRequest?.y ?? 0.5,
+      })
       setScreen(SCREENS.EDITOR)
     }
   }
@@ -567,7 +627,7 @@ function EditorContainer({ onDraftSaved, onSelectCreation }) {
       imageSrc={effectiveImageSrc}
       cropSourceImageSrc={effectiveImageSrc}
       initialCropPx={lastCropBoxPx}
-      onCropApply={handleCropApply}
+      onCropApply={handleCropApplyWrapped}
       onResetCrop={resetCropToOriginal}
       isUploading={isUploading}
       isExporting={isExporting}
@@ -713,16 +773,30 @@ function EditorContainer({ onDraftSaved, onSelectCreation }) {
             isLoadingPreview={isLoadingPresetFilterPreview}
           />
         )
-      case SCREENS.ADD_TEXT:
+      case SCREENS.ADD_TEXT: {
+        // When a draft has saved text, show the pre-text image so the user edits on a clean base.
+        const preTextImageSrc = preTextWorkingMediaId
+          ? `${getBackendBaseUrl()}/api/media/${encodeURIComponent(preTextWorkingMediaId)}`
+          : effectiveImageSrc
+        // Convert backend font size (px) back to the UI slider scale (÷5).
+        const initialUiFontSize = appliedTextOverlay?.fontSize
+          ? Math.max(2, Math.round(appliedTextOverlay.fontSize / 5))
+          : undefined
         return (
           <AddText
-            imageSrc={effectiveImageSrc}
+            imageSrc={preTextImageSrc}
+            initialText={appliedTextOverlay?.text ?? undefined}
+            initialFont={appliedTextOverlay?.font ?? undefined}
+            initialTextColor={appliedTextOverlay?.color ?? undefined}
+            initialFontSize={initialUiFontSize}
+            initialPlacement={appliedTextOverlay ? { x: appliedTextOverlay.x, y: appliedTextOverlay.y } : undefined}
             onApply={handleAddTextScreenApply}
             onBack={() => setScreen(SCREENS.FILTERS_MAIN)}
             onCancel={() => setScreen(SCREENS.EDITOR)}
             applyError={exportError}
           />
         )
+      }
       case SCREENS.COLOR_FILTERS:
         return (
           <ColorFilters

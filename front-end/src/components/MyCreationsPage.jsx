@@ -9,6 +9,20 @@ function CreationPreviewThumb({ row, title }) {
   const [failed, setFailed] = useState(false)
 
   if (url && !failed) {
+    if (kind === 'video') {
+      return (
+        <div className="my-creations-thumb-wrap">
+          <video
+            src={url}
+            className="my-creations-thumb"
+            muted
+            preload="metadata"
+            playsInline
+            onError={() => setFailed(true)}
+          />
+        </div>
+      )
+    }
     return (
       <div className="my-creations-thumb-wrap">
         <img

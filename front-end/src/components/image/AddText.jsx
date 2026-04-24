@@ -12,12 +12,23 @@ const BACKEND_FONT_SCALE = 5
 const DEFAULT_TEXT_COLOR = '#FFFFFF'
 
 
-function AddText({ imageSrc, onApply, onBack, onCancel, applyError = null }) {
-  const [text, setText] = useState('')
-  const [font, setFont] = useState('Arial')
-  const [textColor, setTextColor] = useState(DEFAULT_TEXT_COLOR)
-  const [fontSize, setFontSize] = useState(DEFAULT_UI_FONT_SIZE)
-  const [placement, setPlacement] = useState({ x: 0.5, y: 0.5 })
+function AddText({
+  imageSrc,
+  onApply,
+  onBack,
+  onCancel,
+  applyError = null,
+  initialText,
+  initialFont,
+  initialTextColor,
+  initialFontSize,
+  initialPlacement,
+}) {
+  const [text, setText] = useState(initialText ?? '')
+  const [font, setFont] = useState(initialFont ?? 'Arial')
+  const [textColor, setTextColor] = useState(initialTextColor ?? DEFAULT_TEXT_COLOR)
+  const [fontSize, setFontSize] = useState(initialFontSize ?? DEFAULT_UI_FONT_SIZE)
+  const [placement, setPlacement] = useState(initialPlacement ?? { x: 0.5, y: 0.5 })
   const [previewContainerSize, setPreviewContainerSize] = useState({ width: 1, height: 1 })
   const [imageFrame, setImageFrame] = useState({ left: 0, top: 0, width: 1, height: 1 })
   const [naturalImageSize, setNaturalImageSize] = useState({ width: 1, height: 1 })

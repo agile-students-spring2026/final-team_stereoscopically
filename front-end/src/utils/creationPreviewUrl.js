@@ -15,7 +15,7 @@ export const getCreationPreviewUrl = (creation) => {
   const p = creation.editorPayload
   if (!p || typeof p !== 'object') return null
 
-  if (p.kind === 'image') {
+  if (p.kind === 'image' || p.kind === 'video') {
     const { resumeMediaId } = resolveDraftMediaIds(p)
     if (resumeMediaId) {
       return `${getBackendBaseUrl()}/api/media/${encodeURIComponent(resumeMediaId)}`
