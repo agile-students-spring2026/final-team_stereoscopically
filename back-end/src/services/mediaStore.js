@@ -81,12 +81,17 @@ export const openMediaDownloadStream = (id) => {
 }
 
 export const deleteMedia = async (id) => {
-	if (!isValidObjectIdString(id)) return
+	if (!isValidObjectIdString(id)) {
+		console.warn('deleteMedia skipped invalid id:', id)
+		return
+	}
 
 	try {
 		const bucket = getMediaBucket()
 		await bucket.delete(new ObjectId(id))
+		console.log('Deleted GridFS media:', id)
 	} catch (err) {
+		console.error('Failed to delete GridFS media:', id, err)
 		memoryStore.delete(id)
 	}
 }
