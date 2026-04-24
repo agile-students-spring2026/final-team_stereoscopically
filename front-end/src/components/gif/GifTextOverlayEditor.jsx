@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState, useMemo } from 'react'
 import EditorStatus from '../EditorStatus'
 import {
   asNumberOrFallback,
@@ -21,17 +21,20 @@ const DEFAULT_TEXT_OVERLAY_SETTINGS = {
 const MIN_UI_TEXT_SIZE = 8
 const MAX_UI_TEXT_SIZE = 120
 
-function GifTextOverlayEditor({ videoFile, initialSettings, onBack, onCancel, onApply, onChange }) {
-  const safeInitial = useMemo(() => ({
+function buildTextOverlayDraft(initialSettings) {
+  return {
     ...DEFAULT_TEXT_OVERLAY_SETTINGS,
     ...initialSettings,
     position: {
       ...DEFAULT_TEXT_OVERLAY_SETTINGS.position,
       ...(initialSettings?.position || {}),
     },
-  }), [initialSettings])
+  }
+}
 
-  const [draft, setDraft] = useState(safeInitial)
+function GifTextOverlayEditor({ videoFile, initialSettings, onBack, onCancel, onApply }) {
+  const [draft, setDraft] = useState(() => buildTextOverlayDraft(initialSettings))
+
   const [previewContainerSize, setPreviewContainerSize] = useState({ width: 1, height: 1 })
   const [videoFrame, setVideoFrame] = useState({ left: 0, top: 0, width: 1, height: 1 })
   const [naturalVideoSize, setNaturalVideoSize] = useState({ width: 1, height: 1 })
@@ -43,18 +46,13 @@ function GifTextOverlayEditor({ videoFile, initialSettings, onBack, onCancel, on
   const videoUrl = useVideoPreviewUrl(videoFile)
 
   useEffect(() => {
-    queueMicrotask(() => {
-      setDraft(safeInitial)
-    })
-  }, [safeInitial])
-
-  useEffect(() => {
     const container = previewContainerRef.current
     const video = previewVideoRef.current
     if (!container) return
 
     const syncFrame = () => {
       const containerRect = container.getBoundingClientRect()
+
       setPreviewContainerSize({
         width: container.clientWidth || 1,
         height: container.clientHeight || 1,
@@ -62,12 +60,18 @@ function GifTextOverlayEditor({ videoFile, initialSettings, onBack, onCancel, on
 
       if (!video || !video.clientWidth || !video.clientHeight) {
         setNaturalVideoSize({ width: 1, height: 1 })
-        setVideoFrame({ left: 0, top: 0, width: container.clientWidth || 1, height: container.clientHeight || 1 })
+        setVideoFrame({
+          left: 0,
+          top: 0,
+          width: container.clientWidth || 1,
+          height: container.clientHeight || 1,
+        })
         return
       }
 
       const naturalWidth = Math.max(1, video.videoWidth || 1)
       const naturalHeight = Math.max(1, video.videoHeight || 1)
+
       setNaturalVideoSize({ width: naturalWidth, height: naturalHeight })
 
       const videoRect = video.getBoundingClientRect()
@@ -109,29 +113,29 @@ function GifTextOverlayEditor({ videoFile, initialSettings, onBack, onCancel, on
   }, [videoUrl])
 
   const updateDraft = useCallback((partial) => {
-    setDraft((current) => {
-      const next = {
-        ...current,
-        ...partial,
-        position: {
-          ...current.position,
-          ...(partial?.position || {}),
-        },
-      }
-
-      onChange?.(next)
-      return next
-    })
-  }, [onChange])
+    setDraft((current) => ({
+      ...current,
+      ...partial,
+      position: {
+        ...current.position,
+        ...(partial?.position || {}),
+      },
+    }))
+  }, [])
 
   const safePositionX = clamp(asNumberOrFallback(draft.position?.x, 50), 0, 100)
   const safePositionY = clamp(asNumberOrFallback(draft.position?.y, 50), 0, 100)
-  const safeTextSize = clamp(asNumberOrFallback(draft.size, DEFAULT_TEXT_OVERLAY_SETTINGS.size), 8, 120)
+  const safeTextSize = clamp(
+    asNumberOrFallback(draft.size, DEFAULT_TEXT_OVERLAY_SETTINGS.size),
+    MIN_UI_TEXT_SIZE,
+    MAX_UI_TEXT_SIZE,
+  )
   const renderedVideoBox = getSafeFrame(videoFrame, previewContainerSize)
 
   const previewOverlayFontPx = useMemo(() => {
     const naturalWidth = Math.max(1, naturalVideoSize.width)
     const displayWidth = Math.max(1, renderedVideoBox.width)
+
     return clamp(safeTextSize * (displayWidth / naturalWidth), 8, 240)
   }, [naturalVideoSize.width, renderedVideoBox.width, safeTextSize])
 
@@ -147,6 +151,7 @@ function GifTextOverlayEditor({ videoFile, initialSettings, onBack, onCancel, on
 
   const handlePreviewPointerDown = useCallback((event) => {
     if (event.button !== 0) return
+
     event.preventDefault()
     placementDragActiveRef.current = true
     updatePlacementFromPointer(event)
@@ -165,6 +170,7 @@ function GifTextOverlayEditor({ videoFile, initialSettings, onBack, onCancel, on
 
   const releasePreviewCapture = useCallback((event) => {
     placementDragActiveRef.current = false
+
     const element = event.currentTarget
     if (typeof element.hasPointerCapture === 'function' && element.hasPointerCapture(event.pointerId)) {
       element.releasePointerCapture(event.pointerId)
@@ -183,7 +189,7 @@ function GifTextOverlayEditor({ videoFile, initialSettings, onBack, onCancel, on
       preview={(
         <div
           ref={previewContainerRef}
-          className="preview-box editor-preview preview-box-video editor-preview--video preview-box-checkered editor-preview--checkered preview-box-interactive editor-preview--interactive"
+          className="editor-preview editor-preview--video editor-preview--checkered editor-preview--interactive"
           onPointerDown={handlePreviewPointerDown}
           onPointerMove={handlePreviewPointerMove}
           onPointerUp={releasePreviewCapture}
@@ -194,7 +200,7 @@ function GifTextOverlayEditor({ videoFile, initialSettings, onBack, onCancel, on
             <video
               ref={previewVideoRef}
               src={videoUrl}
-              className="preview-video editor-preview-media"
+              className="editor-preview-media"
               autoPlay
               loop
               muted
@@ -285,7 +291,9 @@ function GifTextOverlayEditor({ videoFile, initialSettings, onBack, onCancel, on
                   value={draft.color}
                   onChange={(event) => updateDraft({ color: event.target.value })}
                 />
-                <span className="add-text-color-value">{String(draft.color || '').toUpperCase()}</span>
+                <span className="add-text-color-value">
+                  {String(draft.color || '').toUpperCase()}
+                </span>
               </div>
             </div>
 
@@ -299,7 +307,9 @@ function GifTextOverlayEditor({ videoFile, initialSettings, onBack, onCancel, on
                   max={MAX_UI_TEXT_SIZE}
                   className="text-input editor-number-input add-text-size-input"
                   value={safeTextSize}
-                  onChange={(event) => updateDraft({ size: asNumberOrFallback(event.target.value, safeTextSize) })}
+                  onChange={(event) => updateDraft({
+                    size: asNumberOrFallback(event.target.value, safeTextSize),
+                  })}
                 />
                 <input
                   type="range"
@@ -307,7 +317,9 @@ function GifTextOverlayEditor({ videoFile, initialSettings, onBack, onCancel, on
                   max={MAX_UI_TEXT_SIZE}
                   step={1}
                   value={safeTextSize}
-                  onChange={(event) => updateDraft({ size: asNumberOrFallback(event.target.value, safeTextSize) })}
+                  onChange={(event) => updateDraft({
+                    size: asNumberOrFallback(event.target.value, safeTextSize),
+                  })}
                   className="add-text-size-slider editor-slider"
                 />
               </div>

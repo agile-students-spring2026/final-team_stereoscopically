@@ -17,9 +17,10 @@ const MediaEntry = ({
   onDismissFileTooLarge,
   onDismissUnsupportedImage,
 }) => {
-  const statusMessage = selectionError
   const imageFileInputRef = useRef(null)
   const videoFileInputRef = useRef(null)
+
+  const statusMessage = selectionError
 
   const handleImageInputChange = (e) => {
     const file = e.target.files?.[0]
@@ -43,31 +44,72 @@ const MediaEntry = ({
     videoFileInputRef.current?.click()
   }
 
+  const handleCameraClick = () => {
+    if (isLoading || isCameraDisabled) return
+    onCameraSelect?.()
+  }
+
+  const unsupportedVideoTypeLabel =
+    unsupportedVideo?.type ||
+    unsupportedVideo?.name?.split('.').pop() ||
+    'unknown format'
+
   return (
     <>
-      <div className="card create-new">
-        <h2>Create New</h2>
+      <div className="card create-new create-new-card">
+        <div className="create-new-header">
+          <h2>Create New</h2>
+          <p className="create-new-subtitle">
+            Choose how you want to start creating your sticker.
+          </p>
+        </div>
 
-        <div className="upload-options">
-          <label className="upload-button" style={{ cursor: isLoading ? 'not-allowed' : 'pointer' }}>
-            Upload Image
+        <div className="create-new-actions">
+          <label
+            className={`create-action-row ${isLoading ? 'create-action-row--disabled' : ''}`}
+            aria-disabled={isLoading}
+          >
+            <div className="create-action-row__content">
+              <div className="create-action-row__title">Upload Image</div>
+              <div className="create-action-row__subtitle">
+                Start from a JPG or PNG image.
+              </div>
+            </div>
+
+            <span className="create-action-row__chevron" aria-hidden="true">
+              ›
+            </span>
+
             <input
               ref={imageFileInputRef}
               type="file"
               accept="image/*"
-              style={{ display: 'none' }}
+              className="hidden-file-input"
               disabled={isLoading}
               onChange={handleImageInputChange}
             />
           </label>
 
-          <label className="upload-button" style={{ cursor: isLoading ? 'not-allowed' : 'pointer' }}>
-            Upload Video
+          <label
+            className={`create-action-row ${isLoading ? 'create-action-row--disabled' : ''}`}
+            aria-disabled={isLoading}
+          >
+            <div className="create-action-row__content">
+              <div className="create-action-row__title">Upload Video</div>
+              <div className="create-action-row__subtitle">
+                Turn a video into a sticker or GIF.
+              </div>
+            </div>
+
+            <span className="create-action-row__chevron" aria-hidden="true">
+              ›
+            </span>
+
             <input
               ref={videoFileInputRef}
               type="file"
               accept="video/*"
-              style={{ display: 'none' }}
+              className="hidden-file-input"
               disabled={isLoading}
               onChange={handleVideoInputChange}
             />
@@ -75,91 +117,117 @@ const MediaEntry = ({
 
           <button
             type="button"
-            className="upload-button"
-            onClick={() => {
-              if (!isCameraDisabled) onCameraSelect?.()
-            }}
+            className="create-action-row create-action-row--button"
+            onClick={handleCameraClick}
             disabled={isLoading || isCameraDisabled}
           >
-            Open Camera
+            <div className="create-action-row__content">
+              <div className="create-action-row__title">Open Camera</div>
+              <div className="create-action-row__subtitle">
+                Capture a photo or video directly.
+              </div>
+            </div>
+
+            <span className="create-action-row__chevron" aria-hidden="true">
+              ›
+            </span>
           </button>
         </div>
 
-        {statusMessage && (
-          <EditorStatus>
-            {statusMessage}
-          </EditorStatus>
-        )}
-
-        {validationError && (
-          <EditorStatus tone="error">
-            {validationError}
-          </EditorStatus>
+        {(statusMessage || validationError) && (
+          <div className="create-new-statuses">
+            {statusMessage && <EditorStatus>{statusMessage}</EditorStatus>}
+            {validationError && (
+              <EditorStatus tone="error">{validationError}</EditorStatus>
+            )}
+          </div>
         )}
       </div>
 
       {unsupportedVideo && (
-        <div className="modal-overlay" style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', background: 'rgba(0,0,0,0.4)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <div className="modal-content" style={{ background: '#fff', padding: '2rem', borderRadius: '8px', boxShadow: '0 2px 16px rgba(0,0,0,0.2)', maxWidth: 360, textAlign: 'center' }}>
-            <h3 style={{ color: '#c00', marginBottom: '1rem' }}>Unsupported Video Format</h3>
-            <p style={{ marginBottom: '1.5rem' }}>
-              This video format ({unsupportedVideo.type || unsupportedVideo.name.split('.').pop()}) is not supported by your browser.<br />
+        <div className="upload-modal-overlay" role="dialog" aria-modal="true">
+          <div className="upload-modal">
+            <h3 className="upload-modal__title upload-modal__title--error">
+              Unsupported Video Format
+            </h3>
+
+            <p className="upload-modal__text">
+              This video format ({unsupportedVideoTypeLabel}) is not supported by your
+              browser.
+              <br />
               Please upload an MP4 or WebM video.
             </p>
-            <button
-              className="btn-primary"
-              style={{ marginBottom: '1rem' }}
-              onClick={() => {
-                onDismissUnsupportedVideo?.()
-                openVideoPicker()
-              }}
-            >
-              Re-upload Video
-            </button>
+
+            <div className="upload-modal__actions">
+              <button
+                type="button"
+                className="btn-primary"
+                onClick={() => {
+                  onDismissUnsupportedVideo?.()
+                  openVideoPicker()
+                }}
+              >
+                Re-upload Video
+              </button>
+            </div>
           </div>
         </div>
       )}
 
       {fileTooLargeMessage && (
-        <div className="modal-overlay" style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', background: 'rgba(0,0,0,0.4)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <div className="modal-content" style={{ background: '#fff', padding: '2rem', borderRadius: '8px', boxShadow: '0 2px 16px rgba(0,0,0,0.2)', maxWidth: 360, textAlign: 'center' }}>
-            <h3 style={{ color: '#c00', marginBottom: '1rem' }}>Upload Error</h3>
-            <p style={{ marginBottom: '1.5rem' }}>{fileTooLargeMessage}</p>
-            <button
-              className="btn-primary"
-              style={{ marginBottom: '1rem' }}
-              onClick={() => {
-                onDismissFileTooLarge?.()
-                if (lastRejectedUploadType === 'video') {
-                  openVideoPicker()
-                  return
-                }
-                if (lastRejectedUploadType === 'image') {
-                  openImagePicker()
-                }
-              }}
-            >
-              Re-upload
-            </button>
+        <div className="upload-modal-overlay" role="dialog" aria-modal="true">
+          <div className="upload-modal">
+            <h3 className="upload-modal__title upload-modal__title--error">
+              Upload Error
+            </h3>
+
+            <p className="upload-modal__text">{fileTooLargeMessage}</p>
+
+            <div className="upload-modal__actions">
+              <button
+                type="button"
+                className="btn-primary"
+                onClick={() => {
+                  onDismissFileTooLarge?.()
+
+                  if (lastRejectedUploadType === 'video') {
+                    openVideoPicker()
+                    return
+                  }
+
+                  if (lastRejectedUploadType === 'image') {
+                    openImagePicker()
+                  }
+                }}
+              >
+                Re-upload
+              </button>
+            </div>
           </div>
         </div>
       )}
 
       {unsupportedImageMessage && (
-        <div className="modal-overlay" style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', background: 'rgba(0,0,0,0.4)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <div className="modal-content" style={{ background: '#fff', padding: '2rem', borderRadius: '8px', boxShadow: '0 2px 16px rgba(0,0,0,0.2)', maxWidth: 360, textAlign: 'center' }}>
-            <h3 style={{ color: '#c00', marginBottom: '1rem' }}>Unsupported Image Format</h3>
-            <p style={{ marginBottom: '1.5rem' }}>{unsupportedImageMessage}</p>
-            <button
-              className="btn-primary"
-              style={{ marginBottom: '1rem' }}
-              onClick={() => {
-                onDismissUnsupportedImage?.()
-                openImagePicker()
-              }}
-            >
-              Re-upload
-            </button>
+        <div className="upload-modal-overlay" role="dialog" aria-modal="true">
+          <div className="upload-modal">
+            <h3 className="upload-modal__title upload-modal__title--error">
+              Unsupported Image Format
+            </h3>
+
+            <p className="upload-modal__text">{unsupportedImageMessage}</p>
+
+            <div className="upload-modal__actions">
+              <button
+                type="button"
+                className="btn-primary"
+                onClick={() => {
+                  onDismissUnsupportedImage?.()
+                  openImagePicker()
+                }}
+              >
+                Re-upload
+              </button>
+            </div>
           </div>
         </div>
       )}

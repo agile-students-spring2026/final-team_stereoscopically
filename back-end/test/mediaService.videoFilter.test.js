@@ -1,6 +1,6 @@
 import { expect } from 'chai'
 
-import { applyPresetVideoFilter } from '../src/services/mediaService.js'
+import { applyPresetVideoFilter } from '../src/services/gifMediaService.js'
 
 describe('mediaService applyPresetVideoFilter validation', () => {
 	it('returns error when video filter file is missing', async () => {

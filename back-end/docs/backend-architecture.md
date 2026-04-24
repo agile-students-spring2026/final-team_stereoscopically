@@ -4,6 +4,8 @@
 
 This document defines responsibility boundaries for the back-end code in `back-end/`.
 
+For persistence rules and data-shape guarantees, see `back-end/docs/database-contract.md`.
+
 It covers:
 - what belongs in each back-end folder
 - what each layer is responsible for
@@ -19,7 +21,8 @@ It covers:
 - Upload handling: Multer
 - Image processing: Sharp
 - Video processing: fluent-ffmpeg (+ @ffmpeg-installer/ffmpeg)
-- Storage model: in-memory media store with TTL expiration
+- Database: MongoDB Atlas (via Mongoose)
+- Binary storage model: GridFS (`media.files` + `media.chunks`) with in-memory fallback for tests and local development
 
 ---
 
@@ -60,8 +63,8 @@ Not responsible for:
 
 Responsible for:
 - upload/crop/export business logic
-- media store access and TTL-aware media retrieval
-- backend validation for crop/export payloads
+- media store access and media retrieval by ID
+- backend validation for all endpoint payloads
 
 Not responsible for:
 - route declarations
@@ -79,7 +82,7 @@ Not responsible for:
 ### `src/config`
 
 Responsible for:
-- shared configuration constants (size limits, TTL, max dimensions, port)
+- shared configuration constants (size limits, max dimensions, port, GIF presets)
 
 Not responsible for:
 - request handling or business logic
@@ -109,6 +112,7 @@ Frontend preflight checks are optional UX helpers and do not replace backend enf
 - `POST /api/crop/image`
 - `POST /api/export/image`
 - `POST /api/text/image`
+- `POST /api/upload/video`
 - `POST /api/trim/video`
 - `POST /api/filter/video`
 - `POST /api/export/gif`
@@ -119,8 +123,12 @@ Frontend preflight checks are optional UX helpers and do not replace backend enf
 
 - Route declarations are owned by `src/routes/mediaRoutes.js`.
 - Request/response orchestration is owned by `src/controllers/mediaController.js`.
-- Core endpoint orchestration is owned by `src/services/mediaService.js`.
-- Text-overlay payload normalization and rendering helpers are owned by `src/services/textOverlayService.js`.
+- Image endpoint logic is owned by `src/services/imageMediaService.js`.
+- GIF/video endpoint logic is owned by `src/services/gifMediaService.js`.
+- Media retrieval and download logic is owned by `src/services/mediaReadService.js`.
+- Shared media load/save utilities are owned by `src/services/mediaUtils.js`.
+- Image adjustment and preset-filter math is owned by `src/services/imageAdjustService.js`.
+- Text-overlay payload normalization and rendering is owned by `src/services/textOverlayService.js`.
 - Media lifecycle state is owned by `src/services/mediaStore.js`.
 
 ---
@@ -151,6 +159,7 @@ Examples of current validation/service codes include:
 - `INVALID_TRIM_VALUES`
 - `INVALID_TRIM_RANGE`
 - `INVALID_RESIZE_PRESET`
+- `INVALID_RESIZE_BORDER_COLOR`
 - `INVALID_DIMENSIONS`
 - `INVALID_LETTERBOX_COLOR`
 - `INVALID_TEXT_PAYLOAD`
@@ -179,7 +188,7 @@ Responsible for:
 - app creation
 - middleware registration
 - route mounting
-- TTL purge interval setup
+- database connection bootstrap
 - server startup
 
 ### `src/config/constants.js`
@@ -191,10 +200,13 @@ Responsible for:
 - `PORT`
 - `MAX_UPLOAD_SIZE_BYTES`
 - `MAX_EXPORT_DIMENSION`
+- `DEFAULT_GIF_RESIZE_PRESET`
+- `DEFAULT_GIF_RESIZE_BORDER_COLOR`
+- `GIF_RESIZE_PRESET_DIMENSIONS`
+
+Legacy constants retained for compatibility:
 - `MEDIA_TTL_MS`
 - `MEDIA_PURGE_INTERVAL_MS`
-- `DEFAULT_GIF_RESIZE_PRESET`
-- `GIF_RESIZE_PRESET_DIMENSIONS`
 
 ### `src/routes/mediaRoutes.js`
 
@@ -202,7 +214,7 @@ Purpose:
 Define API route map.
 
 Responsible for:
-- mapping each media endpoint to its controller
+- mapping each media endpoint to its controller handler
 
 ### `src/controllers/mediaController.js`
 
@@ -214,30 +226,68 @@ Responsible for:
 - converting service results into HTTP responses
 - setting binary response headers for media/download routes
 
-### `src/services/mediaService.js`
+### `src/services/imageMediaService.js`
 
 Purpose:
-Core media workflow service layer.
+Domain service for image workflows.
 
 Responsible for:
-- upload flow result shaping
-- image adjustment and preset-filter orchestration
+- upload image flow
 - crop flow processing and validation
 - export flow processing and validation
-- video trim and preset-filter orchestration
-- resize-preset validation and GIF output-shape mapping for trim-to-GIF flow
+- image adjustment orchestration
+- preset image filter orchestration
+- add-text endpoint orchestration
+
+### `src/services/gifMediaService.js`
+
+Purpose:
+Domain service for GIF and video workflows.
+
+Responsible for:
+- upload video flow
+- trim-video-to-GIF flow, including resize preset and border color validation, text overlay parsing, and ffmpeg filter assembly
+- preset video filter orchestration
 - GIF export metadata response shaping
-- add-text endpoint orchestration and media result shaping
-- media and export download payload assembly
+
+### `src/services/mediaReadService.js`
+
+Purpose:
+Domain service for media retrieval and download.
+
+Responsible for:
+- serving media buffers with correct content-type headers
+- serving export download buffers with content-disposition headers
+
+### `src/services/mediaUtils.js`
+
+Purpose:
+Shared utilities for media load and save across domain services.
+
+Responsible for:
+- `loadMedia` — retrieve a stored media entry as a buffer with metadata
+- `saveMedia` — write a buffer to the media store and return its ID
+- `buildMediaUrl` / `buildExportDownloadUrl` — construct canonical media URLs
+- `parseLetterboxBackground` — validate and parse letterbox color values
+- `parseCropParams` — validate and normalize crop parameter inputs
+
+### `src/services/imageAdjustService.js`
+
+Purpose:
+Low-level image adjustment math.
+
+Responsible for:
+- applying brightness, contrast, saturation, hue, grayscale, sepia, and sharpness adjustments to image buffers via Sharp
+- defining `PRESET_ADJUSTMENTS` — the named adjustment configurations for preset filters
 
 ### `src/services/textOverlayService.js`
 
 Purpose:
-Text-overlay validation, normalization, and rendering utilities.
+Text-overlay validation, normalization, and rendering.
 
 Responsible for:
 - add-text request payload validation and normalization
-- add-text size and placement bounds validation
+- size and placement bounds validation
 - supported font fallback and style defaults
 - SVG text overlay generation for multiline rendering
 - Sharp compositing helpers used by add-text workflow
@@ -245,12 +295,13 @@ Responsible for:
 ### `src/services/mediaStore.js`
 
 Purpose:
-In-memory media store utilities.
+Media persistence utilities.
 
 Responsible for:
-- create/read/delete media entries
-- TTL expiration checks
-- purge of expired entries
+- creating media entries in GridFS, with in-memory fallback when GridFS is unavailable
+- reading media file info by ID
+- opening GridFS download streams, with in-memory fallback
+- deleting media entries by ID
 
 ### `src/middleware/uploadMiddleware.js`
 

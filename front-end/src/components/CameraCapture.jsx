@@ -154,9 +154,9 @@ function CameraCapture({ onCapture, onCancel }) {
 
     return (
         <div className="video-editor-container">
-            <h2 className="video-editor-title">Camera</h2>
+            <h2 className="editor-shell-title">Camera</h2>
 
-            <div className="preview-box">
+            <div className="editor-preview">
                 {error ? (
                     <EditorStatus tone="error" centered>{error}</EditorStatus>
                 ) : (
@@ -165,12 +165,12 @@ function CameraCapture({ onCapture, onCancel }) {
                         autoPlay
                         muted
                         playsInline
-                        className="preview-video editor-preview-media"
+                        className="editor-preview-media"
                     />
                 )}
             </div>
 
-            <div className="card video-editor-actions editor-actions editor-actions--stack">
+            <div className="card editor-actions editor-actions--stack">
                 {!isRecording ? (
                     <>
                         <button
@@ -204,7 +204,7 @@ function CameraCapture({ onCapture, onCancel }) {
                 )}
             </div>
 
-            <div className="card-actions card-actions-spaced editor-actions editor-actions--inline">
+            <div className="editor-actions editor-actions--spaced editor-actions--inline">
                 <button
                     type="button"
                     className="btn-secondary"

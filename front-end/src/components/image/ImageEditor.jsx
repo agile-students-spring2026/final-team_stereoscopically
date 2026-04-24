@@ -86,7 +86,7 @@ const ImageEditor = ({
   if (isCropping) {
     return (
       <div className="image-editor-container">
-        <h2 className="image-editor-title">Crop Image</h2>
+        <h2 className="editor-shell-title">Crop Image</h2>
         <EditorStatus role="note" tone="muted" spaced>
           Cropping uses your current preview (filters and color edits included).
         </EditorStatus>
@@ -100,7 +100,7 @@ const ImageEditor = ({
           initialCropPx={initialCropPx}
           onCropChange={handleCropChange}
         />
-        <div className="card-actions editor-actions editor-actions--inline">
+        <div className="editor-actions editor-actions--inline">
           <button type="button" className="btn-secondary" onClick={handleCancelCrop}>
             Cancel
           </button>
@@ -124,7 +124,7 @@ const ImageEditor = ({
 
   return (
     <div className="image-editor-container">
-      <h2 className="image-editor-title">Image Editor</h2>
+      <h2 className="editor-shell-title">Image Editor</h2>
 
       {uploadError && (
         <EditorStatus tone="error" spaced>
@@ -154,19 +154,19 @@ const ImageEditor = ({
       )}
 
       <div
-        className="preview-box editor-preview preview-box-checkered editor-preview--checkered"
+        className="editor-preview editor-preview--checkered"
         style={{ opacity: isUploading ? 0.75 : 1, transition: 'opacity 150ms ease' }}
       >
         {!imageLoadError && (
           <img
             src={imageSrc}
             alt="Preview"
-            className="preview-image editor-preview-media"
+            className="editor-preview-media"
             onError={handleImageError}
           />
         )}
       </div>
-      <div className="card image-editor-actions editor-actions editor-actions--stack">
+      <div className="card editor-actions editor-actions--stack">
         <button type="button" className="btn-primary" onClick={handleCropClick}>
           Crop
         </button>
@@ -177,7 +177,7 @@ const ImageEditor = ({
           Filters
         </button>
       </div>
-      <div className="card-actions card-actions-spaced editor-actions editor-actions--inline editor-actions--wrap">
+      <div className="editor-actions editor-actions--spaced editor-actions--inline editor-actions--wrap">
         <button type="button" className="btn-secondary" onClick={onBack}>
           Cancel
         </button>

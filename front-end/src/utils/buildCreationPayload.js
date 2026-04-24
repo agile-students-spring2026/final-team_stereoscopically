@@ -1,3 +1,5 @@
+import { buildDraftMediaIds } from './draftMediaIds.js'
+
 /**
  * JSON-serializable snapshot of the current editor session (for draft persistence).
  * Opening drafts is handled in a separate task; this is storage-oriented metadata.
@@ -17,37 +19,59 @@ export const defaultCreationTitle = (file) => {
 }
 
 export const buildImageCreationPayload = ({
-  backendMediaId,
+  sourceMediaId,
+  workingMediaId,
+  preEditWorkingMediaId,
+  preTextWorkingMediaId,
+  textOverlay,
   lastCropBoxPx,
   colorAdjustments,
   selectedImageFilterPreset,
   selectedPreset,
   letterboxColor,
-} = {}) => ({
-  kind: 'image',
-  version: 1,
-  backendMediaId: backendMediaId ?? null,
-  lastCropBoxPx: lastCropBoxPx ?? null,
-  colorAdjustments: colorAdjustments ?? null,
-  selectedImageFilterPreset: selectedImageFilterPreset ?? 'default',
-  selectedPreset: selectedPreset ?? null,
-  letterboxColor: letterboxColor ?? 'transparent',
-})
+} = {}) => {
+  const mediaIds = buildDraftMediaIds({ sourceMediaId, workingMediaId })
+
+  return {
+    kind: 'image',
+    version: 2,
+    ...mediaIds,
+    // Legacy alias for backward compatibility while clients migrate.
+    backendMediaId: mediaIds.workingMediaId,
+    preEditWorkingMediaId: preEditWorkingMediaId ?? null,
+    preTextWorkingMediaId: preTextWorkingMediaId ?? null,
+    textOverlay: textOverlay ?? null,
+    lastCropBoxPx: lastCropBoxPx ?? null,
+    colorAdjustments: colorAdjustments ?? null,
+    selectedImageFilterPreset: selectedImageFilterPreset ?? 'default',
+    selectedPreset: selectedPreset ?? null,
+    letterboxColor: letterboxColor ?? 'transparent',
+  }
+}
 
 export const buildVideoCreationPayload = ({
+  sourceMediaId,
+  workingMediaId,
   trimRange,
   resizePreset,
   resizeBorderColor,
   selectedSpeedPlaybackRate,
   textOverlaySettings,
   selectedFilterPreset,
-} = {}) => ({
-  kind: 'video',
-  version: 1,
-  trimRange: trimRange ? { start: trimRange.start, end: trimRange.end } : { start: 0, end: 0 },
-  resizePreset: resizePreset ?? null,
-  resizeBorderColor: resizeBorderColor ?? null,
-  selectedSpeedPlaybackRate: selectedSpeedPlaybackRate ?? 1,
-  textOverlaySettings: textOverlaySettings ?? null,
-  selectedFilterPreset: selectedFilterPreset ?? 'default',
-})
+} = {}) => {
+  const mediaIds = buildDraftMediaIds({ sourceMediaId, workingMediaId })
+
+  return {
+    kind: 'video',
+    version: 2,
+    ...mediaIds,
+    // Legacy alias for backward compatibility while clients migrate.
+    backendMediaId: mediaIds.workingMediaId,
+    trimRange: trimRange ? { start: trimRange.start, end: trimRange.end } : { start: 0, end: 0 },
+    resizePreset: resizePreset ?? null,
+    resizeBorderColor: resizeBorderColor ?? null,
+    selectedSpeedPlaybackRate: selectedSpeedPlaybackRate ?? 1,
+    textOverlaySettings: textOverlaySettings ?? null,
+    selectedFilterPreset: selectedFilterPreset ?? 'default',
+  }
+}

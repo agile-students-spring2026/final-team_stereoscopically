@@ -27,7 +27,7 @@ function FilterScreen({
       preview={(
         <div
           ref={previewContainerRef}
-          className={`preview-box editor-preview ${previewInteractive ? 'preview-box-interactive editor-preview--interactive' : ''}`}
+          className={`editor-preview ${previewInteractive ? 'editor-preview--interactive' : ''}`}
           onPointerDown={previewInteractive ? onPreviewPointerDown : undefined}
           onPointerMove={previewInteractive ? onPreviewPointerMove : undefined}
           onPointerUp={previewInteractive ? onPreviewPointerUp : undefined}
@@ -39,11 +39,11 @@ function FilterScreen({
               ref={previewImageRef}
               src={imageSrc}
               alt="Preview"
-              className="preview-image editor-preview-media"
+              className="editor-preview-media"
               draggable={previewInteractive ? false : undefined}
             />
           ) : videoSrc ? (
-            <video src={videoSrc} controls className="preview-image editor-preview-media" />
+            <video src={videoSrc} controls className="editor-preview-media" />
           ) : (
             <EditorStatus centered>Preview of Creation</EditorStatus>
           )}

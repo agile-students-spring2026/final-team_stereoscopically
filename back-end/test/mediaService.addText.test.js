@@ -1,8 +1,8 @@
 import { expect } from 'chai'
 
-import { addTextToImage, uploadImage } from '../src/services/mediaService.js'
+import { addTextToImage, uploadImage } from '../src/services/imageMediaService.js'
 
-const uploadFakeImage = () => {
+const uploadFakeImage = async () => {
 	const req = {
 		protocol: 'http',
 		get: () => 'localhost:4000',
@@ -12,7 +12,7 @@ const uploadFakeImage = () => {
 			size: 16,
 		},
 	}
-	const result = uploadImage(req)
+	const result = await uploadImage(req)
 	return result.data.id
 }
 
@@ -34,13 +34,13 @@ describe('mediaService addTextToImage', () => {
 	})
 
 	it('returns error when text payload is invalid', async () => {
-		const mediaId = uploadFakeImage()
+		const mediaId = await uploadFakeImage()
 		const result = await addTextToImage(fakeReq({ mediaId, text: 123, x: 0.5, y: 0.5 }))
 		expect(result.error).to.include({ status: 400, code: 'INVALID_TEXT_PAYLOAD' })
 	})
 
 	it('returns noOp when text is empty', async () => {
-		const mediaId = uploadFakeImage()
+		const mediaId = await uploadFakeImage()
 		const result = await addTextToImage(fakeReq({ mediaId, text: '', x: 0.5, y: 0.5 }))
 		expect(result.status).to.equal(200)
 		expect(result.data.noOp).to.equal(true)

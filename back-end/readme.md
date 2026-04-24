@@ -2,7 +2,7 @@
 
 ## Overview
 
-This backend provides image-processing endpoints for the StickerCreate app. It is built with Express and stores uploaded/generated media in in-memory storage with a time-to-live (TTL).
+This backend provides image-processing endpoints for the StickerCreate app. It is built with Express, uses MongoDB Atlas for persistence, and stores uploaded/generated media in GridFS.
 
 ## Stack
 
@@ -393,3 +393,9 @@ All API errors use this shape:
 ## Architecture notes
 
 For module boundaries and reliability standards, see `back-end/docs/backend-architecture.md`.
+
+Storage notes:
+- Media binaries are stored in MongoDB GridFS (`media.files` and `media.chunks`).
+- Media IDs in API responses map to MongoDB ObjectIds.
+- The backend currently exposes media retrieval by ID and explicit delete helpers in code.
+- Legacy TTL constants remain in `src/config/constants.js`, but storage is no longer an in-memory TTL store.

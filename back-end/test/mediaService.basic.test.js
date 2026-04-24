@@ -1,16 +1,18 @@
 import { expect } from 'chai'
-import { getMediaContent, trimVideo, uploadImage } from '../src/services/mediaService.js'
+import { getMediaContent } from '../src/services/mediaReadService.js'
+import { trimVideo } from '../src/services/gifMediaService.js'
+import { uploadImage } from '../src/services/imageMediaService.js'
 
 describe('mediaService basic flows', () => {
-	it('returns error when image file is missing', () => {
-		const result = uploadImage({ file: null })
+	it('returns error when image file is missing', async () => {
+		const result = await uploadImage({ file: null })
 		expect(result.error).to.include({
 			status: 400,
 			code: 'MISSING_FILE',
 		})
 	})
 
-	it('uploads a valid image and can fetch content by id', () => {
+	it('uploads a valid image and can fetch content by id', async () => {
 		const req = {
 			protocol: 'http',
 			get: () => 'localhost:4000',
@@ -21,12 +23,12 @@ describe('mediaService basic flows', () => {
 			},
 		}
 
-		const upload = uploadImage(req)
+		const upload = await uploadImage(req)
 		expect(upload.status).to.equal(200)
 		expect(upload.data.id).to.be.a('string')
 		expect(upload.data.mimeType).to.equal('image/png')
 
-		const fetched = getMediaContent(upload.data.id)
+		const fetched = await getMediaContent(upload.data.id)
 		expect(fetched.status).to.equal(200)
 		expect(fetched.headers['Content-Type']).to.equal('image/png')
 		expect(Buffer.isBuffer(fetched.data)).to.equal(true)

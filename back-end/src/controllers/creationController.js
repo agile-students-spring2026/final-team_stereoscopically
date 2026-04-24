@@ -1,6 +1,20 @@
 import { Creation } from '../models/creationModel.js'
+import { deleteMedia } from '../services/mediaStore.js'
 
 const MAX_TITLE_LENGTH = 200
+
+const collectPayloadMediaIds = ({ editorPayload = {}, exportAssetId = null } = {}) => {
+    const ids = [
+        editorPayload?.sourceMediaId,
+        editorPayload?.workingMediaId,
+        editorPayload?.backendMediaId,
+        editorPayload?.preEditWorkingMediaId,
+        editorPayload?.preTextWorkingMediaId,
+        exportAssetId,
+    ]
+
+    return [...new Set(ids.filter(Boolean))]
+}
 
 export const createCreation = async (req, res) => {
     const { ownerKey, title, editorPayload, status } = req.body
@@ -22,7 +36,16 @@ export const createCreation = async (req, res) => {
     }
 
     try {
-        const creation = await Creation.create({ ownerKey: ownerKey.trim(), title: title.trim(), editorPayload, status: status || 'draft' })
+        const trackedMediaIds = collectPayloadMediaIds({ editorPayload })
+
+        const creation = await Creation.create({
+            ownerKey: ownerKey.trim(),
+            title: title.trim(),
+            editorPayload,
+            status: status || 'draft',
+            trackedMediaIds,
+        })
+
         return res.status(201).json(creation)
     } catch (error) {
         console.error('createCreation error:', error)
@@ -79,14 +102,44 @@ export const updateCreation = async (req, res) => {
     }
 
     try {
-        const creation = await Creation.findByIdAndUpdate(
-            id,
-            { title, editorPayload, status, exportAssetId },
-            { new: true, runValidators: true }
-        )
+        const creation = await Creation.findById(id)
+
         if (!creation) {
             return res.status(404).json({ error: 'Creation not found.', code: 'NOT_FOUND' })
         }
+
+        const nextEditorPayload = editorPayload ?? creation.editorPayload
+        const nextExportAssetId = exportAssetId ?? creation.exportAssetId
+
+        const nextTrackedMediaIds = collectPayloadMediaIds({
+            editorPayload: nextEditorPayload,
+            exportAssetId: nextExportAssetId,
+        })
+
+        const mergedTrackedMediaIds = [
+            ...new Set([...(creation.trackedMediaIds || []), ...nextTrackedMediaIds]),
+        ]
+
+        if (title !== undefined) {
+            creation.title = title.trim()
+        }
+
+        if (editorPayload !== undefined) {
+            creation.editorPayload = editorPayload
+        }
+
+        if (status !== undefined) {
+            creation.status = status
+        }
+
+        if (exportAssetId !== undefined) {
+            creation.exportAssetId = exportAssetId
+        }
+
+        creation.trackedMediaIds = mergedTrackedMediaIds
+
+        await creation.save()
+
         return res.status(200).json(creation)
     } catch (error) {
         console.error('updateCreation error:', error)
@@ -99,9 +152,25 @@ export const deleteCreation = async (req, res) => {
 
     try {
         const creation = await Creation.findByIdAndDelete(id)
+
         if (!creation) {
             return res.status(404).json({ error: 'Creation not found.', code: 'NOT_FOUND' })
         }
+
+        const currentPayloadMediaIds = collectPayloadMediaIds({
+            editorPayload: creation.editorPayload,
+            exportAssetId: creation.exportAssetId,
+        })
+
+        const allMediaIds = [
+            ...new Set([...(creation.trackedMediaIds || []), ...currentPayloadMediaIds]),
+        ]
+
+        console.log('deleteCreation creation id:', id)
+        console.log('deleteCreation media ids:', allMediaIds)
+
+        await Promise.allSettled(allMediaIds.map((mediaId) => deleteMedia(mediaId)))
+
         return res.status(200).json({ success: true, id })
     } catch (error) {
         console.error('deleteCreation error:', error)

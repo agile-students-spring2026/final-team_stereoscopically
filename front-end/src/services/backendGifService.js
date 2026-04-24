@@ -23,6 +23,15 @@ export const convertVideoToGif = async (videoFile) => {
   }
 }
 
+export const uploadVideoToBackend = async (file) => {
+  return await postMultipart({
+    path: '/api/upload/video',
+    fileField: 'video',
+    file,
+    fallbackErrorMessage: 'Failed to upload video.',
+  })
+}
+
 export const trimVideoService = async (
   videoFile,
   trimStart,

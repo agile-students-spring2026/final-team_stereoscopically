@@ -1,8 +1,8 @@
 import { expect } from 'chai'
 
-import { exportImage, uploadImage } from '../src/services/mediaService.js'
+import { exportImage, uploadImage } from '../src/services/imageMediaService.js'
 
-const uploadFakeImage = () => {
+const uploadFakeImage = async () => {
 	const req = {
 		protocol: 'http',
 		get: () => 'localhost:4000',
@@ -12,7 +12,7 @@ const uploadFakeImage = () => {
 			size: 16,
 		},
 	}
-	const result = uploadImage(req)
+	const result = await uploadImage(req)
 	return result.data.id
 }
 
@@ -34,13 +34,13 @@ describe('mediaService exportImage validation', () => {
 	})
 
 	it('returns error when dimensions are invalid', async () => {
-		const mediaId = uploadFakeImage()
+		const mediaId = await uploadFakeImage()
 		const result = await exportImage(fakeReq({ mediaId, width: -1, height: 512 }))
 		expect(result.error).to.include({ status: 400, code: 'INVALID_DIMENSIONS' })
 	})
 
 	it('returns error when letterbox color is invalid', async () => {
-		const mediaId = uploadFakeImage()
+		const mediaId = await uploadFakeImage()
 		const result = await exportImage(fakeReq({ mediaId, width: 512, height: 512, letterboxColor: 'notacolor' }))
 		expect(result.error).to.include({ status: 400, code: 'INVALID_LETTERBOX_COLOR' })
 	})

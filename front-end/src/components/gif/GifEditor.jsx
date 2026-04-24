@@ -138,12 +138,12 @@ const GifEditor = ({
     }
     return (
         <div className="video-editor-container">
-            <h2 className="video-editor-title">GIF Editor</h2>
+            <h2 className="editor-shell-title">GIF Editor</h2>
 
-            <div className="preview-box editor-preview preview-box-video-resize editor-preview--resize preview-box-checkered editor-preview--checkered">
+            <div className="editor-preview editor-preview--resize editor-preview--checkered">
                 {videoUrl ? (
                     <div className={`gif-preview-frame ${previewFrameClassName}`} style={{ backgroundColor: resizeBorderColor }}>
-                        <video ref={videoRef} src={videoUrl} controls className="preview-video editor-preview-media gif-preview-video"
+                        <video ref={videoRef} src={videoUrl} controls className="editor-preview-media gif-preview-video"
                             onLoadedMetadata={() => {
                                 const total = Number.isFinite(videoRef.current?.duration)
                                         ? videoRef.current.duration
@@ -186,7 +186,7 @@ const GifEditor = ({
                 )}
             </div>
 
-            <div className="card video-editor-actions editor-actions editor-actions--stack">
+            <div className="card editor-actions editor-actions--stack">
                 <button type="button" className="btn-primary" onClick={onOpenTrim}>
                     Trim
                 </button>
@@ -198,7 +198,7 @@ const GifEditor = ({
                 </button>
             </div>
 
-            <div className="card-actions card-actions-spaced editor-actions editor-actions--inline editor-actions--wrap">
+            <div className="editor-actions editor-actions--spaced editor-actions--inline editor-actions--wrap">
                 <button type="button" className="btn-secondary" onClick={() => {
                     resetTransientEditorState()
                     onCancel?.()

@@ -22,27 +22,27 @@ function PhotoPreview({ file, onRetake, onConfirm, onBack }) {
 
     return (
         <div className="video-editor-container">
-            <h2 className="video-editor-title">
+            <h2 className="editor-shell-title">
                 Preview {isVideo ? 'Video' : 'Photo'}
             </h2>
 
-            <div className="preview-box editor-preview">
+            <div className="editor-preview">
                 {isVideo ? (
                     <video 
                         src={previewUrl} 
                         controls 
-                        className="preview-video editor-preview-media" 
+                        className="editor-preview-media" 
                     />
                 ) : (
                     <img 
                         src={previewUrl} 
                         alt="Captured" 
-                        className="preview-video editor-preview-media" 
+                        className="editor-preview-media" 
                     />
                 )}
             </div>
 
-            <div className="card video-editor-actions editor-actions editor-actions--stack">
+            <div className="card editor-actions editor-actions--stack">
                 <button
                     type="button"
                     className="btn-primary"
@@ -60,7 +60,7 @@ function PhotoPreview({ file, onRetake, onConfirm, onBack }) {
                 </button>
             </div>
 
-            <div className="card-actions card-actions-spaced editor-actions editor-actions--inline">
+            <div className="editor-actions editor-actions--spaced editor-actions--inline">
                 <button
                     type="button"
                     className="btn-secondary"
