@@ -22,6 +22,8 @@ export const buildImageCreationPayload = ({
   sourceMediaId,
   workingMediaId,
   previewMediaId,
+  preEditWorkingMediaId,
+  preTextWorkingMediaId,
   selectedPreset,
   letterboxColor,
   lastCropBoxPx,
@@ -40,6 +42,10 @@ export const buildImageCreationPayload = ({
     // Legacy alias for backward compatibility while clients migrate.
     backendMediaId: mediaIds.workingMediaId,
 
+    // Helper bases used by current restore / re-edit flow.
+    preEditWorkingMediaId: preEditWorkingMediaId ?? null,
+    preTextWorkingMediaId: preTextWorkingMediaId ?? null,
+
     editState: {
       crop: lastCropBoxPx ?? null,
       resize: selectedPreset
@@ -53,7 +59,7 @@ export const buildImageCreationPayload = ({
         brightness: 100,
         contrast: 100,
         saturation: 100,
-        hue: 0,
+        sharpness: 100,
       },
       textOverlays: textOverlay ? [textOverlay] : [],
     },

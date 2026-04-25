@@ -44,12 +44,17 @@ function EditorContainer({ onDraftSaved, onSelectCreation }) {
 
   const gifSession = useGifEditingSession()
 
+  const [appliedTextOverlay, setAppliedTextOverlay] = useState(null)
+  const [preTextWorkingMediaId, setPreTextWorkingMediaId] = useState(null)
+
   const imageSession = useImageEditingSession({
     mediaType,
     backendImageResult,
     previewUrl,
     sourceUrl,
     applyTransformedImage,
+    appliedTextOverlay,
+    onPreTextWorkingMediaIdChange: setPreTextWorkingMediaId,
   })
 
   const {
@@ -63,8 +68,6 @@ function EditorContainer({ onDraftSaved, onSelectCreation }) {
   const [activeDraftTitle, setActiveDraftTitle] = useState(null)
   const [imageDraftSourceMediaId, setImageDraftSourceMediaId] = useState(null)
   const [videoDraftSourceMediaId, setVideoDraftSourceMediaId] = useState(null)
-  const [appliedTextOverlay, setAppliedTextOverlay] = useState(null)
-  const [preTextWorkingMediaId, setPreTextWorkingMediaId] = useState(null)
   const [fileTooLargeMessage, setFileTooLargeMessage] = useState(null)
   const [unsupportedImageMessage, setUnsupportedImageMessage] = useState(null)
   const [lastRejectedUploadType, setLastRejectedUploadType] = useState(null)
@@ -245,7 +248,8 @@ function EditorContainer({ onDraftSaved, onSelectCreation }) {
           selectedImageFilterPreset: imageRestore.presetFilter,
           textOverlay: imageRestore.textOverlay,
           selectedPreset: imageRestore.resize?.preset ?? payload?.selectedPreset ?? null,
-          letterboxColor: imageRestore.resize?.letterboxColor ?? payload?.letterboxColor ?? 'transparent',
+          letterboxColor:
+            imageRestore.resize?.letterboxColor ?? payload?.letterboxColor ?? 'transparent',
         }
 
         const ok = await restoreImageSession(normalizedPayload)

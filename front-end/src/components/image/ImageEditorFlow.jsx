@@ -47,11 +47,23 @@ function ImageEditorFlow({ imageSession, media, draft, textOverlay, onBack, onDr
     applyImagePresetFilter,
     updateColorAdjustments,
     applyColorAdjustments,
+    resetCropToOriginal,
+    editBaseMediaId,
   } = imageSession
 
   const { selectedMedia, isUploading, uploadError } = media
-  const { activeDraftId, activeDraftTitle, effectiveImageDraftSourceMediaId, onActiveDraftSaved } = draft
-  const { appliedTextOverlay, preTextWorkingMediaId, onAppliedTextOverlayChange, onPreTextWorkingMediaIdChange } = textOverlay
+  const {
+    activeDraftId,
+    activeDraftTitle,
+    effectiveImageDraftSourceMediaId,
+    onActiveDraftSaved,
+  } = draft
+  const {
+    appliedTextOverlay,
+    preTextWorkingMediaId,
+    onAppliedTextOverlayChange,
+    onPreTextWorkingMediaIdChange,
+  } = textOverlay
 
   const [imageScreen, setImageScreen] = useState(IMAGE_SCREENS.EDITOR)
   const [isSavingDraft, setIsSavingDraft] = useState(false)
@@ -80,6 +92,7 @@ function ImageEditorFlow({ imageSession, media, draft, textOverlay, onBack, onDr
 
   const handleAddTextScreenApply = async (textRequest) => {
     const baseForText = preTextWorkingMediaId || effectiveBackendMediaId
+
     if (!preTextWorkingMediaId && effectiveBackendMediaId) {
       onPreTextWorkingMediaIdChange(effectiveBackendMediaId)
     }
@@ -116,6 +129,11 @@ function ImageEditorFlow({ imageSession, media, draft, textOverlay, onBack, onDr
         sourceMediaId: effectiveImageDraftSourceMediaId || effectiveBackendMediaId,
         workingMediaId: effectiveBackendMediaId || effectiveImageDraftSourceMediaId,
         previewMediaId: effectiveBackendMediaId || effectiveImageDraftSourceMediaId,
+
+        // these two are still important helper bases for restore/re-edit flows
+        preEditWorkingMediaId: editBaseMediaId || null,
+        preTextWorkingMediaId: preTextWorkingMediaId || null,
+
         selectedPreset,
         letterboxColor,
         lastCropBoxPx,
@@ -144,12 +162,14 @@ function ImageEditorFlow({ imageSession, media, draft, textOverlay, onBack, onDr
     activeDraftTitle,
     appliedTextOverlay,
     colorAdjustments,
+    editBaseMediaId,
     effectiveBackendMediaId,
     effectiveImageDraftSourceMediaId,
     lastCropBoxPx,
     letterboxColor,
     onActiveDraftSaved,
     onDraftSaved,
+    preTextWorkingMediaId,
     selectedImageFilterPreset,
     selectedMedia,
     selectedPreset,
@@ -161,7 +181,7 @@ function ImageEditorFlow({ imageSession, media, draft, textOverlay, onBack, onDr
       cropSourceImageSrc={effectiveImageSrc}
       initialCropPx={lastCropBoxPx}
       onCropApply={handleCropApplyWrapped}
-      onResetCrop={imageSession.resetCropToOriginal}
+      onResetCrop={resetCropToOriginal}
       isUploading={isUploading}
       isExporting={isExporting}
       isResettingCrop={isResettingCrop}
