@@ -36,11 +36,11 @@ describe('getCreationPreviewUrl', () => {
     expect(url).toContain('/api/media/legacy_2')
   })
 
-  it('returns null for video drafts without export asset', () => {
+  it('uses working media id for video drafts without export asset', () => {
     const url = getCreationPreviewUrl({
       editorPayload: { kind: 'video', sourceMediaId: 'src_v', workingMediaId: 'work_v' },
     })
 
-    expect(url).toBeNull()
+    expect(url).toContain('/api/media/work_v')
   })
 })

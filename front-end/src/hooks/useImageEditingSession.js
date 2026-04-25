@@ -321,34 +321,6 @@ const useImageEditingSession = ({
     setLastExportLetterbox(null)
   }, [applyTransformedImage, previewUrl, sourceUrl])
 
-  const restoreOriginalImageFromSource = useCallback(async () => {
-    const originalId = originalImageMediaIdRef.current
-    if (!originalId) {
-      return false
-    }
-
-    const result = buildBackendMediaResult(originalId)
-    const { file, objectUrl } = await convertBackendImageResultToLocalMedia(result, {
-      fallbackFileName: 'original.png',
-      fallbackMimeType: 'image/png',
-      fetchErrorMessage: 'Failed to restore original image preview.',
-    })
-
-    if (previewUrl && previewUrl !== sourceUrl) {
-      URL.revokeObjectURL(previewUrl)
-    }
-
-    applyTransformedImage(file, objectUrl, result)
-    setLatestExportResult(null)
-    setLastExportLetterbox(null)
-
-    if (typeof onPreTextWorkingMediaIdChange === 'function') {
-      onPreTextWorkingMediaIdChange(null)
-    }
-
-    return true
-  }, [applyTransformedImage, buildBackendMediaResult, onPreTextWorkingMediaIdChange, previewUrl, sourceUrl])
-
   const loadPresetFilterPreview = useCallback(async (preset) => {
     const nextPreset = preset || DEFAULT_IMAGE_FILTER_PRESET
     const filterMediaId = editBaseMediaIdRef.current || effectiveBackendMediaId
