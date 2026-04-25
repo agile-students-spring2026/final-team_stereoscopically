@@ -16,8 +16,10 @@ function CreationPreviewThumb({ row, title }) {
             src={url}
             className="my-creations-thumb"
             muted
-            preload="metadata"
+            autoPlay
+            loop
             playsInline
+            preload="metadata"
             onError={() => setFailed(true)}
           />
         </div>
