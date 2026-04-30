@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { deleteCreation, fetchCreations } from '../services/creationsApi.js'
 import { getCreationKindLabel, getCreationPreviewUrl } from '../utils/creationPreviewUrl.js'
+import * as authApi from '../services/authApi.js'
 
 function CreationPreviewThumb({ row, title }) {
   const url = getCreationPreviewUrl(row)
@@ -122,6 +123,7 @@ function MyCreationsPage({
   onGoSignIn,
   onGoSignUp,
   onSignOut,
+  onCurrentUserUpdated,
 }) {
   const [items, setItems] = useState([])
   const [loading, setLoading] = useState(false)
@@ -131,6 +133,21 @@ function MyCreationsPage({
   const [deleteDialogError, setDeleteDialogError] = useState(null)
   const [friendRequests, setFriendRequests] = useState([])
   const [friends, setFriends] = useState([])
+  const [showEmailForm, setShowEmailForm] = useState(false)
+  const [showPasswordForm, setShowPasswordForm] = useState(false)
+  const [nextEmail, setNextEmail] = useState('')
+  const [emailSubmitting, setEmailSubmitting] = useState(false)
+  const [emailError, setEmailError] = useState('')
+  const [emailSuccess, setEmailSuccess] = useState('')
+  const [currentPassword, setCurrentPassword] = useState('')
+  const [newPassword, setNewPassword] = useState('')
+  const [showCurrentPassword, setShowCurrentPassword] = useState(false)
+  const [showNewPassword, setShowNewPassword] = useState(false)
+  const [isCurrentPasswordVerified, setIsCurrentPasswordVerified] = useState(false)
+  const [currentPasswordVerifying, setCurrentPasswordVerifying] = useState(false)
+  const [passwordSubmitting, setPasswordSubmitting] = useState(false)
+  const [passwordError, setPasswordError] = useState('')
+  const [passwordSuccess, setPasswordSuccess] = useState('')
 
   useEffect(() => {
     let cancelled = false
@@ -244,6 +261,100 @@ function MyCreationsPage({
     () => friendRequests.length + friends.length,
     [friendRequests.length, friends.length]
   )
+
+  const toggleEmailForm = useCallback(() => {
+    setShowEmailForm((prev) => {
+      const next = !prev
+      if (next) {
+        setNextEmail(currentUser?.email || '')
+        setEmailError('')
+        setEmailSuccess('')
+      }
+      return next
+    })
+  }, [currentUser?.email])
+
+  const togglePasswordForm = useCallback(() => {
+    setShowPasswordForm((prev) => {
+      const next = !prev
+      if (next) {
+        setCurrentPassword('')
+        setNewPassword('')
+        setShowCurrentPassword(false)
+        setShowNewPassword(false)
+        setIsCurrentPasswordVerified(false)
+        setCurrentPasswordVerifying(false)
+        setPasswordError('')
+        setPasswordSuccess('')
+      }
+      return next
+    })
+  }, [])
+
+  const handleChangeEmail = useCallback(
+    async (e) => {
+      e.preventDefault()
+      if (emailSubmitting) return
+
+      setEmailSubmitting(true)
+      setEmailError('')
+      setEmailSuccess('')
+      try {
+        const updated = await authApi.changeEmail({ email: nextEmail })
+        onCurrentUserUpdated?.(updated)
+        setEmailSuccess('Email updated successfully.')
+      } catch (err) {
+        setEmailError(err?.message || 'Could not change email.')
+      } finally {
+        setEmailSubmitting(false)
+      }
+    },
+    [emailSubmitting, nextEmail, onCurrentUserUpdated]
+  )
+
+  const handleChangePassword = useCallback(
+    async (e) => {
+      e.preventDefault()
+      if (passwordSubmitting) return
+      if (!isCurrentPasswordVerified) {
+        setPasswordError('Please verify your current password first.')
+        return
+      }
+
+      setPasswordSubmitting(true)
+      setPasswordError('')
+      setPasswordSuccess('')
+      try {
+        const response = await authApi.changePassword({ currentPassword, newPassword })
+        setCurrentPassword('')
+        setNewPassword('')
+        setPasswordSuccess(response?.message || 'Password updated successfully.')
+      } catch (err) {
+        setPasswordError(err?.message || 'Could not change password.')
+      } finally {
+        setPasswordSubmitting(false)
+      }
+    },
+    [currentPassword, isCurrentPasswordVerified, newPassword, passwordSubmitting]
+  )
+
+  const handleVerifyCurrentPassword = useCallback(async () => {
+    if (currentPasswordVerifying) return
+
+    setCurrentPasswordVerifying(true)
+    setPasswordError('')
+    setPasswordSuccess('')
+    try {
+      await authApi.verifyCurrentPassword({ currentPassword })
+      setIsCurrentPasswordVerified(true)
+      setPasswordSuccess('Current password verified.')
+    } catch (err) {
+      setIsCurrentPasswordVerified(false)
+      setPasswordError(err?.message || 'Current password is incorrect.')
+    } finally {
+      setCurrentPasswordVerifying(false)
+    }
+  }, [currentPassword, currentPasswordVerifying])
 
   const renderDraftsContent = () => {
     if (loading) {
@@ -517,19 +628,144 @@ function MyCreationsPage({
             <p className="profile-account-title">Account</p>
 
             <div className="profile-account-actions">
-              <button type="button" className="profile-account-action">
+              <button type="button" className="profile-account-action" onClick={toggleEmailForm}>
                 <span>Change Email</span>
                 <span className="profile-account-action-arrow" aria-hidden="true">
                   ›
                 </span>
               </button>
+              {showEmailForm ? (
+                <form className="auth-form profile-account-form" onSubmit={handleChangeEmail}>
+                  {emailError ? <p className="editor-status editor-status--error">{emailError}</p> : null}
+                  {emailSuccess ? (
+                    <p className="editor-status editor-status--success">{emailSuccess}</p>
+                  ) : null}
+                  <div className="auth-field">
+                    <label htmlFor="profile-change-email" className="auth-label">
+                      New email
+                    </label>
+                    <input
+                      id="profile-change-email"
+                      type="email"
+                      className="auth-input"
+                      value={nextEmail}
+                      onChange={(e) => setNextEmail(e.target.value)}
+                      placeholder="you@example.com"
+                      autoComplete="email"
+                      required
+                    />
+                  </div>
+                  <button type="submit" className="btn-primary" disabled={emailSubmitting}>
+                    {emailSubmitting ? 'Updating…' : 'Update Email'}
+                  </button>
+                </form>
+              ) : null}
 
-              <button type="button" className="profile-account-action">
+              <button type="button" className="profile-account-action" onClick={togglePasswordForm}>
                 <span>Change Password</span>
                 <span className="profile-account-action-arrow" aria-hidden="true">
                   ›
                 </span>
               </button>
+              {showPasswordForm ? (
+                <form className="auth-form profile-account-form" onSubmit={handleChangePassword}>
+                  {passwordError ? (
+                    <p className="editor-status editor-status--error">{passwordError}</p>
+                  ) : null}
+                  {passwordSuccess ? (
+                    <p className="editor-status editor-status--success">{passwordSuccess}</p>
+                  ) : null}
+                  <div className="auth-field">
+                    <label htmlFor="profile-current-password" className="auth-label">
+                      Current password
+                    </label>
+                    <div style={{ position: 'relative' }}>
+                      <input
+                        id="profile-current-password"
+                        type={showCurrentPassword ? 'text' : 'password'}
+                        className="auth-input"
+                        value={currentPassword}
+                        onChange={(e) => {
+                          setCurrentPassword(e.target.value)
+                          setIsCurrentPasswordVerified(false)
+                          setPasswordSuccess('')
+                        }}
+                        autoComplete="current-password"
+                        required
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowCurrentPassword((prev) => !prev)}
+                        style={{
+                          position: 'absolute',
+                          right: '10px',
+                          top: '50%',
+                          transform: 'translateY(-50%)',
+                          background: 'none',
+                          border: 'none',
+                          cursor: 'pointer',
+                        }}
+                        aria-label={showCurrentPassword ? 'Hide current password' : 'Show current password'}
+                      >
+                        {showCurrentPassword ? 'Hide' : 'Show'}
+                      </button>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    className="btn-secondary"
+                    disabled={!currentPassword || currentPasswordVerifying}
+                    onClick={handleVerifyCurrentPassword}
+                  >
+                    {currentPasswordVerifying
+                      ? 'Verifying…'
+                      : isCurrentPasswordVerified
+                        ? 'Verified'
+                        : 'Verify Current Password'}
+                  </button>
+                  {isCurrentPasswordVerified ? (
+                    <>
+                      <div className="auth-field">
+                        <label htmlFor="profile-new-password" className="auth-label">
+                          New password
+                        </label>
+                        <div style={{ position: 'relative' }}>
+                          <input
+                            id="profile-new-password"
+                            type={showNewPassword ? 'text' : 'password'}
+                            className="auth-input"
+                            value={newPassword}
+                            onChange={(e) => setNewPassword(e.target.value)}
+                            autoComplete="new-password"
+                            minLength={8}
+                            maxLength={128}
+                            required
+                          />
+                          <button
+                            type="button"
+                            onClick={() => setShowNewPassword((prev) => !prev)}
+                            style={{
+                              position: 'absolute',
+                              right: '10px',
+                              top: '50%',
+                              transform: 'translateY(-50%)',
+                              background: 'none',
+                              border: 'none',
+                              cursor: 'pointer',
+                            }}
+                            aria-label={showNewPassword ? 'Hide new password' : 'Show new password'}
+                          >
+                            {showNewPassword ? 'Hide' : 'Show'}
+                          </button>
+                        </div>
+                      </div>
+                      <button type="submit" className="btn-primary" disabled={passwordSubmitting}>
+                        {passwordSubmitting ? 'Updating…' : 'Update Password'}
+                      </button>
+                    </>
+                  ) : null}
+                </form>
+              ) : null}
 
               <button
                 type="button"

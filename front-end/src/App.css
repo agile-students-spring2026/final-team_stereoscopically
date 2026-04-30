@@ -2053,6 +2053,11 @@ input[type='range']::-moz-range-thumb {
   flex-direction: column;
 }
 
+.profile-account-form {
+  padding: 0.7rem 0.95rem 0.95rem;
+  border-top: 1px solid #f0f0f0;
+}
+
 .profile-account-action {
   display: flex;
   align-items: center;

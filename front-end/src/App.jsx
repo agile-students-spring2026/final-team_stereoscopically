@@ -140,6 +140,9 @@ function App() {
             setIsAuthenticated(false)
             setAppScreen(APP_SCREENS.LANDING)
           }}
+          onCurrentUserUpdated={(user) => {
+            setCurrentUser(user)
+          }}
         />
       )
     }
