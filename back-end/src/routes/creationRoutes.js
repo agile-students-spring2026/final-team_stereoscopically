@@ -6,13 +6,14 @@ import {
     updateCreation,
     deleteCreation,
 } from '../controllers/creationController.js'
+import { optionalAuth } from '../middleware/optionalAuth.js'
 
 const router = Router()
 
-router.post('/api/creations', createCreation)
-router.get('/api/creations', getCreations)
-router.get('/api/creations/:id', getCreationById)
-router.patch('/api/creations/:id', updateCreation)
-router.delete('/api/creations/:id', deleteCreation)
+router.post('/api/creations', optionalAuth, createCreation)
+router.get('/api/creations', optionalAuth, getCreations)
+router.get('/api/creations/:id', optionalAuth, getCreationById)
+router.patch('/api/creations/:id', optionalAuth, updateCreation)
+router.delete('/api/creations/:id', optionalAuth, deleteCreation)
 
 export default router

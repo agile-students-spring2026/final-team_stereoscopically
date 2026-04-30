@@ -11,6 +11,7 @@ This backend provides image-processing endpoints for the StickerCreate app. It i
 - Multer (multipart upload handling)
 - Sharp (image processing)
 - Fluent-ffmpeg + @ffmpeg-installer/ffmpeg (video trim/filter processing)
+- Mongoose Models for app data and JWT auth flows
 
 ## Setup
 
@@ -19,7 +20,20 @@ npm install
 cp .env.example .env
 ```
 
-Configure `.env` with your MongoDB Atlas credentials before running the server.
+Configure `.env` from `.env.example` with your MongoDB Atlas URI (`MONGODB_URI`) and auth secret (`JWT_SECRET`) before running the server.
+
+### Authentication compliance (JWT + validation)
+
+The database sprint requires JWT-based authorization, secrets in `.env` (never committed), and validating incoming body fields before persisting to MongoDB via Mongoose:
+
+- Registration and login use **bcrypt-hashed passwords** (`passwordHash` in the DB; plaintext passwords never stored).
+- Successful **register/signup** or **login/signin** returns a JWT signed with **HS256**, configured via `JWT_SECRET` with expiry `JWT_EXPIRES_IN` (default `7d`).
+- Protected routes validate the bearer token middleware-side; **`GET /api/me`** resolves the authenticated user document.
+- `express-validator` runs on auth JSON bodies prior to Mongoose reads/writes; validation failures return **`400`** with an `errors` array.
+
+Aliases for the same handlers: **`POST /api/auth/register`** and **`POST /api/auth/signup`**; **`POST /api/auth/login`** and **`POST /api/auth/signin`**.
+
+Integration tests under `test/auth.routes.test.js` run only when **`MONGODB_URI`** and **`JWT_SECRET`** are set in the environment (same as other Atlas-backed route tests).
 
 ## Scripts
 
@@ -43,6 +57,54 @@ Default server URL: `http://localhost:4000`
 {
   "status": "ok",
   "database": "connected"
+}
+```
+
+### Register / sign-up
+
+- **Methods:** `POST`
+- **Paths:** `/api/auth/register`, `/api/auth/signup`
+
+**JSON body**
+
+- `email` (required string, normalized and validated).
+- `password` (required string, 8–128 characters).
+- `displayName`, `bio`, `avatarUrl` (optional strings; `avatarUrl` must use `http:` or `https:` when supplied).
+
+Success **`201`** response:
+
+```json
+{
+  "token": "<jwt>"
+}
+```
+
+Duplicate email **`409`** with `{ "error": "Email already in use." }`.
+
+### Login / sign-in
+
+- **Methods:** `POST`
+- **Paths:** `/api/auth/login`, `/api/auth/signin`
+
+**JSON body**: `email`, `password`
+
+Success **`200`**: `{ "token": "<jwt>" }`. Wrong credential **`401`**: `{ "error": "Invalid credentials." }`.
+
+### Current account
+
+- **Method:** `GET`
+- **Path:** `/api/me`
+- **Headers:** `Authorization: Bearer <jwt>`
+
+**Success `200`**
+
+```json
+{
+  "id": "...",
+  "email": "...",
+  "displayName": "",
+  "avatarUrl": "",
+  "bio": ""
 }
 ```
 
@@ -309,7 +371,7 @@ Notes:
 - `trimStart` (seconds)
 - `trimEnd` (seconds)
 - `resizePreset` (optional: `square`, `landscape`, `portrait`)
-- `resizeBorderColor` (optional: `#RRGGBB`)
+- `resizeBorderColor` (optional: `#RRGGBB` or `transparent`)
 - `textOverlay` (optional JSON string payload)
 
 `textOverlay` JSON shape:
@@ -378,6 +440,79 @@ Notes:
 
 - `400 { "error": "Missing mediaId.", "code": "MISSING_MEDIA_ID" }`
 - `404 { "error": "Media not found or expired.", "code": "MEDIA_NOT_FOUND" }`
+
+### Creations (drafts / exports)
+
+These routes use **optional JWT**: if `Authorization: Bearer <jwt>` is present, it must be valid (otherwise **`401`**). This lets the same paths serve **signed-in** users (scoped by `userId`) and **guests** (scoped by browser `ownerKey`).
+
+Implementation: `optionalAuth` + `creationController`.
+
+#### List creations
+
+- **Method:** `GET`
+- **Path:** `/api/creations`
+
+**Signed in (valid Bearer)**  
+Lists all creations whose `userId` matches the JWT user. **Do not rely on query `ownerKey`** for scoping.
+
+**Guest (no Bearer)**  
+Requires query: `?ownerKey=<non-empty-string>`. Returns creations with that `ownerKey` **and no bound account** (`userId` absent or null). Legacy drafts created before accounts only stored `ownerKey`; they remain visible here.
+
+**Errors**
+
+- `400 { "error": "Missing or invalid ownerKey.", "code": "INVALID_OWNER_KEY" }` — guest list without a usable `ownerKey`.
+
+#### Create creation
+
+- **Method:** `POST`
+- **Path:** `/api/creations`
+- **Content-Type:** `application/json`
+
+**Body (common)**
+
+- `title` (required, non-empty after trim; max **200** characters).
+- `editorPayload` (required object).
+- `status` (optional): `draft` | `exported` (default `draft`).
+- `exportAssetId` (optional string).
+
+**Signed in**
+
+- Document is stored with **`userId`** set to the current user.
+- Do **not** send a meaningful `ownerKey` in the body. Non-empty/non-whitespace `ownerKey` is rejected with **`400`** `INVALID_OWNER_KEY` (“Signed-in clients must not send ownerKey.”).
+
+**Guest**
+
+- Body **must include** `ownerKey` (non-empty after trim).
+
+**Success **`201`**:** creation document JSON (Mongo fields including `_id`).
+
+#### Get / update / delete one creation
+
+- **GET** `/api/creations/:id`
+- **PATCH** `/api/creations/:id`
+- **DELETE** `/api/creations/:id`
+
+**Signed in**
+
+- Allowed only if the creation’s **`userId`** equals the JWT user (`403 FORBIDDEN` otherwise). Not found **`404`** if id missing.
+
+**Guest**
+
+- Allowed only for **guest** creations (document has **`ownerKey`**, **`userId` not set**) **and** when query **`ownerKey`** matches that document.
+
+**Important for guests**
+
+- **`GET`/`PATCH`/`DELETE`** must include `?ownerKey=...` (same value used at create/list time). Omitting or wrong key: **`403`** with `OWNER_KEY_REQUIRED` or `FORBIDDEN`.
+
+**PATCH body**
+
+- Same fields as create where applicable (`title`, `editorPayload`, `status`, `exportAssetId`). Partial updates follow controller merge rules (`trackedMediaIds` union, etc.).
+
+**DELETE**
+
+- Deletes the creation document and best-effort deletes associated GridFS media referenced by the payload/export.
+
+Persists drafts and exports referenced from the frontend “My Creations” and editor flows. See `docs/database-contract.md` for the `creations` document shape.
 
 ## Error response shape
 

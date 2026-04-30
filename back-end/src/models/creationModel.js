@@ -2,11 +2,15 @@ import mongoose from 'mongoose'
 
 const creationSchema = new mongoose.Schema(
 	{
+		userId: {
+			type: mongoose.Schema.Types.ObjectId,
+			ref: 'User',
+			default: null,
+		},
+		/** Stable browser id for drafts when not signed in. Omitted once bound to userId. */
 		ownerKey: {
 			type: String,
-			required: true,
 			trim: true,
-			index: true,
 		},
 		title: {
 			type: String,
@@ -38,6 +42,7 @@ const creationSchema = new mongoose.Schema(
 	}
 )
 
+creationSchema.index({ userId: 1, updatedAt: -1 })
 creationSchema.index({ ownerKey: 1, updatedAt: -1 })
 
 export const Creation = mongoose.model('Creation', creationSchema)

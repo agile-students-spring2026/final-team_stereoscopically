@@ -23,9 +23,13 @@ Front-end tests are organized under a single top-level folder:
 
 This mirrors the back-end convention (`back-end/test/**`) for consistent project structure.
 
-Run the front-end unit tests:
+Run the front-end unit tests (single run, exits when finished):
 
-- `npm test`
+- `npm test -- --run`
+
+From the repository root:
+
+- `cd front-end && npm test -- --run`
 
 Run in watch mode while developing:
 

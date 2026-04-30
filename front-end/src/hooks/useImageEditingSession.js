@@ -820,7 +820,7 @@ const useImageEditingSession = ({
       setLatestExportResult(exported)
       setLastExportLetterbox(letterboxColor)
       downloadFile(exported.downloadUrl || exported.url, exported.fileName || 'sticker.png')
-      return true
+      return exported
     } catch (err) {
       console.error('Download export failed:', err)
       setExportError(err?.message || 'Failed to download exported image.')

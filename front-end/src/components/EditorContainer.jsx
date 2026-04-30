@@ -12,6 +12,7 @@ import GifEditorFlow from './gif/GifEditorFlow'
 import useMediaSelection, { MEDIA_SELECTION_CODES } from '../hooks/useMediaSelection'
 import useGifEditingSession from '../hooks/useGifEditingSession'
 import useImageEditingSession from '../hooks/useImageEditingSession'
+import { buildSuggestedDraftTitle } from '../utils/buildCreationPayload.js'
 
 const SCREENS = {
   EDITOR: 'editor',
@@ -65,7 +66,7 @@ function EditorContainer({ onDraftSaved, onSelectCreation }) {
 
   const [screen, setScreen] = useState(SCREENS.EDITOR)
   const [activeDraftId, setActiveDraftId] = useState(null)
-  const [activeDraftTitle, setActiveDraftTitle] = useState(null)
+  const [draftTitle, setDraftTitle] = useState(null)
   const [imageDraftSourceMediaId, setImageDraftSourceMediaId] = useState(null)
   const [videoDraftSourceMediaId, setVideoDraftSourceMediaId] = useState(null)
   const [fileTooLargeMessage, setFileTooLargeMessage] = useState(null)
@@ -89,7 +90,7 @@ function EditorContainer({ onDraftSaved, onSelectCreation }) {
 
   const handleActiveDraftSaved = useCallback((id, title) => {
     if (id) setActiveDraftId(id)
-    if (title) setActiveDraftTitle(title)
+    if (typeof title === 'string' && title.trim()) setDraftTitle(title.trim())
   }, [])
 
   const handleImageSelect = async (file) => {
@@ -120,7 +121,7 @@ function EditorContainer({ onDraftSaved, onSelectCreation }) {
     setFileTooLargeMessage(null)
     resetImageEditingSessionState()
     setActiveDraftId(null)
-    setActiveDraftTitle(null)
+    setDraftTitle(buildSuggestedDraftTitle({ file, preset: null, kind: 'image' }))
     setImageDraftSourceMediaId(null)
     setVideoDraftSourceMediaId(null)
     setAppliedTextOverlay(null)
@@ -173,7 +174,7 @@ function EditorContainer({ onDraftSaved, onSelectCreation }) {
       if (result?.applied) {
         if (!preserveDraftIdentity) {
           setActiveDraftId(null)
-          setActiveDraftTitle(null)
+          setDraftTitle(buildSuggestedDraftTitle({ file, preset: null, kind: 'gif' }))
           setImageDraftSourceMediaId(null)
           setVideoDraftSourceMediaId(null)
         }
@@ -183,7 +184,7 @@ function EditorContainer({ onDraftSaved, onSelectCreation }) {
           setPendingVideoDraftPayload(null)
         } else if (!preserveDraftIdentity) {
           setActiveDraftId(null)
-          setActiveDraftTitle(null)
+          setDraftTitle(buildSuggestedDraftTitle({ file, preset: null, kind: 'gif' }))
           gifSession.resetGifSession({ preserveSelectedSpeed })
         }
 
@@ -206,7 +207,7 @@ function EditorContainer({ onDraftSaved, onSelectCreation }) {
     gifSession.resetGifSession()
     setPendingVideoDraftPayload(null)
     setActiveDraftId(null)
-    setActiveDraftTitle(null)
+    setDraftTitle(null)
     setImageDraftSourceMediaId(null)
     setVideoDraftSourceMediaId(null)
     setAppliedTextOverlay(null)
@@ -224,7 +225,7 @@ function EditorContainer({ onDraftSaved, onSelectCreation }) {
       setShowDraftLoadCancel(false)
 
       const draftId = String(creation._id ?? creation.id)
-      const nextDraftTitle =
+      const loadedTitle =
         typeof creation?.title === 'string' && creation.title.trim() ? creation.title.trim() : null
       const { sourceMediaId, workingMediaId, resumeMediaId } = resolveDraftMediaIds(payload)
 
@@ -237,7 +238,14 @@ function EditorContainer({ onDraftSaved, onSelectCreation }) {
         gifSession.resetGifSession()
         setPendingVideoDraftPayload(null)
         setActiveDraftId(draftId)
-        setActiveDraftTitle(nextDraftTitle)
+        setDraftTitle(
+          loadedTitle ||
+            buildSuggestedDraftTitle({
+              file: { name: `${payload?.kind || 'draft'}.restore` },
+              preset: null,
+              kind: payload?.kind === 'video' ? 'gif' : 'image',
+            }),
+        )
         setImageDraftSourceMediaId(sourceMediaId)
         setVideoDraftSourceMediaId(null)
 
@@ -262,7 +270,7 @@ function EditorContainer({ onDraftSaved, onSelectCreation }) {
         } else {
           setDraftLoadError('Could not restore draft image. The file may have expired.')
           setActiveDraftId(null)
-          setActiveDraftTitle(null)
+          setDraftTitle(null)
           setImageDraftSourceMediaId(null)
           setAppliedTextOverlay(null)
           setPreTextWorkingMediaId(null)
@@ -286,7 +294,14 @@ function EditorContainer({ onDraftSaved, onSelectCreation }) {
         resetImageEditingSessionState()
         gifSession.resetGifSession()
         setActiveDraftId(draftId)
-        setActiveDraftTitle(nextDraftTitle)
+        setDraftTitle(
+          loadedTitle ||
+            buildSuggestedDraftTitle({
+              file: { name: 'video.restore' },
+              preset: null,
+              kind: 'gif',
+            }),
+        )
         setImageDraftSourceMediaId(null)
         setVideoDraftSourceMediaId(sourceMediaId)
         setPendingVideoDraftPayload(null)
@@ -363,7 +378,7 @@ function EditorContainer({ onDraftSaved, onSelectCreation }) {
           setDraftLoadError('Could not restore draft video. The file may have expired.')
           setPendingVideoDraftPayload(normalizedPayload)
           setActiveDraftId(null)
-          setActiveDraftTitle(null)
+          setDraftTitle(null)
         } finally {
           setIsDraftLoading(false)
         }
@@ -462,7 +477,8 @@ function EditorContainer({ onDraftSaved, onSelectCreation }) {
           originalVideoFile={originalVideoFile}
           draft={{
             activeDraftId,
-            activeDraftTitle,
+            draftTitle,
+            onDraftTitleChange: setDraftTitle,
             effectiveVideoDraftSourceMediaId,
             onActiveDraftSaved: handleActiveDraftSaved,
           }}
@@ -478,7 +494,8 @@ function EditorContainer({ onDraftSaved, onSelectCreation }) {
           media={{ selectedMedia, isUploading, uploadError }}
           draft={{
             activeDraftId,
-            activeDraftTitle,
+            draftTitle,
+            onDraftTitleChange: setDraftTitle,
             effectiveImageDraftSourceMediaId,
             onActiveDraftSaved: handleActiveDraftSaved,
           }}
@@ -510,7 +527,7 @@ function EditorContainer({ onDraftSaved, onSelectCreation }) {
                   onClick={() => {
                     setPendingVideoDraftPayload(null)
                     setActiveDraftId(null)
-                    setActiveDraftTitle(null)
+                    setDraftTitle(null)
                     setIsDraftLoading(false)
                     setShowDraftLoadCancel(false)
                   }}

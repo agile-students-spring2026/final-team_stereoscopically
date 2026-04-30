@@ -34,6 +34,9 @@ const resolveGifResizeBorderColor = (rawColor) => {
 		return { error: { status: 400, error: 'Invalid resize border color.', code: 'INVALID_RESIZE_BORDER_COLOR' } }
 	}
 	const color = rawColor.trim()
+	if (color.toLowerCase() === 'transparent') {
+		return { borderColor: 'transparent' }
+	}
 	if (!/^#[0-9A-Fa-f]{6}$/.test(color)) {
 		return { error: { status: 400, error: 'Invalid resize border color. Use a #RRGGBB hex value.', code: 'INVALID_RESIZE_BORDER_COLOR' } }
 	}
@@ -174,10 +177,13 @@ export const trimVideo = async (req) => {
 	try {
 		const duration = trimEndNum - trimStartNum
 		const targetSize = GIF_RESIZE_PRESET_DIMENSIONS[parsedResizePreset.preset]
-		const ffmpegPadColor = `0x${parsedResizeBorderColor.borderColor.slice(1)}`
-		const filterChain = [
-			`fps=10,scale=${targetSize.width}:${targetSize.height}:force_original_aspect_ratio=decrease:flags=lanczos,pad=${targetSize.width}:${targetSize.height}:(ow-iw)/2:(oh-ih)/2:color=${ffmpegPadColor}`,
-		]
+		const { width: tw, height: th } = targetSize
+		const scalePadStep =
+			parsedResizeBorderColor.borderColor === 'transparent'
+				? `fps=10,scale=${tw}:${th}:force_original_aspect_ratio=decrease:flags=lanczos,format=rgba,pad=${tw}:${th}:(ow-iw)/2:(oh-ih)/2:color=#00000000`
+				: `fps=10,scale=${tw}:${th}:force_original_aspect_ratio=decrease:flags=lanczos,pad=${tw}:${th}:(ow-iw)/2:(oh-ih)/2:color=0x${parsedResizeBorderColor.borderColor.slice(1)}`
+
+		const filterChain = [scalePadStep]
 		if (parsedTextOverlay.value) {
 			filterChain.push(buildGifDrawtextFilter(parsedTextOverlay.value))
 		}
