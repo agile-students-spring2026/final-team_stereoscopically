@@ -190,7 +190,34 @@ function ImageEditorFlow({ imageSession, media, draft, textOverlay, onBack, onDr
       onBack={onBack}
       onOpenFilters={handleOpenFilters}
       onSize={handleOpenSizes}
-      onExport={handleExport}
+      onExport={async () => {
+        const success = await handleExport()
+        if (success) {
+          try {
+            if (activeDraftId) {
+              await updateCreation(activeDraftId, { status: 'exported' })
+            } else {
+              const result = await createCreation({
+                ownerKey: getOrCreateOwnerKey(),
+                title: defaultCreationTitle(selectedMedia),
+                editorPayload: buildImageCreationPayload({
+                  backendMediaId: effectiveBackendMediaId,
+                  lastCropBoxPx,
+                  colorAdjustments,
+                  selectedImageFilterPreset,
+                  selectedPreset,
+                  letterboxColor,
+                }),
+                status: 'exported',
+              })
+              const id = result?._id ?? result?.id
+              if (id) onActiveDraftSaved(String(id), null)
+            }
+          } catch (err) {
+            console.warn('Could not persist export status:', err)
+          }
+        }
+      }}
       onSaveForLater={handleSaveForLaterImage}
       isSavingDraft={isSavingDraft}
       saveDraftError={saveForLaterError}
