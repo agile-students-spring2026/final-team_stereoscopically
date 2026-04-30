@@ -11,6 +11,7 @@ This backend provides image-processing endpoints for the StickerCreate app. It i
 - Multer (multipart upload handling)
 - Sharp (image processing)
 - Fluent-ffmpeg + @ffmpeg-installer/ffmpeg (video trim/filter processing)
+- Mongoose Models for app data and JWT auth flows
 
 ## Setup
 
@@ -19,7 +20,20 @@ npm install
 cp .env.example .env
 ```
 
-Configure `.env` with your MongoDB Atlas credentials before running the server.
+Configure `.env` from `.env.example` with your MongoDB Atlas URI (`MONGODB_URI`) and auth secret (`JWT_SECRET`) before running the server.
+
+### Authentication compliance (JWT + validation)
+
+The database sprint requires JWT-based authorization, secrets in `.env` (never committed), and validating incoming body fields before persisting to MongoDB via Mongoose:
+
+- Registration and login use **bcrypt-hashed passwords** (`passwordHash` in the DB; plaintext passwords never stored).
+- Successful **register/signup** or **login/signin** returns a JWT signed with **HS256**, configured via `JWT_SECRET` with expiry `JWT_EXPIRES_IN` (default `7d`).
+- Protected routes validate the bearer token middleware-side; **`GET /api/me`** resolves the authenticated user document.
+- `express-validator` runs on auth JSON bodies prior to Mongoose reads/writes; validation failures return **`400`** with an `errors` array.
+
+Aliases for the same handlers: **`POST /api/auth/register`** and **`POST /api/auth/signup`**; **`POST /api/auth/login`** and **`POST /api/auth/signin`**.
+
+Integration tests under `test/auth.routes.test.js` run only when **`MONGODB_URI`** and **`JWT_SECRET`** are set in the environment (same as other Atlas-backed route tests).
 
 ## Scripts
 
@@ -43,6 +57,54 @@ Default server URL: `http://localhost:4000`
 {
   "status": "ok",
   "database": "connected"
+}
+```
+
+### Register / sign-up
+
+- **Methods:** `POST`
+- **Paths:** `/api/auth/register`, `/api/auth/signup`
+
+**JSON body**
+
+- `email` (required string, normalized and validated).
+- `password` (required string, 8–128 characters).
+- `displayName`, `bio`, `avatarUrl` (optional strings; `avatarUrl` must use `http:` or `https:` when supplied).
+
+Success **`201`** response:
+
+```json
+{
+  "token": "<jwt>"
+}
+```
+
+Duplicate email **`409`** with `{ "error": "Email already in use." }`.
+
+### Login / sign-in
+
+- **Methods:** `POST`
+- **Paths:** `/api/auth/login`, `/api/auth/signin`
+
+**JSON body**: `email`, `password`
+
+Success **`200`**: `{ "token": "<jwt>" }`. Wrong credential **`401`**: `{ "error": "Invalid credentials." }`.
+
+### Current account
+
+- **Method:** `GET`
+- **Path:** `/api/me`
+- **Headers:** `Authorization: Bearer <jwt>`
+
+**Success `200`**
+
+```json
+{
+  "id": "...",
+  "email": "...",
+  "displayName": "",
+  "avatarUrl": "",
+  "bio": ""
 }
 ```
 
