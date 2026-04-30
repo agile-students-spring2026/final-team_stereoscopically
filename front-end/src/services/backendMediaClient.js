@@ -22,7 +22,9 @@ const parseErrorMessage = async (response, fallbackMessage = 'Request failed') =
       if (parts.length) return parts.join(' ')
     }
     if (typeof payload?.message === 'string') return payload.message
-  } catch {}
+  } catch {
+    void 0
+  }
 
   return `${fallbackMessage} (${response.status})`
 }

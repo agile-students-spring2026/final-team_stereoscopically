@@ -22,26 +22,34 @@ export const setAuthToken = (token) => {
       localStorage.setItem(STORAGE_KEY, token.trim())
       localStorage.removeItem(DEV_GUEST_KEY)
     }
-  } catch {}
+  } catch {
+    void 0
+  }
 }
 
 export const clearAuthToken = () => {
   try {
     localStorage.removeItem(STORAGE_KEY)
-  } catch {}
+  } catch {
+    void 0
+  }
 }
 
 export const setDevGuestSession = () => {
   try {
     localStorage.removeItem(STORAGE_KEY)
     localStorage.setItem(DEV_GUEST_KEY, '1')
-  } catch {}
+  } catch {
+    void 0
+  }
 }
 
 export const clearDevGuestSession = () => {
   try {
     localStorage.removeItem(DEV_GUEST_KEY)
-  } catch {}
+  } catch {
+    void 0
+  }
 }
 
 export const isDevGuestSession = () => {
