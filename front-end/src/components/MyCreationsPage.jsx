@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { deleteCreation, fetchCreations } from '../services/creationsApi.js'
 import { getCreationKindLabel, getCreationPreviewUrl } from '../utils/creationPreviewUrl.js'
-import { getOrCreateOwnerKey } from '../utils/ownerKey.js'
 
 function CreationPreviewThumb({ row, title }) {
   const url = getCreationPreviewUrl(row)
@@ -134,12 +133,7 @@ function MyCreationsPage({
   const [friends, setFriends] = useState([])
 
   useEffect(() => {
-    if (!isAuthenticated) {
-      return undefined
-    }
-
     let cancelled = false
-    const ownerKey = getOrCreateOwnerKey()
 
     const load = async () => {
       await Promise.resolve()
@@ -150,7 +144,7 @@ function MyCreationsPage({
       setError(null)
 
       try {
-        const data = await fetchCreations(ownerKey)
+        const data = await fetchCreations()
 
         if (!cancelled) {
           setItems(Array.isArray(data) ? data : [])
@@ -250,10 +244,6 @@ function MyCreationsPage({
     () => friendRequests.length + friends.length,
     [friendRequests.length, friends.length]
   )
-
-  if (!isAuthenticated) {
-    return <GuestProfileView onGoSignIn={onGoSignIn} onGoSignUp={onGoSignUp} />
-  }
 
   const renderDraftsContent = () => {
     if (loading) {
@@ -453,9 +443,17 @@ function MyCreationsPage({
   const draftsSection = (
     <div className="profile-section profile-section--drafts">
       <div className="profile-section-header">
-        <h3 className="profile-section-title">Drafts</h3>
+        <h3 className="profile-section-title">
+          {isAuthenticated ? 'Drafts' : 'Drafts on this browser'}
+        </h3>
         {!loading && !error ? <span className="profile-section-count">{items.length}</span> : null}
       </div>
+
+      {!isAuthenticated ? (
+        <p className="profile-guest-drafts-hint">
+          Saved locally for this browser. Sign in to keep creations on your account.
+        </p>
+      ) : null}
 
       <div className="profile-section-body">{renderDraftsContent()}</div>
     </div>
@@ -485,56 +483,65 @@ function MyCreationsPage({
 
   return (
     <div className="profile-page" role="region" aria-label="Profile">
-      <div className="profile-header">
-        <div className="profile-avatar" aria-hidden="true">
-          <span className="profile-avatar-initials">{profileInitials(currentUser)}</span>
+      {!isAuthenticated ? (
+        <GuestProfileView onGoSignIn={onGoSignIn} onGoSignUp={onGoSignUp} />
+      ) : (
+        <div className="profile-header">
+          <div className="profile-avatar" aria-hidden="true">
+            <span className="profile-avatar-initials">{profileInitials(currentUser)}</span>
+          </div>
+
+          <p className="profile-name">{profileDisplayName(currentUser)}</p>
+          <p className="profile-bio">{profileBioText(currentUser)}</p>
+
+          <div className="profile-socials">
+            <button type="button" className="profile-social-link">
+              Instagram
+            </button>
+
+            <button type="button" className="profile-social-link">
+              Twitter
+            </button>
+          </div>
         </div>
-
-        <p className="profile-name">{profileDisplayName(currentUser)}</p>
-        <p className="profile-bio">{profileBioText(currentUser)}</p>
-
-        <div className="profile-socials">
-          <button type="button" className="profile-social-link">
-            Instagram
-          </button>
-
-          <button type="button" className="profile-social-link">
-            Twitter
-          </button>
-        </div>
-      </div>
+      )}
 
       {draftsSection}
-      {showConnectionsBeforeActivity ? connectionsSection : activitySection}
-      {showConnectionsBeforeActivity ? activitySection : connectionsSection}
 
-      <div className="profile-account">
-        <p className="profile-account-title">Account</p>
+      {isAuthenticated ? (
+        <>
+          {showConnectionsBeforeActivity ? connectionsSection : activitySection}
+          {showConnectionsBeforeActivity ? activitySection : connectionsSection}
 
-        <div className="profile-account-actions">
-          <button type="button" className="profile-account-action">
-            <span>Change Email</span>
-            <span className="profile-account-action-arrow" aria-hidden="true">
-              ›
-            </span>
-          </button>
+          <div className="profile-account">
+            <p className="profile-account-title">Account</p>
 
-          <button type="button" className="profile-account-action">
-            <span>Change Password</span>
-            <span className="profile-account-action-arrow" aria-hidden="true">
-              ›
-            </span>
-          </button>
+            <div className="profile-account-actions">
+              <button type="button" className="profile-account-action">
+                <span>Change Email</span>
+                <span className="profile-account-action-arrow" aria-hidden="true">
+                  ›
+                </span>
+              </button>
 
-          <button
-            type="button"
-            className="profile-account-action profile-account-action--danger"
-            onClick={onSignOut}
-          >
-            Sign Out
-          </button>
-        </div>
-      </div>
+              <button type="button" className="profile-account-action">
+                <span>Change Password</span>
+                <span className="profile-account-action-arrow" aria-hidden="true">
+                  ›
+                </span>
+              </button>
+
+              <button
+                type="button"
+                className="profile-account-action profile-account-action--danger"
+                onClick={onSignOut}
+              >
+                Sign Out
+              </button>
+            </div>
+          </div>
+        </>
+      ) : null}
 
       {pendingDelete ? (
         <div className="my-creations-modal-backdrop" role="presentation" onClick={cancelDelete}>
