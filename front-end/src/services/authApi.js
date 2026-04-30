@@ -1,4 +1,4 @@
-import { getJson, postJson } from './backendMediaClient.js'
+import { getJson, patchJson, postJson } from './backendMediaClient.js'
 import { clearAuthToken, getAuthToken, setAuthToken } from '../auth/authSession.js'
 
 const pickToken = (body) =>
@@ -34,6 +34,33 @@ export const fetchCurrentUser = async () => {
   if (!getAuthToken()) return null
   return getJson({ path: '/api/me', fallbackErrorMessage: 'Could not load account' })
 }
+
+export const changeEmail = async ({ email }) => {
+  const body = await patchJson({
+    path: '/api/me/email',
+    payload: { email },
+    fallbackErrorMessage: 'Could not change email',
+  })
+  const token = pickToken(body)
+  if (!token) throw new Error('Invalid server response')
+  setAuthToken(token)
+  return fetchCurrentUser()
+}
+
+export const changePassword = async ({ currentPassword, newPassword }) =>
+  patchJson({
+    path: '/api/me/password',
+    payload: { currentPassword, newPassword },
+    fallbackErrorMessage: 'Could not change password',
+  })
+
+export const verifyCurrentPassword = async ({ currentPassword }) =>
+  postJson({
+    path: '/api/me/password/verify',
+    payload: { currentPassword },
+    fallbackErrorMessage: 'Current password is incorrect',
+    suppressUnauthorizedRedirect: true,
+  })
 
 export const logoutSession = () => {
   clearAuthToken()
