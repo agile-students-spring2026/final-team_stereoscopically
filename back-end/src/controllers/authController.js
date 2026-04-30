@@ -104,3 +104,96 @@ export const me = async (req, res) => {
 		bio: doc.bio ?? '',
 	})
 }
+
+export const changeEmail = async (req, res) => {
+	if (!process.env.JWT_SECRET) {
+		return res.status(500).json({ error: 'Server JWT configuration missing.' })
+	}
+
+	const doc = req.authUserDoc
+	if (!doc) {
+		return res.status(401).json({ error: 'Authentication required.' })
+	}
+
+	const nextEmail =
+		typeof req.body.email === 'string' ? req.body.email.trim().toLowerCase() : ''
+
+	if (nextEmail === doc.email) {
+		const token = tokenForUser(doc)
+		return res.status(200).json({ token })
+	}
+
+	try {
+		doc.email = nextEmail
+		await doc.save()
+		const token = tokenForUser(doc)
+		return res.status(200).json({ token })
+	} catch (err) {
+		if (err instanceof mongoose.Error.ValidationError) {
+			return res.status(400).json({ error: 'Invalid email.' })
+		}
+		if (err.code === 11000) {
+			return res.status(409).json({ error: 'Email already in use.' })
+		}
+		console.error('changeEmail error:', err)
+		return res.status(500).json({ error: 'Could not change email.' })
+	}
+}
+
+export const changePassword = async (req, res) => {
+	const doc = req.authUserDoc
+	if (!doc) {
+		return res.status(401).json({ error: 'Authentication required.' })
+	}
+
+	const currentPassword = req.body.currentPassword
+	const newPassword = req.body.newPassword
+
+	try {
+		const userDoc = await User.findById(doc._id).exec()
+		if (!userDoc) {
+			return res.status(401).json({ error: 'Authentication required.' })
+		}
+
+		const currentMatches = await bcrypt.compare(currentPassword, userDoc.passwordHash)
+		if (!currentMatches) {
+			return res.status(401).json({ error: 'Invalid credentials.' })
+		}
+
+		userDoc.passwordHash = await bcrypt.hash(newPassword, BCRYPT_COST)
+		await userDoc.save()
+
+		return res.status(200).json({
+			message: 'Password changed successfully. You can keep using this session, or sign out if you are on a shared device.',
+		})
+	} catch (err) {
+		console.error('changePassword error:', err)
+		return res.status(500).json({ error: 'Could not change password.' })
+	}
+}
+
+export const verifyCurrentPassword = async (req, res) => {
+	const doc = req.authUserDoc
+	if (!doc) {
+		return res.status(401).json({ error: 'Authentication required.' })
+	}
+
+	const currentPassword = req.body.currentPassword
+
+	try {
+		const userDoc = await User.findById(doc._id).exec()
+		if (!userDoc) {
+			return res.status(401).json({ error: 'Authentication required.' })
+		}
+
+		const currentMatches = await bcrypt.compare(currentPassword, userDoc.passwordHash)
+		if (!currentMatches) {
+			return res.status(401).json({ error: 'Invalid credentials.' })
+		}
+
+		return res.status(200).json({ message: 'Current password verified.' })
+	} catch (err) {
+		console.error('verifyCurrentPassword error:', err)
+		return res.status(500).json({ error: 'Could not verify current password.' })
+	}
+}

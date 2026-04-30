@@ -1,7 +1,14 @@
 import { Router } from 'express'
 import { body } from 'express-validator'
 
-import { login, me, register } from '../controllers/authController.js'
+import {
+	changeEmail,
+	changePassword,
+	login,
+	me,
+	register,
+	verifyCurrentPassword,
+} from '../controllers/authController.js'
 import { requireAuth } from '../middleware/authMiddleware.js'
 import { handleValidationErrors } from '../middleware/validateRequest.js'
 
@@ -45,6 +52,22 @@ const loginBody = [
 	body('password').isString().notEmpty().withMessage('Password required'),
 ]
 
+const changeEmailBody = [
+	body('email').trim().normalizeEmail().isEmail().withMessage('Valid email required'),
+]
+
+const changePasswordBody = [
+	body('currentPassword').isString().notEmpty().withMessage('Current password required'),
+	body('newPassword')
+		.isString()
+		.isLength({ min: 8, max: 128 })
+		.withMessage('New password must be between 8 and 128 characters'),
+]
+
+const verifyCurrentPasswordBody = [
+	body('currentPassword').isString().notEmpty().withMessage('Current password required'),
+]
+
 const registerMiddleware = [...registerBody, handleValidationErrors, register]
 const loginMiddleware = [...loginBody, handleValidationErrors, login]
 
@@ -53,5 +76,20 @@ router.post('/api/auth/signup', ...registerMiddleware)
 router.post('/api/auth/login', ...loginMiddleware)
 router.post('/api/auth/signin', ...loginMiddleware)
 router.get('/api/me', requireAuth, me)
+router.patch('/api/me/email', requireAuth, ...changeEmailBody, handleValidationErrors, changeEmail)
+router.patch(
+	'/api/me/password',
+	requireAuth,
+	...changePasswordBody,
+	handleValidationErrors,
+	changePassword
+)
+router.post(
+	'/api/me/password/verify',
+	requireAuth,
+	...verifyCurrentPasswordBody,
+	handleValidationErrors,
+	verifyCurrentPassword
+)
 
 export default router

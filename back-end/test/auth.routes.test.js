@@ -151,4 +151,155 @@ const runAuthIntegration = !!(process.env.MONGODB_URI && process.env.JWT_SECRET)
 
 		await User.deleteOne({ email: email.trim().toLowerCase() })
 	})
+
+	it('PATCH /api/me/email changes email and returns fresh token', async () => {
+		const email = uniqEmail()
+		const nextEmail = uniqEmail()
+
+		const reg = await request(app).post('/api/auth/register').send({
+			email,
+			password: 'emailChange1!',
+		})
+
+		const res = await request(app)
+			.patch('/api/me/email')
+			.set('Authorization', `Bearer ${reg.body.token}`)
+			.send({ email: nextEmail })
+
+		expect(res.status).to.equal(200)
+		expect(res.body).to.have.property('token').that.is.a('string').with.length.gt(12)
+
+		const meWithNewToken = await request(app)
+			.get('/api/me')
+			.set('Authorization', `Bearer ${res.body.token}`)
+
+		expect(meWithNewToken.status).to.equal(200)
+		expect(meWithNewToken.body.email).to.equal(nextEmail.trim().toLowerCase())
+
+		await User.deleteOne({ email: nextEmail.trim().toLowerCase() })
+	})
+
+	it('PATCH /api/me/email rejects duplicate email (409)', async () => {
+		const firstEmail = uniqEmail()
+		const secondEmail = uniqEmail()
+
+		const first = await request(app).post('/api/auth/register').send({
+			email: firstEmail,
+			password: 'emailDup1!',
+		})
+
+		await request(app).post('/api/auth/register').send({
+			email: secondEmail,
+			password: 'emailDup2!',
+		})
+
+		const dup = await request(app)
+			.patch('/api/me/email')
+			.set('Authorization', `Bearer ${first.body.token}`)
+			.send({ email: secondEmail })
+
+		expect(dup.status).to.equal(409)
+		expect(dup.body.error).to.match(/already|use/i)
+
+		await User.deleteOne({ email: firstEmail.trim().toLowerCase() })
+		await User.deleteOne({ email: secondEmail.trim().toLowerCase() })
+	})
+
+	it('PATCH /api/me/password rejects wrong current password', async () => {
+		const email = uniqEmail()
+
+		const reg = await request(app).post('/api/auth/register').send({
+			email,
+			password: 'rightCurrent1!',
+		})
+
+		const res = await request(app)
+			.patch('/api/me/password')
+			.set('Authorization', `Bearer ${reg.body.token}`)
+			.send({
+				currentPassword: 'wrongCurrent1!',
+				newPassword: 'nextPassword1!',
+			})
+
+		expect(res.status).to.equal(401)
+		expect(res.body.error).to.match(/invalid/i)
+
+		await User.deleteOne({ email: email.trim().toLowerCase() })
+	})
+
+	it('POST /api/me/password/verify rejects wrong current password', async () => {
+		const email = uniqEmail()
+
+		const reg = await request(app).post('/api/auth/register').send({
+			email,
+			password: 'verifyCurrent1!',
+		})
+
+		const res = await request(app)
+			.post('/api/me/password/verify')
+			.set('Authorization', `Bearer ${reg.body.token}`)
+			.send({
+				currentPassword: 'wrongCurrent1!',
+			})
+
+		expect(res.status).to.equal(401)
+		expect(res.body.error).to.match(/invalid/i)
+
+		await User.deleteOne({ email: email.trim().toLowerCase() })
+	})
+
+	it('POST /api/me/password/verify accepts correct current password', async () => {
+		const email = uniqEmail()
+
+		const reg = await request(app).post('/api/auth/register').send({
+			email,
+			password: 'verifyCurrent2!',
+		})
+
+		const res = await request(app)
+			.post('/api/me/password/verify')
+			.set('Authorization', `Bearer ${reg.body.token}`)
+			.send({
+				currentPassword: 'verifyCurrent2!',
+			})
+
+		expect(res.status).to.equal(200)
+		expect(res.body.message).to.match(/verified/i)
+
+		await User.deleteOne({ email: email.trim().toLowerCase() })
+	})
+
+	it('PATCH /api/me/password updates password and allows login with new password', async () => {
+		const email = uniqEmail()
+
+		const reg = await request(app).post('/api/auth/register').send({
+			email,
+			password: 'oldPassword1!',
+		})
+
+		const changed = await request(app)
+			.patch('/api/me/password')
+			.set('Authorization', `Bearer ${reg.body.token}`)
+			.send({
+				currentPassword: 'oldPassword1!',
+				newPassword: 'newPassword1!',
+			})
+
+		expect(changed.status).to.equal(200)
+
+		const loginOld = await request(app).post('/api/auth/login').send({
+			email,
+			password: 'oldPassword1!',
+		})
+		expect(loginOld.status).to.equal(401)
+
+		const loginNew = await request(app).post('/api/auth/login').send({
+			email,
+			password: 'newPassword1!',
+		})
+		expect(loginNew.status).to.equal(200)
+		expect(loginNew.body).to.have.property('token')
+
+		await User.deleteOne({ email: email.trim().toLowerCase() })
+	})
 })
