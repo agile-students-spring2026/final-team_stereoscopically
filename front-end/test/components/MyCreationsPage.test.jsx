@@ -7,15 +7,14 @@ import { flushSync } from 'react-dom'
 
 const fetchCreationsMock = vi.fn()
 const deleteCreationMock = vi.fn()
-const getOrCreateOwnerKeyMock = vi.fn(() => 'owner-key-1')
+
+vi.mock('../../src/auth/authSession.js', () => ({
+  getAuthToken: () => 'test-jwt',
+}))
 
 vi.mock('../../src/services/creationsApi.js', () => ({
   fetchCreations: (...args) => fetchCreationsMock(...args),
   deleteCreation: (...args) => deleteCreationMock(...args),
-}))
-
-vi.mock('../../src/utils/ownerKey.js', () => ({
-  getOrCreateOwnerKey: (...args) => getOrCreateOwnerKeyMock(...args),
 }))
 
 import MyCreationsPage from '../../src/components/MyCreationsPage.jsx'
@@ -66,8 +65,6 @@ afterEach(() => {
   vi.restoreAllMocks()
   fetchCreationsMock.mockReset()
   deleteCreationMock.mockReset()
-  getOrCreateOwnerKeyMock.mockReset()
-  getOrCreateOwnerKeyMock.mockReturnValue('owner-key-1')
 })
 
 describe('MyCreationsPage', () => {
@@ -78,7 +75,7 @@ describe('MyCreationsPage', () => {
     const { container, cleanup } = await renderIntoDom(<MyCreationsPage refreshKey={0} />)
 
     expect(container.textContent).toContain('Loading…')
-    expect(fetchCreationsMock).toHaveBeenCalledWith('owner-key-1')
+    expect(fetchCreationsMock).toHaveBeenCalledWith()
 
     deferred.resolve([
       { _id: 'c-1', title: 'First Draft', status: 'draft', editorPayload: { kind: 'image' }, updatedAt: new Date().toISOString() },
