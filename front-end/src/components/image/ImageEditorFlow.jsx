@@ -191,31 +191,39 @@ function ImageEditorFlow({ imageSession, media, draft, textOverlay, onBack, onDr
       onOpenFilters={handleOpenFilters}
       onSize={handleOpenSizes}
       onExport={async () => {
-        const success = await handleExport()
-        if (success) {
-          try {
-            if (activeDraftId) {
-              await updateCreation(activeDraftId, { status: 'exported' })
-            } else {
-              const result = await createCreation({
-                ownerKey: getOrCreateOwnerKey(),
-                title: defaultCreationTitle(selectedMedia),
-                editorPayload: buildImageCreationPayload({
-                  backendMediaId: effectiveBackendMediaId,
-                  lastCropBoxPx,
-                  colorAdjustments,
-                  selectedImageFilterPreset,
-                  selectedPreset,
-                  letterboxColor,
-                }),
-                status: 'exported',
-              })
-              const id = result?._id ?? result?.id
-              if (id) onActiveDraftSaved(String(id), null)
-            }
-          } catch (err) {
-            console.warn('Could not persist export status:', err)
+        const exported = await handleExport()
+        if (!exported?.id) return
+        try {
+          if (activeDraftId) {
+            await updateCreation(activeDraftId, {
+              status: 'exported',
+              exportAssetId: exported.id,
+            })
+          } else {
+            const result = await createCreation({
+              ownerKey: getOrCreateOwnerKey(),
+              title: defaultCreationTitle(selectedMedia),
+              editorPayload: buildImageCreationPayload({
+                sourceMediaId: effectiveImageDraftSourceMediaId || effectiveBackendMediaId,
+                workingMediaId: effectiveBackendMediaId || effectiveImageDraftSourceMediaId,
+                previewMediaId: effectiveBackendMediaId || effectiveImageDraftSourceMediaId,
+                preEditWorkingMediaId: editBaseMediaId || null,
+                preTextWorkingMediaId: preTextWorkingMediaId || null,
+                selectedPreset,
+                letterboxColor,
+                lastCropBoxPx,
+                colorAdjustments,
+                selectedImageFilterPreset,
+                textOverlay: appliedTextOverlay || null,
+              }),
+              status: 'exported',
+              exportAssetId: exported.id,
+            })
+            const id = result?._id ?? result?.id
+            if (id) onActiveDraftSaved(String(id), null)
           }
+        } catch (err) {
+          console.warn('Could not persist export status:', err)
         }
       }}
       onSaveForLater={handleSaveForLaterImage}

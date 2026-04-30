@@ -17,7 +17,7 @@ const collectPayloadMediaIds = ({ editorPayload = {}, exportAssetId = null } = {
 }
 
 export const createCreation = async (req, res) => {
-    const { ownerKey, title, editorPayload, status } = req.body
+    const { ownerKey, title, editorPayload, status, exportAssetId: rawExportId } = req.body
 
     if (!ownerKey || typeof ownerKey !== 'string' || !ownerKey.trim()) {
         return res.status(400).json({ error: 'Missing or invalid ownerKey.', code: 'INVALID_OWNER_KEY' })
@@ -35,14 +35,18 @@ export const createCreation = async (req, res) => {
         return res.status(400).json({ error: 'Missing or invalid editorPayload.', code: 'INVALID_PAYLOAD' })
     }
 
+    const exportAssetId =
+        typeof rawExportId === 'string' && rawExportId.trim() ? rawExportId.trim() : null
+
     try {
-        const trackedMediaIds = collectPayloadMediaIds({ editorPayload })
+        const trackedMediaIds = collectPayloadMediaIds({ editorPayload, exportAssetId })
 
         const creation = await Creation.create({
             ownerKey: ownerKey.trim(),
             title: title.trim(),
             editorPayload,
             status: status || 'draft',
+            exportAssetId,
             trackedMediaIds,
         })
 

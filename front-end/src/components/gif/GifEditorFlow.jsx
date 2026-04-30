@@ -126,6 +126,61 @@ function GifEditorFlow({ gifSession, media, originalVideoFile, draft, onVideoSel
     selectedMedia,
   ])
 
+  const handleExportGifAndPersist = useCallback(
+    async (videoFile, trimOverrides) => {
+      const exported = await gifSession.createAndExportGif(videoFile, trimOverrides)
+      if (!exported?.id) return
+      const sourceMediaId = effectiveVideoDraftSourceMediaId || null
+      const workingMediaId = backendVideoResult?.id || sourceMediaId
+      if (!workingMediaId) return
+      try {
+        const title = activeDraftTitle || defaultCreationTitle(selectedMedia)
+        const editorPayload = buildVideoCreationPayload({
+          sourceMediaId,
+          workingMediaId,
+          previewMediaId: workingMediaId,
+          trimRange: gifSession.trimRange,
+          resizePreset: gifSession.resizePreset,
+          resizeBorderColor: gifSession.resizeBorderColor,
+          selectedSpeedPlaybackRate: gifSession.selectedSpeedPlaybackRate,
+          textOverlaySettings: gifSession.textOverlaySettings,
+          selectedFilterPreset: gifSession.selectedFilterPreset,
+        })
+        if (activeDraftId) {
+          await updateCreation(activeDraftId, {
+            status: 'exported',
+            exportAssetId: exported.id,
+          })
+        } else {
+          const result = await createCreation({
+            ownerKey: getOrCreateOwnerKey(),
+            title,
+            editorPayload,
+            status: 'exported',
+            exportAssetId: exported.id,
+          })
+          const id = result?._id ?? result?.id
+          if (id) {
+            onActiveDraftSaved(String(id), title)
+          }
+        }
+        onDraftSaved?.()
+      } catch (err) {
+        console.warn('Could not persist GIF export:', err)
+      }
+    },
+    [
+      activeDraftId,
+      activeDraftTitle,
+      backendVideoResult?.id,
+      effectiveVideoDraftSourceMediaId,
+      gifSession,
+      onActiveDraftSaved,
+      onDraftSaved,
+      selectedMedia,
+    ],
+  )
+
   const videoKey = selectedMedia
     ? `${selectedMedia.name ?? selectedMedia.id ?? 'video'}-${selectedMedia.lastModified ?? ''}-${selectedMedia.size ?? ''}`
     : 'video'
@@ -244,7 +299,7 @@ function GifEditorFlow({ gifSession, media, originalVideoFile, draft, onVideoSel
         textOverlaySettings: gifSession.textOverlaySettings,
       }}
       onCancel={onBack}
-      onCreateGif={(videoFile, trimOverrides) => gifSession.createAndExportGif(videoFile, trimOverrides)}
+      onCreateGif={handleExportGifAndPersist}
       onOpenTrim={() => gifSession.openGifTool(gifSession.GIF_FLOW_TOOLS.TRIM)}
       onOpenResize={() => gifSession.openGifTool(gifSession.GIF_FLOW_TOOLS.RESIZE)}
       onOpenFilters={() => gifSession.openGifTool(gifSession.GIF_FLOW_TOOLS.FILTERS_MAIN)}
