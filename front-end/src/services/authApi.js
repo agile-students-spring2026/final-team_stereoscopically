@@ -1,5 +1,5 @@
 import { getJson, postJson } from './backendMediaClient.js'
-import { clearAuthToken, clearDevGuestSession, getAuthToken, setAuthToken } from '../auth/authSession.js'
+import { clearAuthToken, getAuthToken, setAuthToken } from '../auth/authSession.js'
 
 const pickToken = (body) =>
   (body && typeof body === 'object' && (body.token || body.accessToken)) || ''
@@ -37,5 +37,4 @@ export const fetchCurrentUser = async () => {
 
 export const logoutSession = () => {
   clearAuthToken()
-  clearDevGuestSession()
 }

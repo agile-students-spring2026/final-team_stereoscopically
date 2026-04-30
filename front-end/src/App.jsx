@@ -1,13 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import './App.css'
-import {
-  clearAuthToken,
-  clearDevGuestSession,
-  DEV_GUEST_PROFILE,
-  getAuthToken,
-  isDevGuestSession,
-  setDevGuestSession,
-} from './auth/authSession.js'
+import { clearAuthToken, getAuthToken } from './auth/authSession.js'
 import AuthLanding from './components/AuthLanding'
 import EditorContainer from './components/EditorContainer'
 import HomeView from './components/HomeView'
@@ -31,21 +24,16 @@ const APP_VIEWS = {
 
 function App() {
   const [appScreen, setAppScreen] = useState(() =>
-    getAuthToken() || isDevGuestSession() ? APP_SCREENS.APP : APP_SCREENS.LANDING
+    getAuthToken() ? APP_SCREENS.APP : APP_SCREENS.LANDING
   )
-  const [isAuthenticated, setIsAuthenticated] = useState(() =>
-    getAuthToken() ? false : Boolean(isDevGuestSession())
-  )
-  const [currentUser, setCurrentUser] = useState(() =>
-    isDevGuestSession() && !getAuthToken() ? DEV_GUEST_PROFILE : null
-  )
+  const [isAuthenticated, setIsAuthenticated] = useState(false)
+  const [currentUser, setCurrentUser] = useState(null)
   const [activeView, setActiveView] = useState(APP_VIEWS.HOME)
   const [creationsRefreshKey, setCreationsRefreshKey] = useState(0)
   const loadDraftRef = useRef(null)
 
   useEffect(() => {
     const onExpire = () => {
-      clearDevGuestSession()
       setCurrentUser(null)
       setIsAuthenticated(false)
       setAppScreen(APP_SCREENS.SIGN_IN)
@@ -64,7 +52,6 @@ function App() {
         setCurrentUser(user)
         setIsAuthenticated(true)
         setAppScreen(APP_SCREENS.APP)
-        clearDevGuestSession()
       } catch {
         if (!cancelled) {
           clearAuthToken()
@@ -83,9 +70,6 @@ function App() {
     setTimeout(() => loadDraftRef.current?.(creation), 0)
   }, [])
 
-  const showDevGuestEntry =
-    import.meta.env.DEV || import.meta.env.VITE_ENABLE_DEV_GUEST === 'true'
-
   if (appScreen === APP_SCREENS.LANDING) {
     return (
       <AuthLanding
@@ -93,21 +77,10 @@ function App() {
         onSignUp={() => setAppScreen(APP_SCREENS.SIGN_UP)}
         onGuest={() => {
           clearAuthToken()
-          clearDevGuestSession()
           setCurrentUser(null)
           setIsAuthenticated(false)
           setAppScreen(APP_SCREENS.APP)
         }}
-        onDevGuest={
-          showDevGuestEntry
-            ? () => {
-                setDevGuestSession()
-                setCurrentUser(DEV_GUEST_PROFILE)
-                setIsAuthenticated(true)
-                setAppScreen(APP_SCREENS.APP)
-              }
-            : undefined
-        }
       />
     )
   }
