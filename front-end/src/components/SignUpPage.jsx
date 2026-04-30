@@ -4,6 +4,8 @@ function SignUpPage({ onSignUp, onBack, onGoSignIn }) {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [confirm, setConfirm] = useState('')
+  const [showPassword, setShowPassword] = useState(false)
+  const [showConfirm, setShowConfirm] = useState(false)
 
   const handleSubmit = (e) => {
     e.preventDefault()
@@ -36,29 +38,49 @@ function SignUpPage({ onSignUp, onBack, onGoSignIn }) {
             <label htmlFor="signup-password" className="auth-label">
               Password
             </label>
-            <input
-              id="signup-password"
-              type="password"
-              className="auth-input"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="••••••••"
-              autoComplete="new-password"
-            />
+            <div style={{ position: 'relative' }}>
+              <input
+                id="signup-password"
+                type={showPassword ? 'text' : 'password'}
+                className="auth-input"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="••••••••"
+                autoComplete="new-password"
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword((prev) => !prev)}
+                style={{ position: 'absolute', right: '10px', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer' }}
+                aria-label={showPassword ? 'Hide password' : 'Show password'}
+              >
+                {showPassword ? 'Hide' : 'Show'}
+              </button>
+            </div>
           </div>
           <div className="auth-field">
             <label htmlFor="signup-confirm" className="auth-label">
               Confirm Password
             </label>
-            <input
-              id="signup-confirm"
-              type="password"
-              className="auth-input"
-              value={confirm}
-              onChange={(e) => setConfirm(e.target.value)}
-              placeholder="••••••••"
-              autoComplete="new-password"
-            />
+            <div style={{ position: 'relative' }}>
+              <input
+                id="signup-confirm"
+                type={showConfirm ? 'text' : 'password'}
+                className="auth-input"
+                value={confirm}
+                onChange={(e) => setConfirm(e.target.value)}
+                placeholder="••••••••"
+                autoComplete="new-password"
+              />
+              <button
+                type="button"
+                onClick={() => setShowConfirm((prev) => !prev)}
+                style={{ position: 'absolute', right: '10px', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer' }}
+                aria-label={showConfirm ? 'Hide password' : 'Show password'}
+              >
+                {showConfirm ? 'Hide' : 'Show'}
+              </button>
+            </div>
           </div>
           <button type="submit" className="btn-primary auth-action-btn">
             Create Account
