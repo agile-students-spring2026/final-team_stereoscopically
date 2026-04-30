@@ -59,6 +59,32 @@ const formatUpdated = (iso) => {
   }
 }
 
+const profileDisplayName = (user) => {
+  const d = user?.displayName?.trim()
+  if (d) return d
+  const e = user?.email?.trim()
+  if (e) return e
+  return 'Your Name'
+}
+
+const profileBioText = (user) => {
+  const b = user?.bio?.trim()
+  if (b) return b
+  return 'No bio yet.'
+}
+
+const profileInitials = (user) => {
+  const dn = user?.displayName?.trim()
+  if (dn) {
+    const parts = dn.split(/\s+/).filter(Boolean)
+    if (parts.length >= 2) return (parts[0][0] + parts[1][0]).toUpperCase().slice(0, 2)
+    if (parts[0]) return parts[0].slice(0, 2).toUpperCase()
+  }
+  const em = user?.email?.trim()
+  if (em) return em.slice(0, 2).toUpperCase()
+  return 'SC'
+}
+
 function GuestProfileView({ onGoSignIn, onGoSignUp }) {
   return (
     <div className="profile-guest">
@@ -91,6 +117,7 @@ function MyCreationsPage({
   refreshKey = 0,
   onSelectCreation,
   isAuthenticated = true,
+  currentUser = null,
   onGoSignIn,
   onGoSignUp,
   onSignOut,
@@ -458,11 +485,11 @@ function MyCreationsPage({
     <div className="profile-page" role="region" aria-label="Profile">
       <div className="profile-header">
         <div className="profile-avatar" aria-hidden="true">
-          <span className="profile-avatar-initials">SC</span>
+          <span className="profile-avatar-initials">{profileInitials(currentUser)}</span>
         </div>
 
-        <p className="profile-name">Your Name</p>
-        <p className="profile-bio">No bio yet.</p>
+        <p className="profile-name">{profileDisplayName(currentUser)}</p>
+        <p className="profile-bio">{profileBioText(currentUser)}</p>
 
         <div className="profile-socials">
           <button type="button" className="profile-social-link">

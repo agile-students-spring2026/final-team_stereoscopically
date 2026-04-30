@@ -1,4 +1,4 @@
-function AuthLanding({ onSignIn, onSignUp, onGuest }) {
+function AuthLanding({ onSignIn, onSignUp, onGuest, onDevGuest }) {
   return (
     <div className="auth-screen">
       <div className="auth-landing-brand">
@@ -15,6 +15,11 @@ function AuthLanding({ onSignIn, onSignUp, onGuest }) {
         <button type="button" className="auth-guest-btn" onClick={onGuest}>
           Continue as Guest
         </button>
+        {onDevGuest ? (
+          <button type="button" className="auth-dev-guest-btn" onClick={onDevGuest}>
+            Dev session (no backend login)
+          </button>
+        ) : null}
       </div>
     </div>
   )

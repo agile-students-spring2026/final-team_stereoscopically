@@ -1602,6 +1602,29 @@ input[type='range']::-moz-range-thumb {
   border-radius: 4px;
 }
 
+.auth-dev-guest-btn {
+  margin-top: 0.25rem;
+  background: none;
+  border: none;
+  color: #888;
+  font-size: 0.8rem;
+  cursor: pointer;
+  padding: 0.35rem;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  font-family: inherit;
+}
+
+.auth-dev-guest-btn:hover {
+  color: #555;
+}
+
+.auth-dev-guest-btn:focus-visible {
+  outline: 2px solid rgba(100, 108, 255, 0.35);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
 .auth-card {
   width: 100%;
   max-width: 360px;

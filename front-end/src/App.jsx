@@ -1,11 +1,20 @@
-import { useCallback, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import './App.css'
+import {
+  clearAuthToken,
+  clearDevGuestSession,
+  DEV_GUEST_PROFILE,
+  getAuthToken,
+  isDevGuestSession,
+  setDevGuestSession,
+} from './auth/authSession.js'
 import AuthLanding from './components/AuthLanding'
 import EditorContainer from './components/EditorContainer'
 import HomeView from './components/HomeView'
 import MyCreationsPage from './components/MyCreationsPage'
 import SignInPage from './components/SignInPage'
 import SignUpPage from './components/SignUpPage'
+import * as authApi from './services/authApi.js'
 
 const APP_SCREENS = {
   LANDING: 'landing',
@@ -21,23 +30,84 @@ const APP_VIEWS = {
 }
 
 function App() {
-  const [appScreen, setAppScreen] = useState(APP_SCREENS.LANDING)
-  const [isAuthenticated, setIsAuthenticated] = useState(false)
+  const [appScreen, setAppScreen] = useState(() =>
+    getAuthToken() || isDevGuestSession() ? APP_SCREENS.APP : APP_SCREENS.LANDING
+  )
+  const [isAuthenticated, setIsAuthenticated] = useState(() =>
+    getAuthToken() ? false : Boolean(isDevGuestSession())
+  )
+  const [currentUser, setCurrentUser] = useState(() =>
+    isDevGuestSession() && !getAuthToken() ? DEV_GUEST_PROFILE : null
+  )
   const [activeView, setActiveView] = useState(APP_VIEWS.HOME)
   const [creationsRefreshKey, setCreationsRefreshKey] = useState(0)
   const loadDraftRef = useRef(null)
+
+  useEffect(() => {
+    const onExpire = () => {
+      clearDevGuestSession()
+      setCurrentUser(null)
+      setIsAuthenticated(false)
+      setAppScreen(APP_SCREENS.SIGN_IN)
+    }
+    window.addEventListener('auth:session-expired', onExpire)
+    return () => window.removeEventListener('auth:session-expired', onExpire)
+  }, [])
+
+  useEffect(() => {
+    if (!getAuthToken()) return undefined
+    let cancelled = false
+    ;(async () => {
+      try {
+        const user = await authApi.fetchCurrentUser()
+        if (cancelled) return
+        setCurrentUser(user)
+        setIsAuthenticated(true)
+        setAppScreen(APP_SCREENS.APP)
+        clearDevGuestSession()
+      } catch {
+        if (!cancelled) {
+          clearAuthToken()
+          setIsAuthenticated(false)
+          setCurrentUser(null)
+        }
+      }
+    })()
+    return () => {
+      cancelled = true
+    }
+  }, [])
 
   const handleSelectCreation = useCallback((creation) => {
     setActiveView(APP_VIEWS.CREATE)
     setTimeout(() => loadDraftRef.current?.(creation), 0)
   }, [])
 
+  const showDevGuestEntry =
+    import.meta.env.DEV || import.meta.env.VITE_ENABLE_DEV_GUEST === 'true'
+
   if (appScreen === APP_SCREENS.LANDING) {
     return (
       <AuthLanding
         onSignIn={() => setAppScreen(APP_SCREENS.SIGN_IN)}
         onSignUp={() => setAppScreen(APP_SCREENS.SIGN_UP)}
-        onGuest={() => setAppScreen(APP_SCREENS.APP)}
+        onGuest={() => {
+          clearAuthToken()
+          clearDevGuestSession()
+          setCurrentUser(null)
+          setIsAuthenticated(false)
+          setAppScreen(APP_SCREENS.APP)
+        }}
+        onDevGuest={
+          showDevGuestEntry
+            ? () => {
+                setDevGuestSession()
+                setCurrentUser(DEV_GUEST_PROFILE)
+                setIsAuthenticated(true)
+                setAppScreen(APP_SCREENS.APP)
+              }
+            : undefined
+        }
       />
     )
   }
@@ -45,7 +115,11 @@ function App() {
   if (appScreen === APP_SCREENS.SIGN_IN) {
     return (
       <SignInPage
-        onSignIn={() => { setIsAuthenticated(true); setAppScreen(APP_SCREENS.APP) }}
+        onSuccess={(user) => {
+          setCurrentUser(user)
+          setIsAuthenticated(true)
+          setAppScreen(APP_SCREENS.APP)
+        }}
         onBack={() => setAppScreen(APP_SCREENS.LANDING)}
         onGoSignUp={() => setAppScreen(APP_SCREENS.SIGN_UP)}
       />
@@ -55,7 +129,11 @@ function App() {
   if (appScreen === APP_SCREENS.SIGN_UP) {
     return (
       <SignUpPage
-        onSignUp={() => { setIsAuthenticated(true); setAppScreen(APP_SCREENS.APP) }}
+        onSuccess={(user) => {
+          setCurrentUser(user)
+          setIsAuthenticated(true)
+          setAppScreen(APP_SCREENS.APP)
+        }}
         onBack={() => setAppScreen(APP_SCREENS.LANDING)}
         onGoSignIn={() => setAppScreen(APP_SCREENS.SIGN_IN)}
       />
@@ -80,9 +158,15 @@ function App() {
           refreshKey={creationsRefreshKey}
           onSelectCreation={handleSelectCreation}
           isAuthenticated={isAuthenticated}
+          currentUser={currentUser}
           onGoSignIn={() => setAppScreen(APP_SCREENS.SIGN_IN)}
           onGoSignUp={() => setAppScreen(APP_SCREENS.SIGN_UP)}
-          onSignOut={() => { setIsAuthenticated(false); setAppScreen(APP_SCREENS.LANDING) }}
+          onSignOut={() => {
+            authApi.logoutSession()
+            setCurrentUser(null)
+            setIsAuthenticated(false)
+            setAppScreen(APP_SCREENS.LANDING)
+          }}
         />
       )
     }
