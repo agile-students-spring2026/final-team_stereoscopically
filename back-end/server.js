@@ -6,6 +6,7 @@ import { fileURLToPath } from 'url'
 import { PORT } from './src/config/constants.js'
 import { connectToDatabase } from './src/config/database.js'
 import { errorHandler, notFoundHandler } from './src/middleware/errorMiddleware.js'
+import authRoutes from './src/routes/authRoutes.js'
 import mediaRoutes from './src/routes/mediaRoutes.js'
 import creationRoutes from './src/routes/creationRoutes.js'
 
@@ -13,6 +14,7 @@ const app = express()
 
 app.use(cors())
 app.use(express.json())
+app.use(authRoutes)
 app.use(mediaRoutes)
 app.use(creationRoutes) 
 app.use(notFoundHandler)
