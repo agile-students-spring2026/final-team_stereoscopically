@@ -83,7 +83,6 @@ describe('MyCreationsPage', () => {
     await waitForText(container, 'First Draft')
 
     expect(container.textContent).toContain('First Draft')
-    expect(container.textContent).toContain('Draft')
     cleanup()
   })
 
@@ -142,6 +141,87 @@ describe('MyCreationsPage', () => {
     expect(deleteCreationMock).toHaveBeenCalledWith('c-1')
     expect(container.textContent).toContain('No saved stickers yet.')
     expect(container.textContent).not.toContain('Remove Me')
+    cleanup()
+  })
+
+  it('lists only exported stickers in Activity Creations and shows accurate count', async () => {
+    fetchCreationsMock.mockResolvedValueOnce([
+      {
+        _id: 'draft-1',
+        title: 'Work In Progress',
+        status: 'draft',
+        editorPayload: { kind: 'image' },
+        updatedAt: new Date().toISOString(),
+      },
+      {
+        _id: 'exp-1',
+        title: 'Finished Piece',
+        status: 'exported',
+        editorPayload: { kind: 'image' },
+        exportAssetId: '507f1f77bcf86cd799439011',
+        updatedAt: new Date().toISOString(),
+      },
+    ])
+
+    const { container, cleanup } = await renderIntoDom(<MyCreationsPage refreshKey={0} />)
+
+    await waitForText(container, 'Work In Progress')
+
+    expect(container.textContent).toContain('Finished Piece')
+
+    const exportList = container.querySelector('[aria-label="Exported creations"]')
+    expect(exportList).toBeTruthy()
+    expect(exportList.querySelectorAll('li')).toHaveLength(1)
+
+    const draftRows = container.querySelectorAll('.profile-drafts-list .my-creations-item')
+    expect(draftRows.length).toBe(1)
+
+    cleanup()
+  })
+
+  it('shows Activity empty copy when nothing is exported yet', async () => {
+    fetchCreationsMock.mockResolvedValueOnce([
+      {
+        _id: 'd-1',
+        title: 'Draft Only Row',
+        status: 'draft',
+        editorPayload: { kind: 'image' },
+        updatedAt: new Date().toISOString(),
+      },
+    ])
+
+    const { container, cleanup } = await renderIntoDom(<MyCreationsPage refreshKey={0} />)
+
+    await waitForText(container, 'Draft Only Row')
+
+    expect(container.querySelector('[aria-label="Exported creations"]')).toBeNull()
+    expect(container.textContent).toContain('No exported stickers yet')
+
+    cleanup()
+  })
+
+  it('shows drafts empty hint when everything is exported', async () => {
+    fetchCreationsMock.mockResolvedValueOnce([
+      {
+        _id: 'exp-1',
+        title: 'Export Only Row',
+        status: 'exported',
+        editorPayload: { kind: 'image' },
+        exportAssetId: '507f1f77bcf86cd799439011',
+        updatedAt: new Date().toISOString(),
+      },
+    ])
+
+    const { container, cleanup } = await renderIntoDom(<MyCreationsPage refreshKey={0} />)
+
+    await waitForText(container, 'Export Only Row')
+
+    expect(container.querySelector('.profile-drafts-list')).toBeNull()
+    expect(container.textContent).toContain('No drafts yet')
+
+    const exportList = container.querySelector('[aria-label="Exported creations"]')
+    expect(exportList?.querySelectorAll('li').length).toBe(1)
+
     cleanup()
   })
 })

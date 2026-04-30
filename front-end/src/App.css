@@ -1352,6 +1352,31 @@ input[type='range']::-moz-range-thumb {
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06);
 }
 
+.my-creations-item--drafts {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0.65rem;
+}
+
+.my-creations-item-draft-main {
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+  min-width: 0;
+}
+
+.my-creations-item-footer {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 0.1rem;
+  padding-top: 0.55rem;
+  border-top: 1px solid #f0f0f0;
+}
+
+.my-creations-item-row2--single {
+  justify-content: flex-start;
+}
+
 .my-creations-thumb-wrap {
   flex-shrink: 0;
   width: 4.5rem;
@@ -2024,6 +2049,96 @@ input[type='range']::-moz-range-thumb {
 .profile-activity-card-count {
   font-size: 0.78rem;
   color: #aaa;
+}
+
+.profile-activity-exports-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  max-height: 11.5rem;
+  overflow-y: auto;
+}
+
+.profile-activity-export-row {
+  min-width: 0;
+}
+
+.profile-activity-export-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.profile-activity-export-button:focus-visible {
+  outline: 2px solid rgba(100, 108, 255, 0.35);
+  outline-offset: 2px;
+  border-radius: 8px;
+}
+
+.profile-activity-export-button {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  width: 100%;
+  padding: 0;
+  margin: 0;
+  border: none;
+  background: none;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+  text-align: left;
+}
+
+.profile-activity-export-static {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  min-width: 0;
+}
+
+.profile-activity-export-footer {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.profile-activity-export-footer .my-creations-delete {
+  font-size: 0.78rem;
+  padding: 0.28rem 0.55rem;
+}
+
+.profile-activity-export-thumb .my-creations-thumb-wrap {
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: 8px;
+}
+
+.profile-activity-export-thumb .my-creations-thumb {
+  border-radius: 8px;
+}
+
+.profile-activity-export-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 0.12rem;
+  min-width: 0;
+}
+
+.profile-activity-export-title {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #222;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.profile-activity-export-updated {
+  font-size: 0.72rem;
+  color: #888;
 }
 
 /* ============================================================================
