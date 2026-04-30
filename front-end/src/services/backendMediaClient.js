@@ -2,8 +2,16 @@ import { clearAuthToken, getAuthToken } from '../auth/authSession.js'
 
 const DEFAULT_BACKEND_BASE_URL = 'http://localhost:4000'
 
-export const getBackendBaseUrl = () =>
-  (import.meta.env?.VITE_BACKEND_BASE_URL || DEFAULT_BACKEND_BASE_URL).trim()
+export const getBackendBaseUrl = () => {
+  if (import.meta.env?.VITE_BACKEND_RELATIVE === 'true') {
+    return ''
+  }
+  const explicit = import.meta.env?.VITE_BACKEND_BASE_URL
+  if (typeof explicit === 'string' && explicit.trim() !== '') {
+    return explicit.trim()
+  }
+  return DEFAULT_BACKEND_BASE_URL
+}
 
 const notifyUnauthorized = (skipAuth, hadBearer, status, suppressUnauthorizedRedirect = false) => {
   if (status !== 401 || skipAuth || !hadBearer || suppressUnauthorizedRedirect) return
