@@ -19,10 +19,8 @@ describe('Preset filter routes', () => {
     })
 
     it('returns 400 for invalid preset values', async () => {
-        const mediaId = await uploadTestImage(app)
-
         const res = await request(app).post('/api/filter/image').send({
-            mediaId,
+            mediaId: '507f1f77bcf86cd799439011',
             preset: 'invalid-preset',
         })
 

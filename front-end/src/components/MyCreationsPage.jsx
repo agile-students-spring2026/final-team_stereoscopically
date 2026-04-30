@@ -1,15 +1,16 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { deleteCreation, fetchCreations } from '../services/creationsApi.js'
 import { getCreationKindLabel, getCreationPreviewUrl } from '../utils/creationPreviewUrl.js'
-import { getOrCreateOwnerKey } from '../utils/ownerKey.js'
 
 function CreationPreviewThumb({ row, title }) {
   const url = getCreationPreviewUrl(row)
   const kind = getCreationKindLabel(row)
   const [failed, setFailed] = useState(false)
+  const hasExportAsset =
+    typeof row?.exportAssetId === 'string' ? Boolean(row.exportAssetId.trim()) : false
 
   if (url && !failed) {
-    if (kind === 'video') {
+    if (kind === 'video' && !hasExportAsset) {
       return (
         <div className="my-creations-thumb-wrap">
           <video
@@ -59,6 +60,32 @@ const formatUpdated = (iso) => {
   }
 }
 
+const profileDisplayName = (user) => {
+  const d = user?.displayName?.trim()
+  if (d) return d
+  const e = user?.email?.trim()
+  if (e) return e
+  return 'Your Name'
+}
+
+const profileBioText = (user) => {
+  const b = user?.bio?.trim()
+  if (b) return b
+  return 'No bio yet.'
+}
+
+const profileInitials = (user) => {
+  const dn = user?.displayName?.trim()
+  if (dn) {
+    const parts = dn.split(/\s+/).filter(Boolean)
+    if (parts.length >= 2) return (parts[0][0] + parts[1][0]).toUpperCase().slice(0, 2)
+    if (parts[0]) return parts[0].slice(0, 2).toUpperCase()
+  }
+  const em = user?.email?.trim()
+  if (em) return em.slice(0, 2).toUpperCase()
+  return 'SC'
+}
+
 function GuestProfileView({ onGoSignIn, onGoSignUp }) {
   return (
     <div className="profile-guest">
@@ -91,6 +118,7 @@ function MyCreationsPage({
   refreshKey = 0,
   onSelectCreation,
   isAuthenticated = true,
+  currentUser = null,
   onGoSignIn,
   onGoSignUp,
   onSignOut,
@@ -105,12 +133,7 @@ function MyCreationsPage({
   const [friends, setFriends] = useState([])
 
   useEffect(() => {
-    if (!isAuthenticated) {
-      return undefined
-    }
-
     let cancelled = false
-    const ownerKey = getOrCreateOwnerKey()
 
     const load = async () => {
       await Promise.resolve()
@@ -121,7 +144,7 @@ function MyCreationsPage({
       setError(null)
 
       try {
-        const data = await fetchCreations(ownerKey)
+        const data = await fetchCreations()
 
         if (!cancelled) {
           setItems(Array.isArray(data) ? data : [])
@@ -221,10 +244,6 @@ function MyCreationsPage({
     () => friendRequests.length + friends.length,
     [friendRequests.length, friends.length]
   )
-
-  if (!isAuthenticated) {
-    return <GuestProfileView onGoSignIn={onGoSignIn} onGoSignUp={onGoSignUp} />
-  }
 
   const renderDraftsContent = () => {
     if (loading) {
@@ -424,9 +443,17 @@ function MyCreationsPage({
   const draftsSection = (
     <div className="profile-section profile-section--drafts">
       <div className="profile-section-header">
-        <h3 className="profile-section-title">Drafts</h3>
+        <h3 className="profile-section-title">
+          {isAuthenticated ? 'Drafts' : 'Drafts on this browser'}
+        </h3>
         {!loading && !error ? <span className="profile-section-count">{items.length}</span> : null}
       </div>
+
+      {!isAuthenticated ? (
+        <p className="profile-guest-drafts-hint">
+          Saved locally for this browser. Sign in to keep creations on your account.
+        </p>
+      ) : null}
 
       <div className="profile-section-body">{renderDraftsContent()}</div>
     </div>
@@ -456,56 +483,65 @@ function MyCreationsPage({
 
   return (
     <div className="profile-page" role="region" aria-label="Profile">
-      <div className="profile-header">
-        <div className="profile-avatar" aria-hidden="true">
-          <span className="profile-avatar-initials">SC</span>
+      {!isAuthenticated ? (
+        <GuestProfileView onGoSignIn={onGoSignIn} onGoSignUp={onGoSignUp} />
+      ) : (
+        <div className="profile-header">
+          <div className="profile-avatar" aria-hidden="true">
+            <span className="profile-avatar-initials">{profileInitials(currentUser)}</span>
+          </div>
+
+          <p className="profile-name">{profileDisplayName(currentUser)}</p>
+          <p className="profile-bio">{profileBioText(currentUser)}</p>
+
+          <div className="profile-socials">
+            <button type="button" className="profile-social-link">
+              Instagram
+            </button>
+
+            <button type="button" className="profile-social-link">
+              Twitter
+            </button>
+          </div>
         </div>
-
-        <p className="profile-name">Your Name</p>
-        <p className="profile-bio">No bio yet.</p>
-
-        <div className="profile-socials">
-          <button type="button" className="profile-social-link">
-            Instagram
-          </button>
-
-          <button type="button" className="profile-social-link">
-            Twitter
-          </button>
-        </div>
-      </div>
+      )}
 
       {draftsSection}
-      {showConnectionsBeforeActivity ? connectionsSection : activitySection}
-      {showConnectionsBeforeActivity ? activitySection : connectionsSection}
 
-      <div className="profile-account">
-        <p className="profile-account-title">Account</p>
+      {isAuthenticated ? (
+        <>
+          {showConnectionsBeforeActivity ? connectionsSection : activitySection}
+          {showConnectionsBeforeActivity ? activitySection : connectionsSection}
 
-        <div className="profile-account-actions">
-          <button type="button" className="profile-account-action">
-            <span>Change Email</span>
-            <span className="profile-account-action-arrow" aria-hidden="true">
-              ›
-            </span>
-          </button>
+          <div className="profile-account">
+            <p className="profile-account-title">Account</p>
 
-          <button type="button" className="profile-account-action">
-            <span>Change Password</span>
-            <span className="profile-account-action-arrow" aria-hidden="true">
-              ›
-            </span>
-          </button>
+            <div className="profile-account-actions">
+              <button type="button" className="profile-account-action">
+                <span>Change Email</span>
+                <span className="profile-account-action-arrow" aria-hidden="true">
+                  ›
+                </span>
+              </button>
 
-          <button
-            type="button"
-            className="profile-account-action profile-account-action--danger"
-            onClick={onSignOut}
-          >
-            Sign Out
-          </button>
-        </div>
-      </div>
+              <button type="button" className="profile-account-action">
+                <span>Change Password</span>
+                <span className="profile-account-action-arrow" aria-hidden="true">
+                  ›
+                </span>
+              </button>
+
+              <button
+                type="button"
+                className="profile-account-action profile-account-action--danger"
+                onClick={onSignOut}
+              >
+                Sign Out
+              </button>
+            </div>
+          </div>
+        </>
+      ) : null}
 
       {pendingDelete ? (
         <div className="my-creations-modal-backdrop" role="presentation" onClick={cancelDelete}>

@@ -10,6 +10,27 @@ const stripExtension = (name) => {
   return name.replace(/\.[^.]+$/, '') || 'Sticker'
 }
 
+const MAX_CREATION_TITLE = 200
+
+const slugDraftSegment = (value) =>
+  String(value ?? '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '_')
+    .replace(/^_+|_+$/g, '') || 'untitled'
+
+/** Default naming: basename_preset_kind (lowercase underscores). */
+export const buildSuggestedDraftTitle = ({
+  file = null,
+  preset = null,
+  kind = 'image',
+} = {}) => {
+  const baseSlug = slugDraftSegment(stripExtension(file?.name || '') || 'untitled')
+  const presetLabel =
+    preset != null && String(preset).trim() ? slugDraftSegment(preset) : 'custom'
+  const kindLabel = kind === 'gif' ? 'gif' : 'image'
+  return `${baseSlug}_${presetLabel}_${kindLabel}`.slice(0, MAX_CREATION_TITLE)
+}
+
 export const defaultCreationTitle = (file) => {
   if (file?.name && typeof file.name === 'string') {
     const base = stripExtension(file.name)
