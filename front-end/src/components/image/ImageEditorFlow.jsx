@@ -1,6 +1,6 @@
 import { useState, useCallback } from 'react'
 import { createCreation, updateCreation } from '../../services/creationsApi.js'
-import { buildImageCreationPayload, defaultCreationTitle } from '../../utils/buildCreationPayload.js'
+import { buildImageCreationPayload, buildSuggestedDraftTitle } from '../../utils/buildCreationPayload.js'
 import { getOrCreateOwnerKey } from '../../utils/ownerKey.js'
 import { getBackendBaseUrl } from '../../services/backendMediaClient'
 import ImageEditor from './ImageEditor'
@@ -54,7 +54,8 @@ function ImageEditorFlow({ imageSession, media, draft, textOverlay, onBack, onDr
   const { selectedMedia, isUploading, uploadError } = media
   const {
     activeDraftId,
-    activeDraftTitle,
+    draftTitle,
+    onDraftTitleChange,
     effectiveImageDraftSourceMediaId,
     onActiveDraftSaved,
   } = draft
@@ -115,6 +116,20 @@ function ImageEditorFlow({ imageSession, media, draft, textOverlay, onBack, onDr
     }
   }
 
+  const guestOwnership = useCallback(() => ({ guestOwnerKey: getOrCreateOwnerKey() }), [])
+
+  const resolveImageDraftTitle = useCallback(() => {
+    const trimmed = typeof draftTitle === 'string' ? draftTitle.trim() : ''
+    return (
+      trimmed ||
+      buildSuggestedDraftTitle({
+        file: selectedMedia,
+        preset: selectedPreset ?? 'custom',
+        kind: 'image',
+      })
+    )
+  }, [draftTitle, selectedMedia, selectedPreset])
+
   const handleSaveForLaterImage = useCallback(async () => {
     if (!selectedMedia) return
 
@@ -123,7 +138,7 @@ function ImageEditorFlow({ imageSession, media, draft, textOverlay, onBack, onDr
     setIsSavingDraft(true)
 
     try {
-      const title = activeDraftTitle || defaultCreationTitle(selectedMedia)
+      const title = resolveImageDraftTitle()
 
       const editorPayload = buildImageCreationPayload({
         sourceMediaId: effectiveImageDraftSourceMediaId || effectiveBackendMediaId,
@@ -144,8 +159,8 @@ function ImageEditorFlow({ imageSession, media, draft, textOverlay, onBack, onDr
 
       const body = { title, editorPayload, status: 'draft' }
       const result = activeDraftId
-        ? await updateCreation(activeDraftId, body)
-        : await createCreation({ ...body, ownerKey: getOrCreateOwnerKey() })
+        ? await updateCreation(activeDraftId, body, guestOwnership())
+        : await createCreation(body, guestOwnership())
 
       const id = result?._id ?? result?.id
       onActiveDraftSaved(id ? String(id) : activeDraftId, title)
@@ -159,7 +174,8 @@ function ImageEditorFlow({ imageSession, media, draft, textOverlay, onBack, onDr
     }
   }, [
     activeDraftId,
-    activeDraftTitle,
+    resolveImageDraftTitle,
+    guestOwnership,
     appliedTextOverlay,
     colorAdjustments,
     editBaseMediaId,
@@ -194,38 +210,47 @@ function ImageEditorFlow({ imageSession, media, draft, textOverlay, onBack, onDr
         const exported = await handleExport()
         if (!exported?.id) return
         try {
+          const persistTitle = resolveImageDraftTitle()
           if (activeDraftId) {
-            await updateCreation(activeDraftId, {
-              status: 'exported',
-              exportAssetId: exported.id,
-            })
+            await updateCreation(
+              activeDraftId,
+              {
+                status: 'exported',
+                exportAssetId: exported.id,
+              },
+              guestOwnership(),
+            )
           } else {
-            const result = await createCreation({
-              ownerKey: getOrCreateOwnerKey(),
-              title: defaultCreationTitle(selectedMedia),
-              editorPayload: buildImageCreationPayload({
-                sourceMediaId: effectiveImageDraftSourceMediaId || effectiveBackendMediaId,
-                workingMediaId: effectiveBackendMediaId || effectiveImageDraftSourceMediaId,
-                previewMediaId: effectiveBackendMediaId || effectiveImageDraftSourceMediaId,
-                preEditWorkingMediaId: editBaseMediaId || null,
-                preTextWorkingMediaId: preTextWorkingMediaId || null,
-                selectedPreset,
-                letterboxColor,
-                lastCropBoxPx,
-                colorAdjustments,
-                selectedImageFilterPreset,
-                textOverlay: appliedTextOverlay || null,
-              }),
-              status: 'exported',
-              exportAssetId: exported.id,
-            })
+            const result = await createCreation(
+              {
+                title: persistTitle,
+                editorPayload: buildImageCreationPayload({
+                  sourceMediaId: effectiveImageDraftSourceMediaId || effectiveBackendMediaId,
+                  workingMediaId: effectiveBackendMediaId || effectiveImageDraftSourceMediaId,
+                  previewMediaId: effectiveBackendMediaId || effectiveImageDraftSourceMediaId,
+                  preEditWorkingMediaId: editBaseMediaId || null,
+                  preTextWorkingMediaId: preTextWorkingMediaId || null,
+                  selectedPreset,
+                  letterboxColor,
+                  lastCropBoxPx,
+                  colorAdjustments,
+                  selectedImageFilterPreset,
+                  textOverlay: appliedTextOverlay || null,
+                }),
+                status: 'exported',
+                exportAssetId: exported.id,
+              },
+              guestOwnership(),
+            )
             const id = result?._id ?? result?.id
-            if (id) onActiveDraftSaved(String(id), null)
+            if (id) onActiveDraftSaved(String(id), persistTitle)
           }
         } catch (err) {
           console.warn('Could not persist export status:', err)
         }
       }}
+      draftTitleInput={draftTitle ?? ''}
+      onDraftTitleInputChange={(v) => onDraftTitleChange?.(v)}
       onSaveForLater={handleSaveForLaterImage}
       isSavingDraft={isSavingDraft}
       saveDraftError={saveForLaterError}

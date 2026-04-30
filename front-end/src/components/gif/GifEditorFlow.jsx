@@ -1,6 +1,9 @@
 import { useState, useCallback } from 'react'
 import { createCreation, updateCreation } from '../../services/creationsApi.js'
-import { buildVideoCreationPayload, defaultCreationTitle } from '../../utils/buildCreationPayload.js'
+import {
+  buildVideoCreationPayload,
+  buildSuggestedDraftTitle,
+} from '../../utils/buildCreationPayload.js'
 import { getOrCreateOwnerKey } from '../../utils/ownerKey.js'
 import { convertBackendVideoResultToLocalMedia } from '../../services/backendGifService'
 import { MEDIA_SELECTION_CODES } from '../../hooks/useMediaSelection'
@@ -14,7 +17,13 @@ import GifTextOverlayEditor from './GifTextOverlayEditor'
 
 function GifEditorFlow({ gifSession, media, originalVideoFile, draft, onVideoSelect, onBack, onDraftSaved }) {
   const { selectedMedia, backendVideoResult } = media
-  const { activeDraftId, activeDraftTitle, effectiveVideoDraftSourceMediaId, onActiveDraftSaved } = draft
+  const {
+    activeDraftId,
+    draftTitle,
+    onDraftTitleChange,
+    effectiveVideoDraftSourceMediaId,
+    onActiveDraftSaved,
+  } = draft
 
   const [isSavingDraft, setIsSavingDraft] = useState(false)
   const [saveForLaterError, setSaveForLaterError] = useState(null)
@@ -33,6 +42,20 @@ function GifEditorFlow({ gifSession, media, originalVideoFile, draft, onVideoSel
     },
     [gifSession],
   )
+
+  const guestOwnership = useCallback(() => ({ guestOwnerKey: getOrCreateOwnerKey() }), [])
+
+  const resolveGifDraftTitle = useCallback(() => {
+    const trimmed = typeof draftTitle === 'string' ? draftTitle.trim() : ''
+    return (
+      trimmed ||
+      buildSuggestedDraftTitle({
+        file: selectedMedia,
+        preset: gifSession.resizePreset ?? 'custom',
+        kind: 'gif',
+      })
+    )
+  }, [draftTitle, selectedMedia, gifSession.resizePreset])
 
   const handleVideoPresetApply = useCallback(
     async (result) => {
@@ -87,7 +110,7 @@ function GifEditorFlow({ gifSession, media, originalVideoFile, draft, onVideoSel
     }
 
     try {
-      const title = activeDraftTitle || defaultCreationTitle(selectedMedia)
+      const title = resolveGifDraftTitle()
       const editorPayload = buildVideoCreationPayload({
         sourceMediaId,
         workingMediaId,
@@ -102,8 +125,8 @@ function GifEditorFlow({ gifSession, media, originalVideoFile, draft, onVideoSel
 
       const body = { title, editorPayload, status: 'draft' }
       const result = activeDraftId
-        ? await updateCreation(activeDraftId, body)
-        : await createCreation({ ...body, ownerKey: getOrCreateOwnerKey() })
+        ? await updateCreation(activeDraftId, body, guestOwnership())
+        : await createCreation(body, guestOwnership())
 
       const id = result?._id ?? result?.id
       onActiveDraftSaved(id ? String(id) : activeDraftId, title)
@@ -117,7 +140,8 @@ function GifEditorFlow({ gifSession, media, originalVideoFile, draft, onVideoSel
     }
   }, [
     activeDraftId,
-    activeDraftTitle,
+    resolveGifDraftTitle,
+    guestOwnership,
     backendVideoResult?.id,
     effectiveVideoDraftSourceMediaId,
     gifSession,
@@ -134,7 +158,7 @@ function GifEditorFlow({ gifSession, media, originalVideoFile, draft, onVideoSel
       const workingMediaId = backendVideoResult?.id || sourceMediaId
       if (!workingMediaId) return
       try {
-        const title = activeDraftTitle || defaultCreationTitle(selectedMedia)
+        const title = resolveGifDraftTitle()
         const editorPayload = buildVideoCreationPayload({
           sourceMediaId,
           workingMediaId,
@@ -147,18 +171,24 @@ function GifEditorFlow({ gifSession, media, originalVideoFile, draft, onVideoSel
           selectedFilterPreset: gifSession.selectedFilterPreset,
         })
         if (activeDraftId) {
-          await updateCreation(activeDraftId, {
-            status: 'exported',
-            exportAssetId: exported.id,
-          })
+          await updateCreation(
+            activeDraftId,
+            {
+              status: 'exported',
+              exportAssetId: exported.id,
+            },
+            guestOwnership(),
+          )
         } else {
-          const result = await createCreation({
-            ownerKey: getOrCreateOwnerKey(),
-            title,
-            editorPayload,
-            status: 'exported',
-            exportAssetId: exported.id,
-          })
+          const result = await createCreation(
+            {
+              title,
+              editorPayload,
+              status: 'exported',
+              exportAssetId: exported.id,
+            },
+            guestOwnership(),
+          )
           const id = result?._id ?? result?.id
           if (id) {
             onActiveDraftSaved(String(id), title)
@@ -171,7 +201,8 @@ function GifEditorFlow({ gifSession, media, originalVideoFile, draft, onVideoSel
     },
     [
       activeDraftId,
-      activeDraftTitle,
+      resolveGifDraftTitle,
+      guestOwnership,
       backendVideoResult?.id,
       effectiveVideoDraftSourceMediaId,
       gifSession,
@@ -304,6 +335,8 @@ function GifEditorFlow({ gifSession, media, originalVideoFile, draft, onVideoSel
       onOpenResize={() => gifSession.openGifTool(gifSession.GIF_FLOW_TOOLS.RESIZE)}
       onOpenFilters={() => gifSession.openGifTool(gifSession.GIF_FLOW_TOOLS.FILTERS_MAIN)}
       onSaveForLater={handleSaveForLaterVideo}
+      draftTitleInput={draftTitle ?? ''}
+      onDraftTitleInputChange={(v) => onDraftTitleChange?.(v)}
       isSavingDraft={isSavingDraft}
       saveDraftError={saveForLaterError}
       saveDraftMessage={saveForLaterMessage}

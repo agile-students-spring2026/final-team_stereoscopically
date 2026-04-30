@@ -24,6 +24,8 @@ const GifEditor = ({
     isSavingDraft = false,
     saveDraftError = null,
     saveDraftMessage = null,
+    draftTitleInput = '',
+    onDraftTitleInputChange,
 }) => {
     const {
         trimRange = { start: 0, end: 0 },
@@ -184,6 +186,23 @@ const GifEditor = ({
                 ) : (
                     <EditorStatus centered>Upload a video to start editing.</EditorStatus>
                 )}
+            </div>
+
+            <div className="editor-draft-title-row">
+                <label className="editor-draft-title-label" htmlFor="gif-draft-title">
+                    Draft name
+                </label>
+                <input
+                    id="gif-draft-title"
+                    type="text"
+                    className="editor-draft-title-input"
+                    maxLength={200}
+                    value={draftTitleInput}
+                    onChange={(e) => onDraftTitleInputChange?.(e.target.value)}
+                    disabled={isProcessing || isSavingDraft}
+                    placeholder="Name this draft"
+                    autoComplete="off"
+                />
             </div>
 
             <div className="card editor-actions editor-actions--stack">

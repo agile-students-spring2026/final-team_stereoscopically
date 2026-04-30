@@ -23,6 +23,8 @@ const ImageEditor = ({
   isSavingDraft = false,
   saveDraftError = null,
   saveDraftMessage = null,
+  draftTitleInput = '',
+  onDraftTitleInputChange,
   showResetCrop = false,
 }) => {
   // Track if cropper is active
@@ -166,6 +168,23 @@ const ImageEditor = ({
           />
         )}
       </div>
+      <div className="editor-draft-title-row">
+        <label className="editor-draft-title-label" htmlFor="image-draft-title">
+          Draft name
+        </label>
+        <input
+          id="image-draft-title"
+          type="text"
+          className="editor-draft-title-input"
+          maxLength={200}
+          value={draftTitleInput}
+          onChange={(e) => onDraftTitleInputChange?.(e.target.value)}
+          disabled={isUploading || isExporting || isSavingDraft}
+          placeholder="Name this draft"
+          autoComplete="off"
+        />
+      </div>
+
       <div className="card editor-actions editor-actions--stack">
         <button type="button" className="btn-primary" onClick={handleCropClick}>
           Crop
