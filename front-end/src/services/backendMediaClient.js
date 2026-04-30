@@ -1,15 +1,28 @@
+import { clearAuthToken, getAuthToken } from '../auth/authSession.js'
+
 const DEFAULT_BACKEND_BASE_URL = 'http://localhost:4000'
 
 export const getBackendBaseUrl = () =>
   (import.meta.env?.VITE_BACKEND_BASE_URL || DEFAULT_BACKEND_BASE_URL).trim()
 
+const notifyUnauthorized = (skipAuth, hadBearer, status) => {
+  if (status !== 401 || skipAuth || !hadBearer) return
+  clearAuthToken()
+  window.dispatchEvent(new CustomEvent('auth:session-expired'))
+}
+
 const parseErrorMessage = async (response, fallbackMessage = 'Request failed') => {
   try {
     const payload = await response.json()
-    if (payload?.error) return payload.error
-  } catch {
-    // ignore JSON parse errors
-  }
+    if (typeof payload?.error === 'string') return payload.error
+    if (Array.isArray(payload?.errors) && payload.errors.length) {
+      const parts = payload.errors
+        .map((e) => (typeof e === 'string' ? e : e.msg || e.message))
+        .filter(Boolean)
+      if (parts.length) return parts.join(' ')
+    }
+    if (typeof payload?.message === 'string') return payload.message
+  } catch {}
 
   return `${fallbackMessage} (${response.status})`
 }
@@ -20,6 +33,7 @@ export const postMultipart = async ({
   file,
   fields,
   fallbackErrorMessage = 'Request failed',
+  skipAuth = false,
 }) => {
   if (!file) {
     throw new Error('No file provided')
@@ -36,11 +50,15 @@ export const postMultipart = async ({
   }
 
   const endpoint = `${getBackendBaseUrl()}${path}`
+  const tokenAtStart = skipAuth ? '' : getAuthToken()
+  const headers = {}
+  if (tokenAtStart) headers.Authorization = `Bearer ${tokenAtStart}`
 
   let response
   try {
     response = await fetch(endpoint, {
       method: 'POST',
+      headers,
       body: formData,
     })
   } catch {
@@ -48,6 +66,7 @@ export const postMultipart = async ({
   }
 
   if (!response.ok) {
+    notifyUnauthorized(skipAuth, Boolean(tokenAtStart), response.status)
     const message = await parseErrorMessage(response, fallbackErrorMessage)
     const error = new Error(message)
     error.status = response.status
@@ -57,14 +76,22 @@ export const postMultipart = async ({
   return response.json()
 }
 
-export const postJson = async ({ path, payload, fallbackErrorMessage = 'Request failed' }) => {
+export const postJson = async ({
+  path,
+  payload,
+  fallbackErrorMessage = 'Request failed',
+  skipAuth = false,
+}) => {
   const endpoint = `${getBackendBaseUrl()}${path}`
+  const tokenAtStart = skipAuth ? '' : getAuthToken()
+  const headers = { 'Content-Type': 'application/json' }
+  if (tokenAtStart) headers.Authorization = `Bearer ${tokenAtStart}`
 
   let response
   try {
     response = await fetch(endpoint, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers,
       body: JSON.stringify(payload ?? {}),
     })
   } catch {
@@ -72,6 +99,7 @@ export const postJson = async ({ path, payload, fallbackErrorMessage = 'Request 
   }
 
   if (!response.ok) {
+    notifyUnauthorized(skipAuth, Boolean(tokenAtStart), response.status)
     const message = await parseErrorMessage(response, fallbackErrorMessage)
     const error = new Error(message)
     error.status = response.status
@@ -81,17 +109,21 @@ export const postJson = async ({ path, payload, fallbackErrorMessage = 'Request 
   return response.json()
 }
 
-export const getJson = async ({ path, fallbackErrorMessage = 'Request failed' }) => {
+export const getJson = async ({ path, fallbackErrorMessage = 'Request failed', skipAuth = false }) => {
   const endpoint = `${getBackendBaseUrl()}${path}`
+  const tokenAtStart = skipAuth ? '' : getAuthToken()
+  const headers = {}
+  if (tokenAtStart) headers.Authorization = `Bearer ${tokenAtStart}`
 
   let response
   try {
-    response = await fetch(endpoint, { method: 'GET' })
+    response = await fetch(endpoint, { method: 'GET', headers })
   } catch {
     throw new Error('Unable to reach backend. Please make sure the backend server is running.')
   }
 
   if (!response.ok) {
+    notifyUnauthorized(skipAuth, Boolean(tokenAtStart), response.status)
     const message = await parseErrorMessage(response, fallbackErrorMessage)
     const error = new Error(message)
     error.status = response.status
@@ -101,17 +133,21 @@ export const getJson = async ({ path, fallbackErrorMessage = 'Request failed' })
   return response.json()
 }
 
-export const deleteJson = async ({ path, fallbackErrorMessage = 'Request failed' }) => {
+export const deleteJson = async ({ path, fallbackErrorMessage = 'Request failed', skipAuth = false }) => {
   const endpoint = `${getBackendBaseUrl()}${path}`
+  const tokenAtStart = skipAuth ? '' : getAuthToken()
+  const headers = {}
+  if (tokenAtStart) headers.Authorization = `Bearer ${tokenAtStart}`
 
   let response
   try {
-    response = await fetch(endpoint, { method: 'DELETE' })
+    response = await fetch(endpoint, { method: 'DELETE', headers })
   } catch {
     throw new Error('Unable to reach backend. Please make sure the backend server is running.')
   }
 
   if (!response.ok) {
+    notifyUnauthorized(skipAuth, Boolean(tokenAtStart), response.status)
     const message = await parseErrorMessage(response, fallbackErrorMessage)
     const error = new Error(message)
     error.status = response.status
@@ -121,14 +157,22 @@ export const deleteJson = async ({ path, fallbackErrorMessage = 'Request failed'
   return response.json()
 }
 
-export const patchJson = async ({ path, payload, fallbackErrorMessage = 'Request failed' }) => {
+export const patchJson = async ({
+  path,
+  payload,
+  fallbackErrorMessage = 'Request failed',
+  skipAuth = false,
+}) => {
   const endpoint = `${getBackendBaseUrl()}${path}`
+  const tokenAtStart = skipAuth ? '' : getAuthToken()
+  const headers = { 'Content-Type': 'application/json' }
+  if (tokenAtStart) headers.Authorization = `Bearer ${tokenAtStart}`
 
   let response
   try {
     response = await fetch(endpoint, {
       method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
+      headers,
       body: JSON.stringify(payload ?? {}),
     })
   } catch {
@@ -136,6 +180,7 @@ export const patchJson = async ({ path, payload, fallbackErrorMessage = 'Request
   }
 
   if (!response.ok) {
+    notifyUnauthorized(skipAuth, Boolean(tokenAtStart), response.status)
     const message = await parseErrorMessage(response, fallbackErrorMessage)
     const error = new Error(message)
     error.status = response.status
