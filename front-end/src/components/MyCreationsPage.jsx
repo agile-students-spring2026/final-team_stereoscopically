@@ -7,9 +7,11 @@ function CreationPreviewThumb({ row, title }) {
   const url = getCreationPreviewUrl(row)
   const kind = getCreationKindLabel(row)
   const [failed, setFailed] = useState(false)
+  const hasExportAsset =
+    typeof row?.exportAssetId === 'string' ? Boolean(row.exportAssetId.trim()) : false
 
   if (url && !failed) {
-    if (kind === 'video') {
+    if (kind === 'video' && !hasExportAsset) {
       return (
         <div className="my-creations-thumb-wrap">
           <video

@@ -371,7 +371,7 @@ Notes:
 - `trimStart` (seconds)
 - `trimEnd` (seconds)
 - `resizePreset` (optional: `square`, `landscape`, `portrait`)
-- `resizeBorderColor` (optional: `#RRGGBB`)
+- `resizeBorderColor` (optional: `#RRGGBB` or `transparent`)
 - `textOverlay` (optional JSON string payload)
 
 `textOverlay` JSON shape:
