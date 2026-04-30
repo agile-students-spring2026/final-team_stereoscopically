@@ -441,6 +441,79 @@ Notes:
 - `400 { "error": "Missing mediaId.", "code": "MISSING_MEDIA_ID" }`
 - `404 { "error": "Media not found or expired.", "code": "MEDIA_NOT_FOUND" }`
 
+### Creations (drafts / exports)
+
+These routes use **optional JWT**: if `Authorization: Bearer <jwt>` is present, it must be valid (otherwise **`401`**). This lets the same paths serve **signed-in** users (scoped by `userId`) and **guests** (scoped by browser `ownerKey`).
+
+Implementation: `optionalAuth` + `creationController`.
+
+#### List creations
+
+- **Method:** `GET`
+- **Path:** `/api/creations`
+
+**Signed in (valid Bearer)**  
+Lists all creations whose `userId` matches the JWT user. **Do not rely on query `ownerKey`** for scoping.
+
+**Guest (no Bearer)**  
+Requires query: `?ownerKey=<non-empty-string>`. Returns creations with that `ownerKey` **and no bound account** (`userId` absent or null). Legacy drafts created before accounts only stored `ownerKey`; they remain visible here.
+
+**Errors**
+
+- `400 { "error": "Missing or invalid ownerKey.", "code": "INVALID_OWNER_KEY" }` — guest list without a usable `ownerKey`.
+
+#### Create creation
+
+- **Method:** `POST`
+- **Path:** `/api/creations`
+- **Content-Type:** `application/json`
+
+**Body (common)**
+
+- `title` (required, non-empty after trim; max **200** characters).
+- `editorPayload` (required object).
+- `status` (optional): `draft` | `exported` (default `draft`).
+- `exportAssetId` (optional string).
+
+**Signed in**
+
+- Document is stored with **`userId`** set to the current user.
+- Do **not** send a meaningful `ownerKey` in the body. Non-empty/non-whitespace `ownerKey` is rejected with **`400`** `INVALID_OWNER_KEY` (“Signed-in clients must not send ownerKey.”).
+
+**Guest**
+
+- Body **must include** `ownerKey` (non-empty after trim).
+
+**Success **`201`**:** creation document JSON (Mongo fields including `_id`).
+
+#### Get / update / delete one creation
+
+- **GET** `/api/creations/:id`
+- **PATCH** `/api/creations/:id`
+- **DELETE** `/api/creations/:id`
+
+**Signed in**
+
+- Allowed only if the creation’s **`userId`** equals the JWT user (`403 FORBIDDEN` otherwise). Not found **`404`** if id missing.
+
+**Guest**
+
+- Allowed only for **guest** creations (document has **`ownerKey`**, **`userId` not set**) **and** when query **`ownerKey`** matches that document.
+
+**Important for guests**
+
+- **`GET`/`PATCH`/`DELETE`** must include `?ownerKey=...` (same value used at create/list time). Omitting or wrong key: **`403`** with `OWNER_KEY_REQUIRED` or `FORBIDDEN`.
+
+**PATCH body**
+
+- Same fields as create where applicable (`title`, `editorPayload`, `status`, `exportAssetId`). Partial updates follow controller merge rules (`trackedMediaIds` union, etc.).
+
+**DELETE**
+
+- Deletes the creation document and best-effort deletes associated GridFS media referenced by the payload/export.
+
+Persists drafts and exports referenced from the frontend “My Creations” and editor flows. See `docs/database-contract.md` for the `creations` document shape.
+
 ## Error response shape
 
 All API errors use this shape:
