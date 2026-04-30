@@ -50,9 +50,10 @@ Ensure you have Node.js and npm installed
 
 - Open the app in your browser by navigating to: `http://localhost:5173/`
 
-### Run Unit Tests (Mocha + Chai)
+### Run unit tests
 
-- Run: `npm test` in `back-end`
+- **Back-end** (Mocha + Chai): from the `back-end` directory, run `npm test`.
+- **Front-end** (Vitest): from the repository root, run `cd front-end && npm test -- --run` (use `--run` for a single non-watch run, e.g. in CI or before pushing).
 
 ### Check Back-End Coverage (c8)
 
