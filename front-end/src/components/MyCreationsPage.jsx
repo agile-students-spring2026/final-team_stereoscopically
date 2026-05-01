@@ -55,7 +55,7 @@ const formatUpdated = (iso) => {
   try {
     const d = new Date(iso)
     if (Number.isNaN(d.getTime())) return '—'
-    return d.toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' })
+    return d.toLocaleString('en-US', { dateStyle: 'medium', timeStyle: 'short' })
   } catch {
     return '—'
   }
@@ -262,6 +262,22 @@ function MyCreationsPage({
     [friendRequests.length, friends.length]
   )
 
+  const exportedCreations = useMemo(
+    () =>
+      Array.isArray(items)
+        ? items.filter((row) => row.status === 'exported')
+        : [],
+    [items]
+  )
+
+  const draftItems = useMemo(
+    () =>
+      Array.isArray(items)
+        ? items.filter((row) => row.status !== 'exported')
+        : [],
+    [items]
+  )
+
   const toggleEmailForm = useCallback(() => {
     setShowEmailForm((prev) => {
       const next = !prev
@@ -369,17 +385,24 @@ function MyCreationsPage({
       return <p className="profile-section-empty">No saved stickers yet.</p>
     }
 
+    if (!draftItems.length) {
+      return (
+        <p className="profile-section-empty">
+          No drafts yet. Exported stickers are under Activity.
+        </p>
+      )
+    }
+
     return (
       <ul className="my-creations-list profile-drafts-list">
-        {items.map((row) => {
+        {draftItems.map((row) => {
           const id = row._id ?? row.id
           const title = typeof row.title === 'string' && row.title.trim() ? row.title.trim() : 'Untitled'
-          const status = row.status === 'exported' ? 'exported' : 'draft'
 
           return (
             <li
               key={id}
-              className={`my-creations-item${onSelectCreation ? ' my-creations-item--clickable' : ''}`}
+              className={`my-creations-item my-creations-item--drafts${onSelectCreation ? ' my-creations-item--clickable' : ''}`}
               onClick={() => onSelectCreation?.(row)}
               role={onSelectCreation ? 'button' : undefined}
               tabIndex={onSelectCreation ? 0 : undefined}
@@ -394,48 +417,42 @@ function MyCreationsPage({
                   : undefined
               }
             >
-              <CreationPreviewThumb row={row} title={title} />
+              <div className="my-creations-item-draft-main">
+                <CreationPreviewThumb row={row} title={title} />
 
-              <div className="my-creations-item-body">
-                <div className="my-creations-item-main">
-                  {onSelectCreation ? (
-                    <button
-                      type="button"
-                      className="my-creations-item-title my-creations-item-title--link"
-                      onClick={(e) => {
-                        e.stopPropagation()
-                        onSelectCreation(row)
-                      }}
-                    >
-                      {title}
-                    </button>
-                  ) : (
-                    <span className="my-creations-item-title">{title}</span>
-                  )}
+                <div className="my-creations-item-body">
+                  <div className="my-creations-item-main">
+                    {onSelectCreation ? (
+                      <button
+                        type="button"
+                        className="my-creations-item-title my-creations-item-title--link"
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          onSelectCreation(row)
+                        }}
+                      >
+                        {title}
+                      </button>
+                    ) : (
+                      <span className="my-creations-item-title">{title}</span>
+                    )}
+                  </div>
 
-                  <span
-                    className={
-                      status === 'exported'
-                        ? 'my-creations-badge my-creations-badge--exported'
-                        : 'my-creations-badge my-creations-badge--draft'
-                    }
-                  >
-                    {status === 'exported' ? 'Exported' : 'Draft'}
-                  </span>
+                  <div className="my-creations-item-row2 my-creations-item-row2--single">
+                    <div className="my-creations-item-meta">Updated {formatUpdated(row.updatedAt)}</div>
+                  </div>
                 </div>
+              </div>
 
-                <div className="my-creations-item-row2">
-                  <div className="my-creations-item-meta">Updated {formatUpdated(row.updatedAt)}</div>
-
-                  <button
-                    type="button"
-                    className="my-creations-delete"
-                    onClick={(e) => requestDelete(e, row)}
-                    aria-label={`Delete ${title}`}
-                  >
-                    Delete
-                  </button>
-                </div>
+              <div className="my-creations-item-footer">
+                <button
+                  type="button"
+                  className="my-creations-delete"
+                  onClick={(e) => requestDelete(e, row)}
+                  aria-label={`Delete ${title}`}
+                >
+                  Delete
+                </button>
               </div>
             </li>
           )
@@ -525,31 +542,91 @@ function MyCreationsPage({
     )
   }
 
-  const renderActivityContent = () => {
+  const renderActivityCreationsBody = () => {
+    if (loading) {
+      return <p className="profile-section-empty profile-section-empty--compact editor-status editor-status--loading">Loading…</p>
+    }
+    if (error) {
+      return <p className="profile-section-empty profile-section-empty--compact editor-status editor-status--error">{error}</p>
+    }
+    if (!exportedCreations.length) {
+      return (
+        <p className="profile-section-empty profile-section-empty--compact">
+          No exported stickers yet. Export from the editor to see them here.
+        </p>
+      )
+    }
     return (
-      <div className="profile-activity-grid">
-        <div className="profile-activity-card">
-          <div className="profile-activity-card-header">
-            <h4 className="profile-activity-card-title">Creations</h4>
-            <span className="profile-activity-card-count">0</span>
-          </div>
-          <p className="profile-section-empty profile-section-empty--compact">
-            Exported stickers will appear here.
-          </p>
-        </div>
+      <ul className="profile-activity-exports-list" aria-label="Exported creations">
+        {exportedCreations.map((row) => {
+          const id = row._id ?? row.id
+          const title = typeof row.title === 'string' && row.title.trim() ? row.title.trim() : 'Untitled'
 
-        <div className="profile-activity-card">
-          <div className="profile-activity-card-header">
-            <h4 className="profile-activity-card-title">Likes</h4>
-            <span className="profile-activity-card-count">0</span>
-          </div>
-          <p className="profile-section-empty profile-section-empty--compact">
-            Stickers you like will appear here.
-          </p>
-        </div>
-      </div>
+          const rowBody = (
+            <>
+              <div className="profile-activity-export-thumb">
+                <CreationPreviewThumb row={row} title={title} />
+              </div>
+              <div className="profile-activity-export-meta">
+                <span className="profile-activity-export-title">{title}</span>
+                <span className="profile-activity-export-updated">{formatUpdated(row.updatedAt)}</span>
+              </div>
+            </>
+          )
+
+          return (
+            <li key={id} className="profile-activity-export-row">
+              <div className="profile-activity-export-stack">
+                {onSelectCreation ? (
+                  <button
+                    type="button"
+                    className="profile-activity-export-button"
+                    onClick={() => onSelectCreation(row)}
+                  >
+                    {rowBody}
+                  </button>
+                ) : (
+                  <div className="profile-activity-export-static">{rowBody}</div>
+                )}
+                <div className="profile-activity-export-footer">
+                  <button
+                    type="button"
+                    className="my-creations-delete"
+                    onClick={(e) => requestDelete(e, row)}
+                    aria-label={`Delete ${title}`}
+                  >
+                    Delete
+                  </button>
+                </div>
+              </div>
+            </li>
+          )
+        })}
+      </ul>
     )
   }
+
+  const renderActivityContent = () => (
+    <div className="profile-activity-grid">
+      <div className="profile-activity-card profile-activity-card--creations">
+        <div className="profile-activity-card-header">
+          <h4 className="profile-activity-card-title">Creations</h4>
+          <span className="profile-activity-card-count">{loading || error ? '—' : exportedCreations.length}</span>
+        </div>
+        {renderActivityCreationsBody()}
+      </div>
+
+      <div className="profile-activity-card">
+        <div className="profile-activity-card-header">
+          <h4 className="profile-activity-card-title">Likes</h4>
+          <span className="profile-activity-card-count">0</span>
+        </div>
+        <p className="profile-section-empty profile-section-empty--compact">
+          Stickers you like will appear here.
+        </p>
+      </div>
+    </div>
+  )
 
   const draftsSection = (
     <div className="profile-section profile-section--drafts">
@@ -557,7 +634,9 @@ function MyCreationsPage({
         <h3 className="profile-section-title">
           {isAuthenticated ? 'Drafts' : 'Drafts on this browser'}
         </h3>
-        {!loading && !error ? <span className="profile-section-count">{items.length}</span> : null}
+        {!loading && !error ? (
+          <span className="profile-section-count">{draftItems.length}</span>
+        ) : null}
       </div>
 
       {!isAuthenticated ? (
@@ -570,11 +649,15 @@ function MyCreationsPage({
     </div>
   )
 
+  const activitySectionCount = loading || error ? null : exportedCreations.length
+
   const activitySection = (
     <div className="profile-section profile-section--activity">
       <div className="profile-section-header">
         <h3 className="profile-section-title">Activity</h3>
-        <span className="profile-section-count">0</span>
+        {activitySectionCount !== null ? (
+          <span className="profile-section-count">{activitySectionCount}</span>
+        ) : null}
       </div>
 
       <div className="profile-section-body">{renderActivityContent()}</div>
