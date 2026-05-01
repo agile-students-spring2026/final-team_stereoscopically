@@ -1,4 +1,6 @@
 import { useState, useEffect } from 'react'
+import { getAuthToken } from '../auth/authSession'
+
 
 function EditProfile({ onSave, onCancel }) {
   const [form, setForm] = useState({
@@ -8,20 +10,30 @@ function EditProfile({ onSave, onCancel }) {
     instagram: '',
     x: '',
   })
-  const [avatarFile, setAvatarFile] = useState(null)
   const [avatarPreview, setAvatarPreview] = useState(null)
   const [errors, setErrors] = useState({})
   const [isSaving, setIsSaving] = useState(false)
 
   useEffect(() => {
-    // TODO: replace with real API when JWT is ready
-    setForm({
-      displayName: 'Test User',
-      bio: 'Hello world!',
-      avatarUrl: '',
-      instagram: 'https://instagram.com/test',
-      x: 'https://x.com/test',
-    })
+    const fetchProfile = async () => {
+      try {
+        const res = await fetch('/api/me', {
+          headers: { Authorization: `Bearer ${getAuthToken()}` }
+        })
+        if (!res.ok) throw new Error('Failed to fetch profile')
+        const data = await res.json()
+        setForm({
+          displayName: data.displayName || '',
+          bio: data.bio || '',
+          avatarUrl: data.avatarUrl || '',
+          instagram: data.instagram || '',
+          x: data.x || '',
+        })
+      } catch (_err) {
+        setErrors({ fetch: 'Could not load profile. Please try again.' })
+      }
+    }
+    fetchProfile()
   }, [])
 
   const handleChange = (e) => {
@@ -33,7 +45,6 @@ function EditProfile({ onSave, onCancel }) {
   const handleAvatarFileChange = (e) => {
     const file = e.target.files?.[0]
     if (!file) return
-    setAvatarFile(file)
     setAvatarPreview(URL.createObjectURL(file))
   }
 
@@ -63,7 +74,10 @@ function EditProfile({ onSave, onCancel }) {
     try {
       const res = await fetch('/api/me', {
         method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${getAuthToken()}`,
+        },
         body: JSON.stringify({
           displayName: form.displayName,
           bio: form.bio,
@@ -85,7 +99,7 @@ function EditProfile({ onSave, onCancel }) {
 
       const updated = await res.json()
       onSave?.(updated)
-    } catch (err) {
+    } catch (_err) {
       setErrors({ api: 'Network error. Please try again.' })
     } finally {
       setIsSaving(false)
