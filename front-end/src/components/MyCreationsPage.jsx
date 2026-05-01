@@ -442,8 +442,8 @@ function MyCreationsPage({
   if (showEditProfile) {
     return (
       <EditProfile
-        onSave={(updated) => {
-          setProfile(updated)
+        onSave={() => {
+          fetchCurrentUser().then(setProfile).catch(() => {})
           setShowEditProfile(false)
         }}
         onCancel={() => setShowEditProfile(false)}
@@ -455,13 +455,26 @@ function MyCreationsPage({
     <div className="profile-page" role="region" aria-label="Profile">
       <div className="profile-header">
         <div className="profile-avatar" aria-hidden="true">
-          <span className="profile-avatar-initials">
-            {profile?.displayName ? profile.displayName.charAt(0).toUpperCase() : '?'}
-          </span>
+          {profile?.avatarUrl ? (
+            <img
+              src={profile.avatarUrl}
+              alt="Avatar"
+              style={{ width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover' }}
+            />
+          ) : (
+            <span className="profile-avatar-initials">
+              {profile?.displayName?.charAt(0).toUpperCase() ||
+                profile?.username?.charAt(0).toUpperCase() ||
+                '?'}
+            </span>
+          )}
         </div>
 
-        {profile?.displayName ? (
-          <p className="profile-name">{profile.displayName}</p>
+        {profile?.displayName && profile?.username ? (
+          <>
+            <p className="profile-name">{profile.displayName}</p>
+            <p className="profile-username">@{profile.username}</p>
+          </>
         ) : (
           <p className="profile-name profile-name--incomplete">
             Profile not set up yet.{' '}
@@ -483,12 +496,22 @@ function MyCreationsPage({
         {(profile?.instagram || profile?.x) ? (
           <div className="profile-socials">
             {profile.instagram ? (
-              <a href={profile.instagram} className="profile-social-link" target="_blank" rel="noopener noreferrer">
+              <a
+                href={`https://instagram.com/${profile.instagram}`}
+                className="profile-social-link"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
                 Instagram
               </a>
             ) : null}
             {profile.x ? (
-              <a href={profile.x} className="profile-social-link" target="_blank" rel="noopener noreferrer">
+              <a
+                href={`https://x.com/${profile.x}`}
+                className="profile-social-link"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
                 X
               </a>
             ) : null}
