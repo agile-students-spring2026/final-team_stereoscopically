@@ -35,6 +35,9 @@ export const fetchCurrentUser = async () => {
   return getJson({ path: '/api/me', fallbackErrorMessage: 'Could not load account' })
 }
 
+export const updateProfile = async (payload) =>
+  patchJson({ path: '/api/me', payload, fallbackErrorMessage: 'Could not update profile' })
+
 export const changeEmail = async ({ email }) => {
   const body = await patchJson({
     path: '/api/me/email',

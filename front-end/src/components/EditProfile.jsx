@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { getAuthToken } from '../auth/authSession'
+import { fetchCurrentUser, updateProfile } from '../services/authApi'
 
 
 function EditProfile({ onSave, onCancel }) {
@@ -17,11 +17,8 @@ function EditProfile({ onSave, onCancel }) {
   useEffect(() => {
     const fetchProfile = async () => {
       try {
-        const res = await fetch('/api/me', {
-          headers: { Authorization: `Bearer ${getAuthToken()}` }
-        })
-        if (!res.ok) throw new Error('Failed to fetch profile')
-        const data = await res.json()
+        const data = await fetchCurrentUser()
+        if (!data) return
         setForm({
           displayName: data.displayName || '',
           bio: data.bio || '',
@@ -72,35 +69,16 @@ function EditProfile({ onSave, onCancel }) {
 
     setIsSaving(true)
     try {
-      const res = await fetch('/api/me', {
-        method: 'PATCH',
-        headers: { 
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${getAuthToken()}`,
-        },
-        body: JSON.stringify({
-          displayName: form.displayName,
-          bio: form.bio,
-          avatarUrl: form.avatarUrl,
-          instagram: form.instagram,
-          x: form.x,
-        }),
+      const updated = await updateProfile({
+        displayName: form.displayName,
+        bio: form.bio,
+        avatarUrl: form.avatarUrl,
+        instagram: form.instagram,
+        x: form.x,
       })
-
-      if (!res.ok) {
-        const errorData = await res.json()
-        if (errorData.errors) {
-          setErrors(errorData.errors)
-        } else {
-          setErrors({ api: errorData.message || 'Failed to save profile.' })
-        }
-        return
-      }
-
-      const updated = await res.json()
       onSave?.(updated)
-    } catch {
-      setErrors({ api: 'Network error. Please try again.' })
+    } catch (err) {
+      setErrors({ api: err?.message || 'Failed to save profile.' })
     } finally {
       setIsSaving(false)
     }

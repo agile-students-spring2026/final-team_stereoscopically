@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { deleteCreation, fetchCreations } from '../services/creationsApi.js'
+import { fetchCurrentUser } from '../services/authApi.js'
 import { getCreationKindLabel, getCreationPreviewUrl } from '../utils/creationPreviewUrl.js'
 import EditProfile from './EditProfile'
 
@@ -96,6 +97,7 @@ function MyCreationsPage({
   onGoSignUp,
   onSignOut,
 }) {
+  const [profile, setProfile] = useState(null)
   const [items, setItems] = useState([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
@@ -106,6 +108,14 @@ function MyCreationsPage({
   const [friends, setFriends] = useState([])
   const [showEditProfile, setShowEditProfile] = useState(false)
 
+
+  useEffect(() => {
+    if (!isAuthenticated) {
+      setProfile(null)
+      return
+    }
+    fetchCurrentUser().then(setProfile).catch(() => {})
+  }, [isAuthenticated])
 
   useEffect(() => {
     if (!isAuthenticated) {
@@ -432,7 +442,10 @@ function MyCreationsPage({
   if (showEditProfile) {
     return (
       <EditProfile
-        onSave={() => setShowEditProfile(false)}
+        onSave={(updated) => {
+          setProfile(updated)
+          setShowEditProfile(false)
+        }}
         onCancel={() => setShowEditProfile(false)}
       />
     )
@@ -442,11 +455,22 @@ function MyCreationsPage({
     <div className="profile-page" role="region" aria-label="Profile">
       <div className="profile-header">
         <div className="profile-avatar" aria-hidden="true">
-          <span className="profile-avatar-initials">SC</span>
+          <span className="profile-avatar-initials">
+            {profile?.displayName ? profile.displayName.charAt(0).toUpperCase() : '?'}
+          </span>
         </div>
 
-        <p className="profile-name">Your Name</p>
-        <p className="profile-bio">No bio yet.</p>
+        {profile?.displayName ? (
+          <p className="profile-name">{profile.displayName}</p>
+        ) : (
+          <p className="profile-name profile-name--incomplete">
+            Profile not set up yet.{' '}
+            <button type="button" className="profile-setup-link" onClick={() => setShowEditProfile(true)}>
+              Set up your profile
+            </button>
+          </p>
+        )}
+        {profile?.bio ? <p className="profile-bio">{profile.bio}</p> : null}
 
         <button
           type="button"
@@ -456,15 +480,20 @@ function MyCreationsPage({
           Edit Profile
         </button>
 
-        <div className="profile-socials">
-          <button type="button" className="profile-social-link">
-            Instagram
-          </button>
-
-          <button type="button" className="profile-social-link">
-            Twitter
-          </button>
-        </div>
+        {(profile?.instagram || profile?.x) ? (
+          <div className="profile-socials">
+            {profile.instagram ? (
+              <a href={profile.instagram} className="profile-social-link" target="_blank" rel="noopener noreferrer">
+                Instagram
+              </a>
+            ) : null}
+            {profile.x ? (
+              <a href={profile.x} className="profile-social-link" target="_blank" rel="noopener noreferrer">
+                X
+              </a>
+            ) : null}
+          </div>
+        ) : null}
       </div>
 
       {draftsSection}
