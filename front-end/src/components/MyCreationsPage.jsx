@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { deleteCreation, fetchCreations } from '../services/creationsApi.js'
 import { getCreationKindLabel, getCreationPreviewUrl } from '../utils/creationPreviewUrl.js'
-import { getOrCreateOwnerKey } from '../utils/ownerKey.js'
 import EditProfile from './EditProfile'
 
 
@@ -114,7 +113,6 @@ function MyCreationsPage({
     }
 
     let cancelled = false
-    const ownerKey = getOrCreateOwnerKey()
 
     const load = async () => {
       await Promise.resolve()
@@ -125,7 +123,7 @@ function MyCreationsPage({
       setError(null)
 
       try {
-        const data = await fetchCreations(ownerKey)
+        const data = await fetchCreations()
 
         if (!cancelled) {
           setItems(Array.isArray(data) ? data : [])
