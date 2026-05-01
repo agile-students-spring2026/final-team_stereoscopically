@@ -5,8 +5,8 @@ const DEFAULT_BACKEND_BASE_URL = 'http://localhost:4000'
 export const getBackendBaseUrl = () =>
   (import.meta.env?.VITE_BACKEND_BASE_URL || DEFAULT_BACKEND_BASE_URL).trim()
 
-const notifyUnauthorized = (skipAuth, hadBearer, status) => {
-  if (status !== 401 || skipAuth || !hadBearer) return
+const notifyUnauthorized = (skipAuth, hadBearer, status, suppressUnauthorizedRedirect = false) => {
+  if (status !== 401 || skipAuth || !hadBearer || suppressUnauthorizedRedirect) return
   clearAuthToken()
   window.dispatchEvent(new CustomEvent('auth:session-expired'))
 }
@@ -83,6 +83,7 @@ export const postJson = async ({
   payload,
   fallbackErrorMessage = 'Request failed',
   skipAuth = false,
+  suppressUnauthorizedRedirect = false,
 }) => {
   const endpoint = `${getBackendBaseUrl()}${path}`
   const tokenAtStart = skipAuth ? '' : getAuthToken()
@@ -101,7 +102,7 @@ export const postJson = async ({
   }
 
   if (!response.ok) {
-    notifyUnauthorized(skipAuth, Boolean(tokenAtStart), response.status)
+    notifyUnauthorized(skipAuth, Boolean(tokenAtStart), response.status, suppressUnauthorizedRedirect)
     const message = await parseErrorMessage(response, fallbackErrorMessage)
     const error = new Error(message)
     error.status = response.status

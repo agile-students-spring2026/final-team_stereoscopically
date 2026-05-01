@@ -29,6 +29,8 @@ The database sprint requires JWT-based authorization, secrets in `.env` (never c
 - Registration and login use **bcrypt-hashed passwords** (`passwordHash` in the DB; plaintext passwords never stored).
 - Successful **register/signup** or **login/signin** returns a JWT signed with **HS256**, configured via `JWT_SECRET` with expiry `JWT_EXPIRES_IN` (default `7d`).
 - Protected routes validate the bearer token middleware-side; **`GET /api/me`** resolves the authenticated user document.
+- Authenticated users can update their own email (`PATCH /api/me/email`) and password (`PATCH /api/me/password`) after request validation.
+- JWT invalidation policy (MVP): tokens are stateless and are not force-revoked server-side on password/email change; they naturally expire by `JWT_EXPIRES_IN`.
 - `express-validator` runs on auth JSON bodies prior to Mongoose reads/writes; validation failures return **`400`** with an `errors` array.
 
 Aliases for the same handlers: **`POST /api/auth/register`** and **`POST /api/auth/signup`**; **`POST /api/auth/login`** and **`POST /api/auth/signin`**.
@@ -107,6 +109,40 @@ Success **`200`**: `{ "token": "<jwt>" }`. Wrong credential **`401`**: `{ "error
   "bio": ""
 }
 ```
+
+### Change email
+
+- **Method:** `PATCH`
+- **Path:** `/api/me/email`
+- **Headers:** `Authorization: Bearer <jwt>`
+- **JSON body:** `email`
+
+Success **`200`**:
+
+```json
+{
+  "token": "<fresh-jwt>"
+}
+```
+
+Duplicate email **`409`** with `{ "error": "Email already in use." }`.
+
+### Change password
+
+- **Method:** `PATCH`
+- **Path:** `/api/me/password`
+- **Headers:** `Authorization: Bearer <jwt>`
+- **JSON body:** `currentPassword`, `newPassword` (`8-128` chars)
+
+Success **`200`**:
+
+```json
+{
+  "message": "Password changed successfully. You can keep using this session, or sign out if you are on a shared device."
+}
+```
+
+Wrong current password **`401`** with `{ "error": "Invalid credentials." }`.
 
 ### Upload image
 
