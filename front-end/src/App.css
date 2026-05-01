@@ -152,6 +152,22 @@
   box-sizing: border-box;
 }
 
+.card-actions {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 1rem;
+  padding: 0 1rem;
+  width: 100%;
+  max-width: var(--editor-max-width);
+}
+
+.error-text {
+  display: block;
+  color: red;
+  font-size: 0.85rem;
+  margin-top: 3rem;
+}
+
 .card h2 {
   font-size: 1.5rem;
   margin: 0 0 1.5rem 0;
@@ -165,42 +181,6 @@
 .card--compact {
   max-width: min(100%, 34rem);
   padding: 1.35rem;
-}
-
-.editor-draft-title-row {
-  display: flex;
-  flex-direction: column;
-  gap: 0.35rem;
-  margin-bottom: 1rem;
-  width: 100%;
-  max-width: min(100%, 34rem);
-}
-
-.editor-draft-title-label {
-  font-size: 0.85rem;
-  font-weight: 600;
-  color: inherit;
-  opacity: 0.85;
-}
-
-.editor-draft-title-input {
-  width: 100%;
-  box-sizing: border-box;
-  padding: 0.55rem 0.65rem;
-  border-radius: 8px;
-  border: 1px solid rgba(0, 0, 0, 0.12);
-  font: inherit;
-  background: rgba(255, 255, 255, 0.9);
-}
-
-.editor-draft-title-input:focus {
-  outline: 2px solid rgba(100, 120, 200, 0.35);
-  outline-offset: 1px;
-}
-
-.editor-draft-title-input:disabled {
-  opacity: 0.65;
-  cursor: not-allowed;
 }
 
 .editor-actions {
@@ -1352,31 +1332,6 @@ input[type='range']::-moz-range-thumb {
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06);
 }
 
-.my-creations-item--drafts {
-  flex-direction: column;
-  align-items: stretch;
-  gap: 0.65rem;
-}
-
-.my-creations-item-draft-main {
-  display: flex;
-  align-items: flex-start;
-  gap: 1rem;
-  min-width: 0;
-}
-
-.my-creations-item-footer {
-  display: flex;
-  justify-content: flex-end;
-  margin-top: 0.1rem;
-  padding-top: 0.55rem;
-  border-top: 1px solid #f0f0f0;
-}
-
-.my-creations-item-row2--single {
-  justify-content: flex-start;
-}
-
 .my-creations-thumb-wrap {
   flex-shrink: 0;
   width: 4.5rem;
@@ -2051,96 +2006,6 @@ input[type='range']::-moz-range-thumb {
   color: #aaa;
 }
 
-.profile-activity-exports-list {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 0.45rem;
-  max-height: 11.5rem;
-  overflow-y: auto;
-}
-
-.profile-activity-export-row {
-  min-width: 0;
-}
-
-.profile-activity-export-stack {
-  display: flex;
-  flex-direction: column;
-  gap: 0.35rem;
-}
-
-.profile-activity-export-button:focus-visible {
-  outline: 2px solid rgba(100, 108, 255, 0.35);
-  outline-offset: 2px;
-  border-radius: 8px;
-}
-
-.profile-activity-export-button {
-  display: flex;
-  align-items: center;
-  gap: 0.55rem;
-  width: 100%;
-  padding: 0;
-  margin: 0;
-  border: none;
-  background: none;
-  font: inherit;
-  color: inherit;
-  cursor: pointer;
-  text-align: left;
-}
-
-.profile-activity-export-static {
-  display: flex;
-  align-items: center;
-  gap: 0.55rem;
-  min-width: 0;
-}
-
-.profile-activity-export-footer {
-  display: flex;
-  justify-content: flex-end;
-}
-
-.profile-activity-export-footer .my-creations-delete {
-  font-size: 0.78rem;
-  padding: 0.28rem 0.55rem;
-}
-
-.profile-activity-export-thumb .my-creations-thumb-wrap {
-  width: 2.5rem;
-  height: 2.5rem;
-  border-radius: 8px;
-}
-
-.profile-activity-export-thumb .my-creations-thumb {
-  border-radius: 8px;
-}
-
-.profile-activity-export-meta {
-  display: flex;
-  flex-direction: column;
-  gap: 0.12rem;
-  min-width: 0;
-}
-
-.profile-activity-export-title {
-  font-size: 0.8rem;
-  font-weight: 600;
-  color: #222;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.profile-activity-export-updated {
-  font-size: 0.72rem;
-  color: #888;
-}
-
 /* ============================================================================
    ACCOUNT
    ============================================================================ */
@@ -2166,11 +2031,6 @@ input[type='range']::-moz-range-thumb {
 .profile-account-actions {
   display: flex;
   flex-direction: column;
-}
-
-.profile-account-form {
-  padding: 0.7rem 0.95rem 0.95rem;
-  border-top: 1px solid #f0f0f0;
 }
 
 .profile-account-action {
@@ -2260,14 +2120,6 @@ input[type='range']::-moz-range-thumb {
   color: #888;
   margin: 0;
   line-height: 1.5;
-}
-
-.profile-guest-drafts-hint {
-  font-size: 0.85rem;
-  color: #666;
-  margin: -0.25rem 0 0.85rem;
-  line-height: 1.45;
-  padding: 0 0.25rem;
 }
 
 .profile-guest-actions {
