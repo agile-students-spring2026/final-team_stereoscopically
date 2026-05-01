@@ -7,7 +7,7 @@
 	"scripts": {
 		"start": "node server.js",
 		"dev": "node server.js",
-		"test": "mocha \"test/**/*.test.js\" --exit",
+		"test": "mocha \"test/**/*.test.js\" --file test/integration-root.mjs --exit",
 		"coverage": "c8 --all --src . --reporter=text --reporter=html mocha \"test/**/*.test.js\" --exit"
 	},
 	"overrides": {

@@ -2,13 +2,13 @@ name: CI
 
 on:
   push:
-    branches: [main, master]
   pull_request:
-    branches: [main, master]
+
+permissions:
+  contents: read
 
 jobs:
   frontend:
-    name: Front-end
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -18,37 +18,54 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: 22
+          node-version: "22"
           cache: npm
-          cache-dependency-path: ./front-end/package-lock.json
+          cache-dependency-path: front-end/package-lock.json
 
       - run: npm ci
       - run: npm run lint
-      - run: npm test
       - run: npm run build
+      - run: npm test
 
-  backend-tests:
-    name: Back-end tests
+  backend:
     runs-on: ubuntu-latest
     defaults:
       run:
         working-directory: back-end
+
+    services:
+      mongodb:
+        image: mongo:7
+        ports:
+          - 27017:27017
+        options: >-
+          --health-cmd "mongosh --quiet --eval 'db.adminCommand({ ping: 1 })'"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 8
+          --health-start-period 15s
+
+    env:
+      MONGODB_URI: mongodb://127.0.0.1:27017/stereoscopic_ci
+      MONGODB_DB_NAME: stereoscopically_ci
+      JWT_SECRET: ci-github-actions-jwt-secret-at-least-32-characters
+
     steps:
       - uses: actions/checkout@v4
 
       - uses: actions/setup-node@v4
         with:
-          node-version: 22
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: back-end/package-lock.json
 
-      - name: Install dependencies
-        run: |
-          if [ -f package-lock.json ]; then
-            npm ci
-          else
-            npm install
-          fi
+      - run: npm ci
+      - run: npm test
 
-      - name: Run tests
-        env:
-          NODE_ENV: test
-        run: npm test
+  docker-build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build container images (Docker extra credit sanity check)
+        run: docker compose build

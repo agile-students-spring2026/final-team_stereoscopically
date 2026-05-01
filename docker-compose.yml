@@ -1,0 +1,46 @@
+services:
+  mongo:
+    image: mongo:7
+    restart: unless-stopped
+    volumes:
+      - mongo-data:/data/db
+    healthcheck:
+      test: ["CMD", "mongosh", "--quiet", "--eval", "db.adminCommand({ ping: 1 })"]
+      interval: 10s
+      timeout: 5s
+      retries: 8
+      start_period: 15s
+
+  api:
+    build:
+      context: ./back-end
+      dockerfile: Dockerfile
+    ports:
+      # If local `npm run dev` already uses 4000, set HOST_API_PORT=4001 in `.env` or the shell.
+      - "${HOST_API_PORT:-4000}:4000"
+    depends_on:
+      mongo:
+        condition: service_healthy
+    restart: unless-stopped
+    environment:
+      MONGODB_URI: ${MONGODB_URI:-mongodb://mongo:27017/docker_local}
+      MONGODB_DB_NAME: ${MONGODB_DB_NAME:-stereoscopically}
+      JWT_SECRET: ${JWT_SECRET:-change-me-docker-jwt-secret-at-least-32-chars}
+      JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-7d}
+      BCRYPT_COST: ${BCRYPT_COST:-11}
+      PORT: 4000
+
+  web:
+    build:
+      context: ./front-end
+      dockerfile: Dockerfile
+      args:
+        VITE_BACKEND_RELATIVE: "true"
+    ports:
+      - "${HOST_WEB_PORT:-8080}:80"
+    depends_on:
+      - api
+    restart: unless-stopped
+
+volumes:
+  mongo-data:
