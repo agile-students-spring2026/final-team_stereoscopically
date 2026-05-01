@@ -4,9 +4,11 @@ import { body } from 'express-validator'
 import {
 	changeEmail,
 	changePassword,
+	getLikes,
 	login,
 	me,
 	register,
+	updateMe,
 	verifyCurrentPassword,
 } from '../controllers/authController.js'
 import { requireAuth } from '../middleware/authMiddleware.js'
@@ -76,6 +78,8 @@ router.post('/api/auth/signup', ...registerMiddleware)
 router.post('/api/auth/login', ...loginMiddleware)
 router.post('/api/auth/signin', ...loginMiddleware)
 router.get('/api/me', requireAuth, me)
+router.patch('/api/me', requireAuth, updateMe)
+router.get('/api/me/likes', requireAuth, getLikes)
 router.patch('/api/me/email', requireAuth, ...changeEmailBody, handleValidationErrors, changeEmail)
 router.patch(
 	'/api/me/password',
