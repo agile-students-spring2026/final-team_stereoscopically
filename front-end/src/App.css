@@ -2138,6 +2138,184 @@ input[type='range']::-moz-range-thumb {
 }
 
 /* ============================================================================
+   EDIT PROFILE
+   ============================================================================ */
+
+.edit-profile-screen {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.edit-profile-card {
+  max-width: 420px;
+  gap: 1.15rem;
+  align-items: stretch;
+}
+
+.edit-profile-header {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  width: 100%;
+}
+
+.edit-profile-header .auth-card-title {
+  text-align: left;
+  margin: 0;
+}
+
+.edit-profile-avatar-preview {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 1px solid #e0e0e0;
+}
+
+.edit-profile-upload-btn {
+  align-self: flex-start;
+  cursor: pointer;
+  font-size: 0.88rem;
+  padding: 0.45rem 0.9rem;
+  min-height: unset;
+}
+
+.edit-profile-bio {
+  resize: vertical;
+  min-height: 80px;
+  line-height: 1.45;
+}
+
+.edit-profile-actions {
+  display: flex;
+  gap: 0.75rem;
+  justify-content: flex-end;
+  margin-top: 0.25rem;
+}
+
+.edit-profile-actions .btn-primary,
+.edit-profile-actions .btn-secondary {
+  flex: 1;
+}
+
+/* ============================================================================
+   PROFILE FORM SHARED (used in EditProfile + account modals)
+   ============================================================================ */
+
+.profile-form-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.32rem;
+  width: 100%;
+}
+
+.profile-form-required {
+  color: #c0392b;
+  margin-left: 1px;
+}
+
+.profile-form-error {
+  font-size: 0.82rem;
+  color: #c0392b;
+  margin: 0;
+}
+
+.profile-form-alert {
+  font-size: 0.88rem;
+  color: #9a1a1a;
+  background: #fff5f5;
+  border: 1px solid #f0c0c0;
+  border-radius: 6px;
+  padding: 0.55rem 0.85rem;
+  margin: 0;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.profile-form-success {
+  font-size: 0.88rem;
+  color: #1a6a38;
+  background: #f0faf5;
+  border: 1px solid #a3d9b8;
+  border-radius: 6px;
+  padding: 0.55rem 0.85rem;
+  margin: 0;
+}
+
+.auth-input--error {
+  border-color: #c0392b;
+}
+
+.auth-input--error:focus {
+  outline-color: rgba(192, 57, 43, 0.4);
+  border-color: #c0392b;
+}
+
+.hidden-file-input {
+  display: none;
+}
+
+/* ============================================================================
+   PROFILE USERNAME + SETUP NUDGE
+   ============================================================================ */
+
+.profile-username {
+  font-size: 0.9rem;
+  color: #888;
+  margin: 0;
+}
+
+.profile-name--incomplete {
+  color: #888;
+  font-weight: 400;
+  font-size: 0.95rem;
+}
+
+.profile-setup-link {
+  background: none;
+  border: none;
+  color: #646cff;
+  font-size: inherit;
+  cursor: pointer;
+  padding: 0;
+  font-family: inherit;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.profile-setup-link:hover {
+  color: #3e47cf;
+}
+
+/* ============================================================================
+   ACCOUNT MODALS
+   ============================================================================ */
+
+.account-modal {
+  max-width: 26rem;
+  width: 100%;
+}
+
+.account-modal-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  width: 100%;
+}
+
+.my-creations-modal-btn--confirm {
+  background: #000;
+  border-color: #000;
+  color: #fff;
+}
+
+.my-creations-modal-btn--confirm:hover:not(:disabled) {
+  background: #222;
+}
+
+/* ============================================================================
    RESPONSIVE
    ============================================================================ */
 

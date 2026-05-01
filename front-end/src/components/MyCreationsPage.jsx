@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { deleteCreation, fetchCreations } from '../services/creationsApi.js'
-import { fetchCurrentUser } from '../services/authApi.js'
+import { changeEmail, changePassword, fetchCurrentUser } from '../services/authApi.js'
 import { getCreationKindLabel, getCreationPreviewUrl } from '../utils/creationPreviewUrl.js'
 import EditProfile from './EditProfile'
 
@@ -61,6 +61,303 @@ const formatUpdated = (iso) => {
   }
 }
 
+function ChangeEmailModal({ onClose }) {
+  const [email, setEmail] = useState('')
+  const [errors, setErrors] = useState({})
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [success, setSuccess] = useState(false)
+
+  useEffect(() => {
+    const onKey = (e) => {
+      if (e.key === 'Escape' && !isSubmitting) onClose()
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [isSubmitting, onClose])
+
+  const handleSubmit = async () => {
+    const errs = {}
+    const trimmed = email.trim()
+    if (!trimmed) {
+      errs.email = 'Email is required.'
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmed)) {
+      errs.email = 'Enter a valid email address.'
+    }
+    if (Object.keys(errs).length) {
+      setErrors(errs)
+      return
+    }
+
+    setIsSubmitting(true)
+    try {
+      await changeEmail({ email: trimmed })
+      setSuccess(true)
+    } catch (err) {
+      setErrors({ api: err?.message || 'Could not update email.' })
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
+
+  return (
+    <div
+      className="my-creations-modal-backdrop"
+      role="presentation"
+      onClick={!isSubmitting ? onClose : undefined}
+    >
+      <div
+        className="my-creations-modal account-modal"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="change-email-title"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <h2 className="my-creations-modal-title" id="change-email-title">
+          Change Email
+        </h2>
+
+        {success ? (
+          <>
+            <p className="profile-form-success">Email updated successfully.</p>
+            <div className="my-creations-modal-actions" style={{ marginTop: '1rem' }}>
+              <button type="button" className="my-creations-modal-btn" onClick={onClose}>
+                Done
+              </button>
+            </div>
+          </>
+        ) : (
+          <>
+            {errors.api && (
+              <p className="my-creations-modal-error" role="alert">
+                {errors.api}
+              </p>
+            )}
+            <div className="account-modal-form">
+              <div className="profile-form-field">
+                <label htmlFor="ce-email" className="auth-label">
+                  New Email
+                </label>
+                <input
+                  id="ce-email"
+                  type="email"
+                  value={email}
+                  onChange={(e) => {
+                    setEmail(e.target.value)
+                    if (errors.email) setErrors((p) => ({ ...p, email: null }))
+                  }}
+                  placeholder="new@example.com"
+                  className={`auth-input${errors.email ? ' auth-input--error' : ''}`}
+                  autoComplete="email"
+                  disabled={isSubmitting}
+                />
+                {errors.email && (
+                  <p className="profile-form-error" role="alert">
+                    {errors.email}
+                  </p>
+                )}
+              </div>
+            </div>
+            <div className="my-creations-modal-actions" style={{ marginTop: '1.25rem' }}>
+              <button
+                type="button"
+                className="my-creations-modal-btn"
+                onClick={onClose}
+                disabled={isSubmitting}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                className="my-creations-modal-btn my-creations-modal-btn--confirm"
+                onClick={handleSubmit}
+                disabled={isSubmitting}
+              >
+                {isSubmitting ? 'Updating email…' : 'Update Email'}
+              </button>
+            </div>
+          </>
+        )}
+      </div>
+    </div>
+  )
+}
+
+function ChangePasswordModal({ onClose }) {
+  const [form, setForm] = useState({
+    currentPassword: '',
+    newPassword: '',
+    confirmPassword: '',
+  })
+  const [errors, setErrors] = useState({})
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [success, setSuccess] = useState(false)
+
+  useEffect(() => {
+    const onKey = (e) => {
+      if (e.key === 'Escape' && !isSubmitting) onClose()
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [isSubmitting, onClose])
+
+  const handleChange = (e) => {
+    const { name, value } = e.target
+    setForm((p) => ({ ...p, [name]: value }))
+    if (errors[name]) setErrors((p) => ({ ...p, [name]: null }))
+  }
+
+  const handleSubmit = async () => {
+    const errs = {}
+    if (!form.currentPassword) errs.currentPassword = 'Current password is required.'
+    if (!form.newPassword) {
+      errs.newPassword = 'New password is required.'
+    } else if (form.newPassword.length < 8) {
+      errs.newPassword = 'Password must be at least 8 characters.'
+    }
+    if (form.newPassword && form.newPassword !== form.confirmPassword) {
+      errs.confirmPassword = 'Passwords do not match.'
+    }
+    if (Object.keys(errs).length) {
+      setErrors(errs)
+      return
+    }
+
+    setIsSubmitting(true)
+    try {
+      await changePassword({
+        currentPassword: form.currentPassword,
+        newPassword: form.newPassword,
+      })
+      setSuccess(true)
+    } catch (err) {
+      setErrors({ api: err?.message || 'Could not update password.' })
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
+
+  return (
+    <div
+      className="my-creations-modal-backdrop"
+      role="presentation"
+      onClick={!isSubmitting ? onClose : undefined}
+    >
+      <div
+        className="my-creations-modal account-modal"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="change-password-title"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <h2 className="my-creations-modal-title" id="change-password-title">
+          Change Password
+        </h2>
+
+        {success ? (
+          <>
+            <p className="profile-form-success">Password updated successfully.</p>
+            <div className="my-creations-modal-actions" style={{ marginTop: '1rem' }}>
+              <button type="button" className="my-creations-modal-btn" onClick={onClose}>
+                Done
+              </button>
+            </div>
+          </>
+        ) : (
+          <>
+            {errors.api && (
+              <p className="my-creations-modal-error" role="alert">
+                {errors.api}
+              </p>
+            )}
+            <div className="account-modal-form">
+              <div className="profile-form-field">
+                <label htmlFor="cp-current" className="auth-label">
+                  Current Password
+                </label>
+                <input
+                  id="cp-current"
+                  type="password"
+                  name="currentPassword"
+                  value={form.currentPassword}
+                  onChange={handleChange}
+                  className={`auth-input${errors.currentPassword ? ' auth-input--error' : ''}`}
+                  autoComplete="current-password"
+                  disabled={isSubmitting}
+                />
+                {errors.currentPassword && (
+                  <p className="profile-form-error" role="alert">
+                    {errors.currentPassword}
+                  </p>
+                )}
+              </div>
+
+              <div className="profile-form-field">
+                <label htmlFor="cp-new" className="auth-label">
+                  New Password
+                </label>
+                <input
+                  id="cp-new"
+                  type="password"
+                  name="newPassword"
+                  value={form.newPassword}
+                  onChange={handleChange}
+                  className={`auth-input${errors.newPassword ? ' auth-input--error' : ''}`}
+                  autoComplete="new-password"
+                  disabled={isSubmitting}
+                />
+                {errors.newPassword && (
+                  <p className="profile-form-error" role="alert">
+                    {errors.newPassword}
+                  </p>
+                )}
+              </div>
+
+              <div className="profile-form-field">
+                <label htmlFor="cp-confirm" className="auth-label">
+                  Confirm New Password
+                </label>
+                <input
+                  id="cp-confirm"
+                  type="password"
+                  name="confirmPassword"
+                  value={form.confirmPassword}
+                  onChange={handleChange}
+                  className={`auth-input${errors.confirmPassword ? ' auth-input--error' : ''}`}
+                  autoComplete="new-password"
+                  disabled={isSubmitting}
+                />
+                {errors.confirmPassword && (
+                  <p className="profile-form-error" role="alert">
+                    {errors.confirmPassword}
+                  </p>
+                )}
+              </div>
+            </div>
+            <div className="my-creations-modal-actions" style={{ marginTop: '1.25rem' }}>
+              <button
+                type="button"
+                className="my-creations-modal-btn"
+                onClick={onClose}
+                disabled={isSubmitting}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                className="my-creations-modal-btn my-creations-modal-btn--confirm"
+                onClick={handleSubmit}
+                disabled={isSubmitting}
+              >
+                {isSubmitting ? 'Updating password…' : 'Update Password'}
+              </button>
+            </div>
+          </>
+        )}
+      </div>
+    </div>
+  )
+}
+
 function GuestProfileView({ onGoSignIn, onGoSignUp }) {
   return (
     <div className="profile-guest">
@@ -107,6 +404,8 @@ function MyCreationsPage({
   const [friendRequests, setFriendRequests] = useState([])
   const [friends, setFriends] = useState([])
   const [showEditProfile, setShowEditProfile] = useState(false)
+  const [showChangeEmail, setShowChangeEmail] = useState(false)
+  const [showChangePassword, setShowChangePassword] = useState(false)
 
 
   useEffect(() => {
@@ -245,11 +544,11 @@ function MyCreationsPage({
     if (loading) {
       return <p className="profile-section-empty editor-status editor-status--loading">Loading…</p>
     }
-  
+
     if (error) {
       return <p className="profile-section-empty editor-status editor-status--error">{error}</p>
     }
-  
+
     if (!draftItems.length) {
       return (
         <>
@@ -258,13 +557,13 @@ function MyCreationsPage({
         </>
       )
     }
-  
+
     return (
       <ul className="my-creations-list profile-drafts-list">
         {draftItems.map((row) => {
           const id = row._id ?? row.id
           const title = typeof row.title === 'string' && row.title.trim() ? row.title.trim() : 'Untitled'
-  
+
           return (
             <li
               key={id}
@@ -296,13 +595,13 @@ function MyCreationsPage({
     if (!exportedItems.length) {
       return <p className="profile-section-empty profile-section-empty--compact">No exported stickers yet</p>
     }
-  
+
     return (
       <ul aria-label="Exported creations">
         {exportedItems.map((row) => {
           const id = row._id ?? row.id
           const title = typeof row.title === 'string' && row.title.trim() ? row.title.trim() : 'Untitled'
-  
+
           return (
             <li key={id} className="my-creations-item">
               <CreationPreviewThumb row={row} title={title} />
@@ -527,18 +826,22 @@ function MyCreationsPage({
         <p className="profile-account-title">Account</p>
 
         <div className="profile-account-actions">
-          <button type="button" className="profile-account-action">
+          <button
+            type="button"
+            className="profile-account-action"
+            onClick={() => setShowChangeEmail(true)}
+          >
             <span>Change Email</span>
-            <span className="profile-account-action-arrow" aria-hidden="true">
-              ›
-            </span>
+            <span className="profile-account-action-arrow" aria-hidden="true">›</span>
           </button>
 
-          <button type="button" className="profile-account-action">
+          <button
+            type="button"
+            className="profile-account-action"
+            onClick={() => setShowChangePassword(true)}
+          >
             <span>Change Password</span>
-            <span className="profile-account-action-arrow" aria-hidden="true">
-              ›
-            </span>
+            <span className="profile-account-action-arrow" aria-hidden="true">›</span>
           </button>
 
           <button
@@ -596,6 +899,14 @@ function MyCreationsPage({
             </div>
           </div>
         </div>
+      ) : null}
+
+      {showChangeEmail ? (
+        <ChangeEmailModal onClose={() => setShowChangeEmail(false)} />
+      ) : null}
+
+      {showChangePassword ? (
+        <ChangePasswordModal onClose={() => setShowChangePassword(false)} />
       ) : null}
     </div>
   )
