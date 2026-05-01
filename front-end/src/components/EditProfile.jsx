@@ -10,12 +10,15 @@ function EditProfile({ onSave, onCancel }) {
     instagram: '',
     x: '',
   })
+  const [avatarFile, setAvatarFile] = useState(null)
   const [avatarPreview, setAvatarPreview] = useState(null)
   const [errors, setErrors] = useState({})
+  const [isLoading, setIsLoading] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
 
   useEffect(() => {
     const fetchProfile = async () => {
+      setIsLoading(true)
       try {
         const res = await fetch('/api/me', {
           headers: { Authorization: `Bearer ${getAuthToken()}` }
@@ -29,8 +32,10 @@ function EditProfile({ onSave, onCancel }) {
           instagram: data.instagram || '',
           x: data.x || '',
         })
-      } catch (_err) {
+      } catch {
         setErrors({ fetch: 'Could not load profile. Please try again.' })
+      } finally {
+        setIsLoading(false)
       }
     }
     fetchProfile()
@@ -45,6 +50,7 @@ function EditProfile({ onSave, onCancel }) {
   const handleAvatarFileChange = (e) => {
     const file = e.target.files?.[0]
     if (!file) return
+    setAvatarFile(file)
     setAvatarPreview(URL.createObjectURL(file))
   }
 
@@ -99,7 +105,7 @@ function EditProfile({ onSave, onCancel }) {
 
       const updated = await res.json()
       onSave?.(updated)
-    } catch (_err) {
+    } catch {
       setErrors({ api: 'Network error. Please try again.' })
     } finally {
       setIsSaving(false)
