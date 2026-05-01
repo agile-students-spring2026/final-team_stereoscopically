@@ -1,17 +1,17 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { deleteCreation, fetchCreations } from '../services/creationsApi.js'
 import { getCreationKindLabel, getCreationPreviewUrl } from '../utils/creationPreviewUrl.js'
-import * as authApi from '../services/authApi.js'
+import { getOrCreateOwnerKey } from '../utils/ownerKey.js'
+import EditProfile from './EditProfile'
+
 
 function CreationPreviewThumb({ row, title }) {
   const url = getCreationPreviewUrl(row)
   const kind = getCreationKindLabel(row)
   const [failed, setFailed] = useState(false)
-  const hasExportAsset =
-    typeof row?.exportAssetId === 'string' ? Boolean(row.exportAssetId.trim()) : false
 
   if (url && !failed) {
-    if (kind === 'video' && !hasExportAsset) {
+    if (kind === 'video') {
       return (
         <div className="my-creations-thumb-wrap">
           <video
@@ -55,36 +55,10 @@ const formatUpdated = (iso) => {
   try {
     const d = new Date(iso)
     if (Number.isNaN(d.getTime())) return '—'
-    return d.toLocaleString('en-US', { dateStyle: 'medium', timeStyle: 'short' })
+    return d.toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' })
   } catch {
     return '—'
   }
-}
-
-const profileDisplayName = (user) => {
-  const d = user?.displayName?.trim()
-  if (d) return d
-  const e = user?.email?.trim()
-  if (e) return e
-  return 'Your Name'
-}
-
-const profileBioText = (user) => {
-  const b = user?.bio?.trim()
-  if (b) return b
-  return 'No bio yet.'
-}
-
-const profileInitials = (user) => {
-  const dn = user?.displayName?.trim()
-  if (dn) {
-    const parts = dn.split(/\s+/).filter(Boolean)
-    if (parts.length >= 2) return (parts[0][0] + parts[1][0]).toUpperCase().slice(0, 2)
-    if (parts[0]) return parts[0].slice(0, 2).toUpperCase()
-  }
-  const em = user?.email?.trim()
-  if (em) return em.slice(0, 2).toUpperCase()
-  return 'SC'
 }
 
 function GuestProfileView({ onGoSignIn, onGoSignUp }) {
@@ -119,11 +93,9 @@ function MyCreationsPage({
   refreshKey = 0,
   onSelectCreation,
   isAuthenticated = true,
-  currentUser = null,
   onGoSignIn,
   onGoSignUp,
   onSignOut,
-  onCurrentUserUpdated,
 }) {
   const [items, setItems] = useState([])
   const [loading, setLoading] = useState(false)
@@ -133,24 +105,16 @@ function MyCreationsPage({
   const [deleteDialogError, setDeleteDialogError] = useState(null)
   const [friendRequests, setFriendRequests] = useState([])
   const [friends, setFriends] = useState([])
-  const [showEmailForm, setShowEmailForm] = useState(false)
-  const [showPasswordForm, setShowPasswordForm] = useState(false)
-  const [nextEmail, setNextEmail] = useState('')
-  const [emailSubmitting, setEmailSubmitting] = useState(false)
-  const [emailError, setEmailError] = useState('')
-  const [emailSuccess, setEmailSuccess] = useState('')
-  const [currentPassword, setCurrentPassword] = useState('')
-  const [newPassword, setNewPassword] = useState('')
-  const [showCurrentPassword, setShowCurrentPassword] = useState(false)
-  const [showNewPassword, setShowNewPassword] = useState(false)
-  const [isCurrentPasswordVerified, setIsCurrentPasswordVerified] = useState(false)
-  const [currentPasswordVerifying, setCurrentPasswordVerifying] = useState(false)
-  const [passwordSubmitting, setPasswordSubmitting] = useState(false)
-  const [passwordError, setPasswordError] = useState('')
-  const [passwordSuccess, setPasswordSuccess] = useState('')
+  const [showEditProfile, setShowEditProfile] = useState(false)
+
 
   useEffect(() => {
+    if (!isAuthenticated) {
+      return undefined
+    }
+
     let cancelled = false
+    const ownerKey = getOrCreateOwnerKey()
 
     const load = async () => {
       await Promise.resolve()
@@ -161,7 +125,7 @@ function MyCreationsPage({
       setError(null)
 
       try {
-        const data = await fetchCreations()
+        const data = await fetchCreations(ownerKey)
 
         if (!cancelled) {
           setItems(Array.isArray(data) ? data : [])
@@ -262,115 +226,9 @@ function MyCreationsPage({
     [friendRequests.length, friends.length]
   )
 
-  const exportedCreations = useMemo(
-    () =>
-      Array.isArray(items)
-        ? items.filter((row) => row.status === 'exported')
-        : [],
-    [items]
-  )
-
-  const draftItems = useMemo(
-    () =>
-      Array.isArray(items)
-        ? items.filter((row) => row.status !== 'exported')
-        : [],
-    [items]
-  )
-
-  const toggleEmailForm = useCallback(() => {
-    setShowEmailForm((prev) => {
-      const next = !prev
-      if (next) {
-        setNextEmail(currentUser?.email || '')
-        setEmailError('')
-        setEmailSuccess('')
-      }
-      return next
-    })
-  }, [currentUser?.email])
-
-  const togglePasswordForm = useCallback(() => {
-    setShowPasswordForm((prev) => {
-      const next = !prev
-      if (next) {
-        setCurrentPassword('')
-        setNewPassword('')
-        setShowCurrentPassword(false)
-        setShowNewPassword(false)
-        setIsCurrentPasswordVerified(false)
-        setCurrentPasswordVerifying(false)
-        setPasswordError('')
-        setPasswordSuccess('')
-      }
-      return next
-    })
-  }, [])
-
-  const handleChangeEmail = useCallback(
-    async (e) => {
-      e.preventDefault()
-      if (emailSubmitting) return
-
-      setEmailSubmitting(true)
-      setEmailError('')
-      setEmailSuccess('')
-      try {
-        const updated = await authApi.changeEmail({ email: nextEmail })
-        onCurrentUserUpdated?.(updated)
-        setEmailSuccess('Email updated successfully.')
-      } catch (err) {
-        setEmailError(err?.message || 'Could not change email.')
-      } finally {
-        setEmailSubmitting(false)
-      }
-    },
-    [emailSubmitting, nextEmail, onCurrentUserUpdated]
-  )
-
-  const handleChangePassword = useCallback(
-    async (e) => {
-      e.preventDefault()
-      if (passwordSubmitting) return
-      if (!isCurrentPasswordVerified) {
-        setPasswordError('Please verify your current password first.')
-        return
-      }
-
-      setPasswordSubmitting(true)
-      setPasswordError('')
-      setPasswordSuccess('')
-      try {
-        const response = await authApi.changePassword({ currentPassword, newPassword })
-        setCurrentPassword('')
-        setNewPassword('')
-        setPasswordSuccess(response?.message || 'Password updated successfully.')
-      } catch (err) {
-        setPasswordError(err?.message || 'Could not change password.')
-      } finally {
-        setPasswordSubmitting(false)
-      }
-    },
-    [currentPassword, isCurrentPasswordVerified, newPassword, passwordSubmitting]
-  )
-
-  const handleVerifyCurrentPassword = useCallback(async () => {
-    if (currentPasswordVerifying) return
-
-    setCurrentPasswordVerifying(true)
-    setPasswordError('')
-    setPasswordSuccess('')
-    try {
-      await authApi.verifyCurrentPassword({ currentPassword })
-      setIsCurrentPasswordVerified(true)
-      setPasswordSuccess('Current password verified.')
-    } catch (err) {
-      setIsCurrentPasswordVerified(false)
-      setPasswordError(err?.message || 'Current password is incorrect.')
-    } finally {
-      setCurrentPasswordVerifying(false)
-    }
-  }, [currentPassword, currentPasswordVerifying])
+  if (!isAuthenticated) {
+    return <GuestProfileView onGoSignIn={onGoSignIn} onGoSignUp={onGoSignUp} />
+  }
 
   const renderDraftsContent = () => {
     if (loading) {
@@ -385,24 +243,17 @@ function MyCreationsPage({
       return <p className="profile-section-empty">No saved stickers yet.</p>
     }
 
-    if (!draftItems.length) {
-      return (
-        <p className="profile-section-empty">
-          No drafts yet. Exported stickers are under Activity.
-        </p>
-      )
-    }
-
     return (
       <ul className="my-creations-list profile-drafts-list">
-        {draftItems.map((row) => {
+        {items.map((row) => {
           const id = row._id ?? row.id
           const title = typeof row.title === 'string' && row.title.trim() ? row.title.trim() : 'Untitled'
+          const status = row.status === 'exported' ? 'exported' : 'draft'
 
           return (
             <li
               key={id}
-              className={`my-creations-item my-creations-item--drafts${onSelectCreation ? ' my-creations-item--clickable' : ''}`}
+              className={`my-creations-item${onSelectCreation ? ' my-creations-item--clickable' : ''}`}
               onClick={() => onSelectCreation?.(row)}
               role={onSelectCreation ? 'button' : undefined}
               tabIndex={onSelectCreation ? 0 : undefined}
@@ -417,42 +268,48 @@ function MyCreationsPage({
                   : undefined
               }
             >
-              <div className="my-creations-item-draft-main">
-                <CreationPreviewThumb row={row} title={title} />
+              <CreationPreviewThumb row={row} title={title} />
 
-                <div className="my-creations-item-body">
-                  <div className="my-creations-item-main">
-                    {onSelectCreation ? (
-                      <button
-                        type="button"
-                        className="my-creations-item-title my-creations-item-title--link"
-                        onClick={(e) => {
-                          e.stopPropagation()
-                          onSelectCreation(row)
-                        }}
-                      >
-                        {title}
-                      </button>
-                    ) : (
-                      <span className="my-creations-item-title">{title}</span>
-                    )}
-                  </div>
+              <div className="my-creations-item-body">
+                <div className="my-creations-item-main">
+                  {onSelectCreation ? (
+                    <button
+                      type="button"
+                      className="my-creations-item-title my-creations-item-title--link"
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        onSelectCreation(row)
+                      }}
+                    >
+                      {title}
+                    </button>
+                  ) : (
+                    <span className="my-creations-item-title">{title}</span>
+                  )}
 
-                  <div className="my-creations-item-row2 my-creations-item-row2--single">
-                    <div className="my-creations-item-meta">Updated {formatUpdated(row.updatedAt)}</div>
-                  </div>
+                  <span
+                    className={
+                      status === 'exported'
+                        ? 'my-creations-badge my-creations-badge--exported'
+                        : 'my-creations-badge my-creations-badge--draft'
+                    }
+                  >
+                    {status === 'exported' ? 'Exported' : 'Draft'}
+                  </span>
                 </div>
-              </div>
 
-              <div className="my-creations-item-footer">
-                <button
-                  type="button"
-                  className="my-creations-delete"
-                  onClick={(e) => requestDelete(e, row)}
-                  aria-label={`Delete ${title}`}
-                >
-                  Delete
-                </button>
+                <div className="my-creations-item-row2">
+                  <div className="my-creations-item-meta">Updated {formatUpdated(row.updatedAt)}</div>
+
+                  <button
+                    type="button"
+                    className="my-creations-delete"
+                    onClick={(e) => requestDelete(e, row)}
+                    aria-label={`Delete ${title}`}
+                  >
+                    Delete
+                  </button>
+                </div>
               </div>
             </li>
           )
@@ -542,122 +399,48 @@ function MyCreationsPage({
     )
   }
 
-  const renderActivityCreationsBody = () => {
-    if (loading) {
-      return <p className="profile-section-empty profile-section-empty--compact editor-status editor-status--loading">Loading…</p>
-    }
-    if (error) {
-      return <p className="profile-section-empty profile-section-empty--compact editor-status editor-status--error">{error}</p>
-    }
-    if (!exportedCreations.length) {
-      return (
-        <p className="profile-section-empty profile-section-empty--compact">
-          No exported stickers yet. Export from the editor to see them here.
-        </p>
-      )
-    }
+  const renderActivityContent = () => {
     return (
-      <ul className="profile-activity-exports-list" aria-label="Exported creations">
-        {exportedCreations.map((row) => {
-          const id = row._id ?? row.id
-          const title = typeof row.title === 'string' && row.title.trim() ? row.title.trim() : 'Untitled'
+      <div className="profile-activity-grid">
+        <div className="profile-activity-card">
+          <div className="profile-activity-card-header">
+            <h4 className="profile-activity-card-title">Creations</h4>
+            <span className="profile-activity-card-count">0</span>
+          </div>
+          <p className="profile-section-empty profile-section-empty--compact">
+            Exported stickers will appear here.
+          </p>
+        </div>
 
-          const rowBody = (
-            <>
-              <div className="profile-activity-export-thumb">
-                <CreationPreviewThumb row={row} title={title} />
-              </div>
-              <div className="profile-activity-export-meta">
-                <span className="profile-activity-export-title">{title}</span>
-                <span className="profile-activity-export-updated">{formatUpdated(row.updatedAt)}</span>
-              </div>
-            </>
-          )
-
-          return (
-            <li key={id} className="profile-activity-export-row">
-              <div className="profile-activity-export-stack">
-                {onSelectCreation ? (
-                  <button
-                    type="button"
-                    className="profile-activity-export-button"
-                    onClick={() => onSelectCreation(row)}
-                  >
-                    {rowBody}
-                  </button>
-                ) : (
-                  <div className="profile-activity-export-static">{rowBody}</div>
-                )}
-                <div className="profile-activity-export-footer">
-                  <button
-                    type="button"
-                    className="my-creations-delete"
-                    onClick={(e) => requestDelete(e, row)}
-                    aria-label={`Delete ${title}`}
-                  >
-                    Delete
-                  </button>
-                </div>
-              </div>
-            </li>
-          )
-        })}
-      </ul>
+        <div className="profile-activity-card">
+          <div className="profile-activity-card-header">
+            <h4 className="profile-activity-card-title">Likes</h4>
+            <span className="profile-activity-card-count">0</span>
+          </div>
+          <p className="profile-section-empty profile-section-empty--compact">
+            Stickers you like will appear here.
+          </p>
+        </div>
+      </div>
     )
   }
-
-  const renderActivityContent = () => (
-    <div className="profile-activity-grid">
-      <div className="profile-activity-card profile-activity-card--creations">
-        <div className="profile-activity-card-header">
-          <h4 className="profile-activity-card-title">Creations</h4>
-          <span className="profile-activity-card-count">{loading || error ? '—' : exportedCreations.length}</span>
-        </div>
-        {renderActivityCreationsBody()}
-      </div>
-
-      <div className="profile-activity-card">
-        <div className="profile-activity-card-header">
-          <h4 className="profile-activity-card-title">Likes</h4>
-          <span className="profile-activity-card-count">0</span>
-        </div>
-        <p className="profile-section-empty profile-section-empty--compact">
-          Stickers you like will appear here.
-        </p>
-      </div>
-    </div>
-  )
 
   const draftsSection = (
     <div className="profile-section profile-section--drafts">
       <div className="profile-section-header">
-        <h3 className="profile-section-title">
-          {isAuthenticated ? 'Drafts' : 'Drafts on this browser'}
-        </h3>
-        {!loading && !error ? (
-          <span className="profile-section-count">{draftItems.length}</span>
-        ) : null}
+        <h3 className="profile-section-title">Drafts</h3>
+        {!loading && !error ? <span className="profile-section-count">{items.length}</span> : null}
       </div>
-
-      {!isAuthenticated ? (
-        <p className="profile-guest-drafts-hint">
-          Saved locally for this browser. Sign in to keep creations on your account.
-        </p>
-      ) : null}
 
       <div className="profile-section-body">{renderDraftsContent()}</div>
     </div>
   )
 
-  const activitySectionCount = loading || error ? null : exportedCreations.length
-
   const activitySection = (
     <div className="profile-section profile-section--activity">
       <div className="profile-section-header">
         <h3 className="profile-section-title">Activity</h3>
-        {activitySectionCount !== null ? (
-          <span className="profile-section-count">{activitySectionCount}</span>
-        ) : null}
+        <span className="profile-section-count">0</span>
       </div>
 
       <div className="profile-section-body">{renderActivityContent()}</div>
@@ -675,192 +458,75 @@ function MyCreationsPage({
     </div>
   )
 
+  if (showEditProfile) {
+    return (
+      <EditProfile
+        onSave={() => setShowEditProfile(false)}
+        onCancel={() => setShowEditProfile(false)}
+      />
+    )
+  }
+
   return (
     <div className="profile-page" role="region" aria-label="Profile">
-      {!isAuthenticated ? (
-        <GuestProfileView onGoSignIn={onGoSignIn} onGoSignUp={onGoSignUp} />
-      ) : (
-        <div className="profile-header">
-          <div className="profile-avatar" aria-hidden="true">
-            <span className="profile-avatar-initials">{profileInitials(currentUser)}</span>
-          </div>
-
-          <p className="profile-name">{profileDisplayName(currentUser)}</p>
-          <p className="profile-bio">{profileBioText(currentUser)}</p>
-
-          <div className="profile-socials">
-            <button type="button" className="profile-social-link">
-              Instagram
-            </button>
-
-            <button type="button" className="profile-social-link">
-              Twitter
-            </button>
-          </div>
+      <div className="profile-header">
+        <div className="profile-avatar" aria-hidden="true">
+          <span className="profile-avatar-initials">SC</span>
         </div>
-      )}
+
+        <p className="profile-name">Your Name</p>
+        <p className="profile-bio">No bio yet.</p>
+
+        <button
+          type="button"
+          className="btn-secondary"
+          onClick={() => setShowEditProfile(true)}
+        >
+          Edit Profile
+        </button>
+
+        <div className="profile-socials">
+          <button type="button" className="profile-social-link">
+            Instagram
+          </button>
+
+          <button type="button" className="profile-social-link">
+            Twitter
+          </button>
+        </div>
+      </div>
 
       {draftsSection}
+      {showConnectionsBeforeActivity ? connectionsSection : activitySection}
+      {showConnectionsBeforeActivity ? activitySection : connectionsSection}
 
-      {isAuthenticated ? (
-        <>
-          {showConnectionsBeforeActivity ? connectionsSection : activitySection}
-          {showConnectionsBeforeActivity ? activitySection : connectionsSection}
+      <div className="profile-account">
+        <p className="profile-account-title">Account</p>
 
-          <div className="profile-account">
-            <p className="profile-account-title">Account</p>
+        <div className="profile-account-actions">
+          <button type="button" className="profile-account-action">
+            <span>Change Email</span>
+            <span className="profile-account-action-arrow" aria-hidden="true">
+              ›
+            </span>
+          </button>
 
-            <div className="profile-account-actions">
-              <button type="button" className="profile-account-action" onClick={toggleEmailForm}>
-                <span>Change Email</span>
-                <span className="profile-account-action-arrow" aria-hidden="true">
-                  ›
-                </span>
-              </button>
-              {showEmailForm ? (
-                <form className="auth-form profile-account-form" onSubmit={handleChangeEmail}>
-                  {emailError ? <p className="editor-status editor-status--error">{emailError}</p> : null}
-                  {emailSuccess ? (
-                    <p className="editor-status editor-status--success">{emailSuccess}</p>
-                  ) : null}
-                  <div className="auth-field">
-                    <label htmlFor="profile-change-email" className="auth-label">
-                      New email
-                    </label>
-                    <input
-                      id="profile-change-email"
-                      type="email"
-                      className="auth-input"
-                      value={nextEmail}
-                      onChange={(e) => setNextEmail(e.target.value)}
-                      placeholder="you@example.com"
-                      autoComplete="email"
-                      required
-                    />
-                  </div>
-                  <button type="submit" className="btn-primary" disabled={emailSubmitting}>
-                    {emailSubmitting ? 'Updating…' : 'Update Email'}
-                  </button>
-                </form>
-              ) : null}
+          <button type="button" className="profile-account-action">
+            <span>Change Password</span>
+            <span className="profile-account-action-arrow" aria-hidden="true">
+              ›
+            </span>
+          </button>
 
-              <button type="button" className="profile-account-action" onClick={togglePasswordForm}>
-                <span>Change Password</span>
-                <span className="profile-account-action-arrow" aria-hidden="true">
-                  ›
-                </span>
-              </button>
-              {showPasswordForm ? (
-                <form className="auth-form profile-account-form" onSubmit={handleChangePassword}>
-                  {passwordError ? (
-                    <p className="editor-status editor-status--error">{passwordError}</p>
-                  ) : null}
-                  {passwordSuccess ? (
-                    <p className="editor-status editor-status--success">{passwordSuccess}</p>
-                  ) : null}
-                  <div className="auth-field">
-                    <label htmlFor="profile-current-password" className="auth-label">
-                      Current password
-                    </label>
-                    <div style={{ position: 'relative' }}>
-                      <input
-                        id="profile-current-password"
-                        type={showCurrentPassword ? 'text' : 'password'}
-                        className="auth-input"
-                        value={currentPassword}
-                        onChange={(e) => {
-                          setCurrentPassword(e.target.value)
-                          setIsCurrentPasswordVerified(false)
-                          setPasswordSuccess('')
-                        }}
-                        autoComplete="current-password"
-                        required
-                      />
-                      <button
-                        type="button"
-                        onClick={() => setShowCurrentPassword((prev) => !prev)}
-                        style={{
-                          position: 'absolute',
-                          right: '10px',
-                          top: '50%',
-                          transform: 'translateY(-50%)',
-                          background: 'none',
-                          border: 'none',
-                          cursor: 'pointer',
-                        }}
-                        aria-label={showCurrentPassword ? 'Hide current password' : 'Show current password'}
-                      >
-                        {showCurrentPassword ? 'Hide' : 'Show'}
-                      </button>
-                    </div>
-                  </div>
-                  <button
-                    type="button"
-                    className="btn-secondary"
-                    disabled={!currentPassword || currentPasswordVerifying}
-                    onClick={handleVerifyCurrentPassword}
-                  >
-                    {currentPasswordVerifying
-                      ? 'Verifying…'
-                      : isCurrentPasswordVerified
-                        ? 'Verified'
-                        : 'Verify Current Password'}
-                  </button>
-                  {isCurrentPasswordVerified ? (
-                    <>
-                      <div className="auth-field">
-                        <label htmlFor="profile-new-password" className="auth-label">
-                          New password
-                        </label>
-                        <div style={{ position: 'relative' }}>
-                          <input
-                            id="profile-new-password"
-                            type={showNewPassword ? 'text' : 'password'}
-                            className="auth-input"
-                            value={newPassword}
-                            onChange={(e) => setNewPassword(e.target.value)}
-                            autoComplete="new-password"
-                            minLength={8}
-                            maxLength={128}
-                            required
-                          />
-                          <button
-                            type="button"
-                            onClick={() => setShowNewPassword((prev) => !prev)}
-                            style={{
-                              position: 'absolute',
-                              right: '10px',
-                              top: '50%',
-                              transform: 'translateY(-50%)',
-                              background: 'none',
-                              border: 'none',
-                              cursor: 'pointer',
-                            }}
-                            aria-label={showNewPassword ? 'Hide new password' : 'Show new password'}
-                          >
-                            {showNewPassword ? 'Hide' : 'Show'}
-                          </button>
-                        </div>
-                      </div>
-                      <button type="submit" className="btn-primary" disabled={passwordSubmitting}>
-                        {passwordSubmitting ? 'Updating…' : 'Update Password'}
-                      </button>
-                    </>
-                  ) : null}
-                </form>
-              ) : null}
-
-              <button
-                type="button"
-                className="profile-account-action profile-account-action--danger"
-                onClick={onSignOut}
-              >
-                Sign Out
-              </button>
-            </div>
-          </div>
-        </>
-      ) : null}
+          <button
+            type="button"
+            className="profile-account-action profile-account-action--danger"
+            onClick={onSignOut}
+          >
+            Sign Out
+          </button>
+        </div>
+      </div>
 
       {pendingDelete ? (
         <div className="my-creations-modal-backdrop" role="presentation" onClick={cancelDelete}>
