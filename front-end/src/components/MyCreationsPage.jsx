@@ -241,7 +241,7 @@ function MyCreationsPage({
     }
   
     if (!draftItems.length) {
-      return <p className="profile-section-empty">No drafts yet</p>
+      return <p className="profile-section-empty">No saved stickers yet.</p>
     }
   
     return (
