@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { deleteCreation, fetchCreations } from '../services/creationsApi.js'
 import { getCreationKindLabel, getCreationPreviewUrl } from '../utils/creationPreviewUrl.js'
-import { getOrCreateOwnerKey } from '../utils/ownerKey.js'
 import EditProfile from './EditProfile'
 
 
@@ -114,7 +113,6 @@ function MyCreationsPage({
     }
 
     let cancelled = false
-    const ownerKey = getOrCreateOwnerKey()
 
     const load = async () => {
       await Promise.resolve()
@@ -125,7 +123,7 @@ function MyCreationsPage({
       setError(null)
 
       try {
-        const data = await fetchCreations(ownerKey)
+        const data = await fetchCreations()
 
         if (!cancelled) {
           setItems(Array.isArray(data) ? data : [])
@@ -230,26 +228,33 @@ function MyCreationsPage({
     return <GuestProfileView onGoSignIn={onGoSignIn} onGoSignUp={onGoSignUp} />
   }
 
+  const draftItems = items.filter(row => row.status !== 'exported')
+  const exportedItems = items.filter(row => row.status === 'exported')
+
   const renderDraftsContent = () => {
     if (loading) {
       return <p className="profile-section-empty editor-status editor-status--loading">Loading…</p>
     }
-
+  
     if (error) {
       return <p className="profile-section-empty editor-status editor-status--error">{error}</p>
     }
-
-    if (!items.length) {
-      return <p className="profile-section-empty">No saved stickers yet.</p>
+  
+    if (!draftItems.length) {
+      return (
+        <>
+          <p className="profile-section-empty">No saved stickers yet.</p>
+          <p className="profile-section-empty">No drafts yet</p>
+        </>
+      )
     }
-
+  
     return (
       <ul className="my-creations-list profile-drafts-list">
-        {items.map((row) => {
+        {draftItems.map((row) => {
           const id = row._id ?? row.id
           const title = typeof row.title === 'string' && row.title.trim() ? row.title.trim() : 'Untitled'
-          const status = row.status === 'exported' ? 'exported' : 'draft'
-
+  
           return (
             <li
               key={id}
@@ -257,56 +262,16 @@ function MyCreationsPage({
               onClick={() => onSelectCreation?.(row)}
               role={onSelectCreation ? 'button' : undefined}
               tabIndex={onSelectCreation ? 0 : undefined}
-              onKeyDown={
-                onSelectCreation
-                  ? (e) => {
-                      if (e.key === 'Enter' || e.key === ' ') {
-                        e.preventDefault()
-                        onSelectCreation(row)
-                      }
-                    }
-                  : undefined
-              }
             >
               <CreationPreviewThumb row={row} title={title} />
-
               <div className="my-creations-item-body">
                 <div className="my-creations-item-main">
-                  {onSelectCreation ? (
-                    <button
-                      type="button"
-                      className="my-creations-item-title my-creations-item-title--link"
-                      onClick={(e) => {
-                        e.stopPropagation()
-                        onSelectCreation(row)
-                      }}
-                    >
-                      {title}
-                    </button>
-                  ) : (
-                    <span className="my-creations-item-title">{title}</span>
-                  )}
-
-                  <span
-                    className={
-                      status === 'exported'
-                        ? 'my-creations-badge my-creations-badge--exported'
-                        : 'my-creations-badge my-creations-badge--draft'
-                    }
-                  >
-                    {status === 'exported' ? 'Exported' : 'Draft'}
-                  </span>
+                  <span className="my-creations-item-title">{title}</span>
+                  <span className="my-creations-badge my-creations-badge--draft">Draft</span>
                 </div>
-
                 <div className="my-creations-item-row2">
                   <div className="my-creations-item-meta">Updated {formatUpdated(row.updatedAt)}</div>
-
-                  <button
-                    type="button"
-                    className="my-creations-delete"
-                    onClick={(e) => requestDelete(e, row)}
-                    aria-label={`Delete ${title}`}
-                  >
+                  <button type="button" className="my-creations-delete" onClick={(e) => requestDelete(e, row)} aria-label={`Delete ${title}`}>
                     Delete
                   </button>
                 </div>
@@ -317,6 +282,39 @@ function MyCreationsPage({
       </ul>
     )
   }
+  const renderExportedContent = () => {
+    if (!exportedItems.length) {
+      return <p className="profile-section-empty profile-section-empty--compact">No exported stickers yet</p>
+    }
+  
+    return (
+      <ul aria-label="Exported creations">
+        {exportedItems.map((row) => {
+          const id = row._id ?? row.id
+          const title = typeof row.title === 'string' && row.title.trim() ? row.title.trim() : 'Untitled'
+  
+          return (
+            <li key={id} className="my-creations-item">
+              <CreationPreviewThumb row={row} title={title} />
+              <div className="my-creations-item-body">
+                <div className="my-creations-item-main">
+                  <span className="my-creations-item-title">{title}</span>
+                  <span className="my-creations-badge my-creations-badge--exported">Exported</span>
+                </div>
+                <div className="my-creations-item-row2">
+                  <div className="my-creations-item-meta">Updated {formatUpdated(row.updatedAt)}</div>
+                  <button type="button" className="my-creations-delete" onClick={(e) => requestDelete(e, row)} aria-label={`Delete ${title}`}>
+                    Delete
+                  </button>
+                </div>
+              </div>
+            </li>
+          )
+        })}
+      </ul>
+    )
+  }
+
 
   const renderConnectionsContent = () => {
     if (friendRequests.length === 0 && friends.length === 0) {
@@ -399,37 +397,11 @@ function MyCreationsPage({
     )
   }
 
-  const renderActivityContent = () => {
-    return (
-      <div className="profile-activity-grid">
-        <div className="profile-activity-card">
-          <div className="profile-activity-card-header">
-            <h4 className="profile-activity-card-title">Creations</h4>
-            <span className="profile-activity-card-count">0</span>
-          </div>
-          <p className="profile-section-empty profile-section-empty--compact">
-            Exported stickers will appear here.
-          </p>
-        </div>
-
-        <div className="profile-activity-card">
-          <div className="profile-activity-card-header">
-            <h4 className="profile-activity-card-title">Likes</h4>
-            <span className="profile-activity-card-count">0</span>
-          </div>
-          <p className="profile-section-empty profile-section-empty--compact">
-            Stickers you like will appear here.
-          </p>
-        </div>
-      </div>
-    )
-  }
-
   const draftsSection = (
     <div className="profile-section profile-section--drafts">
       <div className="profile-section-header">
         <h3 className="profile-section-title">Drafts</h3>
-        {!loading && !error ? <span className="profile-section-count">{items.length}</span> : null}
+        {!loading && !error ? <span className="profile-section-count">{draftItems.length}</span> : null}
       </div>
 
       <div className="profile-section-body">{renderDraftsContent()}</div>
@@ -440,10 +412,9 @@ function MyCreationsPage({
     <div className="profile-section profile-section--activity">
       <div className="profile-section-header">
         <h3 className="profile-section-title">Activity</h3>
-        <span className="profile-section-count">0</span>
+        <span className="profile-section-count">{exportedItems.length}</span>
       </div>
-
-      <div className="profile-section-body">{renderActivityContent()}</div>
+      <div className="profile-section-body">{renderExportedContent()}</div>
     </div>
   )
 
