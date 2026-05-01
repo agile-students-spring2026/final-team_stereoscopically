@@ -32,6 +32,18 @@ const userSchema = new mongoose.Schema(
 			trim: true,
 			maxlength: 500,
 		},
+		instagram: {
+			type: String,
+			default: '',
+			trim: true,
+			maxlength: 2048,
+		},
+		x: {
+			type: String,
+			default: '',
+			trim: true,
+			maxlength: 2048,
+		},
 	},
 	{
 		timestamps: true,

@@ -197,3 +197,52 @@ export const verifyCurrentPassword = async (req, res) => {
 		return res.status(500).json({ error: 'Could not verify current password.' })
 	}
 }
+export const updateMe = async (req, res) => {
+	const doc = req.authUserDoc
+	if (!doc) {
+	  return res.status(401).json({ error: 'Authentication required.' })
+	}
+  
+	const { displayName, bio, avatarUrl, instagram, x } = req.body
+  
+	if (displayName !== undefined) {
+	  if (typeof displayName !== 'string' || !displayName.trim()) {
+		return res.status(400).json({ error: 'Invalid display name.', code: 'INVALID_DISPLAY_NAME' })
+	  }
+	  if (displayName.length > 100) {
+		return res.status(400).json({ error: 'Display name too long.', code: 'DISPLAY_NAME_TOO_LONG' })
+	  }
+	  doc.displayName = displayName.trim()
+	}
+  
+	if (bio !== undefined) {
+	  if (typeof bio !== 'string') {
+		return res.status(400).json({ error: 'Invalid bio.', code: 'INVALID_BIO' })
+	  }
+	  if (bio.length > 500) {
+		return res.status(400).json({ error: 'Bio too long.', code: 'BIO_TOO_LONG' })
+	  }
+	  doc.bio = bio.trim()
+	}
+  
+	if (avatarUrl !== undefined) {
+	  if (avatarUrl && !/^https?:\/\/.+/.test(avatarUrl)) {
+		return res.status(400).json({ error: 'avatarUrl must be a valid URL.', code: 'INVALID_AVATAR_URL' })
+	  }
+	  doc.avatarUrl = avatarUrl.trim()
+	}
+  
+	try {
+	  await doc.save()
+	  return res.status(200).json({
+		id: doc._id.toString(),
+		email: doc.email,
+		displayName: doc.displayName ?? '',
+		avatarUrl: doc.avatarUrl ?? '',
+		bio: doc.bio ?? '',
+	  })
+	} catch (err) {
+	  console.error('updateMe error:', err)
+	  return res.status(500).json({ error: 'Could not update profile.' })
+	}
+  }
