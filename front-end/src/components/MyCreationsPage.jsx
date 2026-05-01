@@ -241,7 +241,7 @@ function MyCreationsPage({
     }
   
     if (!draftItems.length) {
-      return <p className="profile-section-empty">No saved stickers yet.</p>
+      return <p className="profile-section-empty">No drafts yet</p>
     }
   
     return (
@@ -396,7 +396,7 @@ function MyCreationsPage({
     <div className="profile-section profile-section--drafts">
       <div className="profile-section-header">
         <h3 className="profile-section-title">Drafts</h3>
-        {!loading && !error ? <span className="profile-section-count">{items.length}</span> : null}
+        {!loading && !error ? <span className="profile-section-count">{draftItems.length}</span> : null}
       </div>
 
       <div className="profile-section-body">{renderDraftsContent()}</div>
