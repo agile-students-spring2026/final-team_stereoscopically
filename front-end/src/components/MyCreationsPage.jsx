@@ -720,7 +720,7 @@ function MyCreationsPage({
     <div className="profile-section profile-section--connections">
       <div className="profile-section-header">
         <h3 className="profile-section-title">Connections</h3>
-        <span className="profile-section-count">{totalConnections}</span>
+        <span className="profile-section-count">{following.length}</span>
       </div>
 
       <div className="profile-section-body">{renderConnectionsContent()}</div>
@@ -808,8 +808,8 @@ function MyCreationsPage({
       </div>
 
       {draftsSection}
-      {showConnectionsBeforeActivity ? connectionsSection : activitySection}
-      {showConnectionsBeforeActivity ? activitySection : connectionsSection}
+      {activitySection}
+      {connectionsSection}
 
       <div className="profile-account">
         <p className="profile-account-title">Account</p>

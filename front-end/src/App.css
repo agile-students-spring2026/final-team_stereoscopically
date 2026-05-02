@@ -420,6 +420,25 @@
   background: #e4e4ee;
 }
 
+.home-search-hint {
+  margin-top: 0.5rem;
+  font-size: 0.85rem;
+  color: #888;
+}
+
+.home-connections-link {
+  all: unset;
+  cursor: pointer;
+  color: #646cff;
+  font-size: 0.85rem;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.home-connections-link:hover {
+  color: #4a50cc;
+}
+
 /* ── Public Profile View ── */
 
 .public-profile-shell {

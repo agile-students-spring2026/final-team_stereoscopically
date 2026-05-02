@@ -32,6 +32,8 @@ function App() {
   const [currentUser, setCurrentUser] = useState(null)
   const [activeView, setActiveView] = useState(APP_VIEWS.HOME)
   const [profileTarget, setProfileTarget] = useState(null)
+  const [profileReturnView, setProfileReturnView] = useState(APP_VIEWS.HOME)
+  const [followingRefreshKey, setFollowingRefreshKey] = useState(0)
   const [creationsRefreshKey, setCreationsRefreshKey] = useState(0)
   const loadDraftRef = useRef(null)
 
@@ -73,8 +75,9 @@ function App() {
     setTimeout(() => loadDraftRef.current?.(creation), 0)
   }, [])
 
-  const handleNavigateToProfile = useCallback((user) => {
+  const handleNavigateToProfile = useCallback((user, returnView = APP_VIEWS.HOME) => {
     setProfileTarget(user)
+    setProfileReturnView(returnView)
     setActiveView(APP_VIEWS.USER_PROFILE)
   }, [])
 
@@ -148,9 +151,11 @@ function App() {
             setIsAuthenticated(false)
             setAppScreen(APP_SCREENS.LANDING)
           }}
-          onCurrentUserUpdated={(user) => {
-            setCurrentUser(user)
-          }}
+          onCurrentUserUpdated={(user) => setCurrentUser(user)}
+          onNavigateToProfile={(user) =>
+            handleNavigateToProfile(user, APP_VIEWS.MY_CREATIONS)
+          }
+          followingRefreshKey={followingRefreshKey}
         />
       )
     }
@@ -159,7 +164,11 @@ function App() {
       return (
         <PublicProfileView
           user={profileTarget}
-          onBack={() => setActiveView(APP_VIEWS.HOME)}
+          currentUser={currentUser}
+          onBack={() => {
+            setFollowingRefreshKey((k) => k + 1)
+            setActiveView(profileReturnView)
+          }}
         />
       )
     }
@@ -168,6 +177,8 @@ function App() {
       <HomeView
         isAuthenticated={isAuthenticated}
         onNavigateToProfile={handleNavigateToProfile}
+        onGoToProfile={() => setActiveView(APP_VIEWS.MY_CREATIONS)}
+        followingRefreshKey={followingRefreshKey}
       />
     )
   }
