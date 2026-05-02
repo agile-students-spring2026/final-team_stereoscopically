@@ -326,18 +326,136 @@
   display: flex;
   flex-direction: column;
   align-items: center;
+  gap: 1rem;
 }
 
 .home-card {
   align-items: stretch;
-  min-height: 240px;
+  padding: 1.35rem;
 }
 
 .home-card h2 {
-  margin-bottom: 0.75rem;
+  font-size: 1rem;
+  font-weight: 650;
+  text-align: left;
+  margin: 0 0 0.85rem 0;
+  color: #111;
 }
 
 .home-card .editor-status {
+  margin-top: 0.5rem;
+}
+
+.home-search-row {
+  display: flex;
+  gap: 0.5rem;
+  width: 100%;
+}
+
+.home-search-input {
+  flex: 1;
+  min-width: 0;
+}
+
+.home-search-btn {
+  flex-shrink: 0;
+  min-width: 72px;
+  padding: 0.6rem 1rem;
+}
+
+.home-user-list {
+  margin-top: 0.25rem;
+}
+
+.home-user-bio {
+  font-size: 0.75rem;
+  color: #999;
+  margin-top: 0.08rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.home-user-avatar-btn {
+  all: unset;
+  cursor: pointer;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.home-user-avatar-img {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  object-fit: cover;
+  display: block;
+}
+
+.home-user-info-btn {
+  all: unset;
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.08rem;
+  cursor: pointer;
+  text-align: left;
+}
+
+.home-user-info-btn:focus-visible {
+  outline: 2px solid rgba(100, 108, 255, 0.35);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+.profile-friend-btn--following {
+  background: #f0f0f5;
+  border-color: #d0d0da;
+  color: #555;
+}
+
+.profile-friend-btn--following:hover:not(:disabled) {
+  background: #e4e4ee;
+}
+
+/* ── Public Profile View ── */
+
+.public-profile-shell {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+  width: 100%;
+  max-width: var(--app-content-max-width);
+  box-sizing: border-box;
+}
+
+.public-profile-back {
+  all: unset;
+  cursor: pointer;
+  align-self: flex-start;
+  font-size: 0.88rem;
+  color: #646cff;
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.25rem 0;
+}
+
+.public-profile-back:hover {
+  text-decoration: underline;
+}
+
+.public-profile-back:focus-visible {
+  outline: 2px solid rgba(100, 108, 255, 0.35);
+  border-radius: 4px;
+}
+
+.public-profile-follow-row {
+  display: flex;
+  justify-content: center;
   margin-top: 0.75rem;
 }
 

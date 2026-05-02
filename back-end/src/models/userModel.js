@@ -54,8 +54,11 @@ const userSchema = new mongoose.Schema(
 		likedStickers: {
 			type: [String],
 			default: [],
-		  },
-		  
+		},
+		following: {
+			type: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
+			default: [],
+		},
 	},
 	{
 		timestamps: true,

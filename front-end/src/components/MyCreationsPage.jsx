@@ -1,6 +1,7 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { deleteCreation, fetchCreations } from '../services/creationsApi.js'
 import { changeEmail, changePassword, fetchCurrentUser } from '../services/authApi.js'
+import { fetchFollowing, unfollowUser } from '../services/usersApi.js'
 import { getCreationKindLabel, getCreationPreviewUrl } from '../utils/creationPreviewUrl.js'
 import EditProfile from './EditProfile'
 
@@ -393,6 +394,8 @@ function MyCreationsPage({
   onGoSignIn,
   onGoSignUp,
   onSignOut,
+  onNavigateToProfile,
+  followingRefreshKey = 0,
 }) {
   const [profile, setProfile] = useState(null)
   const [items, setItems] = useState([])
@@ -401,8 +404,9 @@ function MyCreationsPage({
   const [pendingDelete, setPendingDelete] = useState(null)
   const [isDeleting, setIsDeleting] = useState(false)
   const [deleteDialogError, setDeleteDialogError] = useState(null)
-  const [friendRequests, setFriendRequests] = useState([])
-  const [friends, setFriends] = useState([])
+  const [following, setFollowing] = useState([])
+  const [followingLoading, setFollowingLoading] = useState(false)
+  const [pendingUnfollowIds, setPendingUnfollowIds] = useState(new Set())
   const [showEditProfile, setShowEditProfile] = useState(false)
   const [showChangeEmail, setShowChangeEmail] = useState(false)
   const [showChangePassword, setShowChangePassword] = useState(false)
@@ -480,16 +484,29 @@ function MyCreationsPage({
     [isDeleting]
   )
 
-  const handleAcceptRequest = useCallback((id) => {
-    const req = friendRequests.find((r) => r.id === id)
-    if (req) {
-      setFriends((prev) => [...prev, req])
-    }
-    setFriendRequests((prev) => prev.filter((r) => r.id !== id))
-  }, [friendRequests])
+  useEffect(() => {
+    if (!isAuthenticated) return
+    setFollowingLoading(true)
+    fetchFollowing()
+      .then(({ users }) => setFollowing(users || []))
+      .catch(() => {})
+      .finally(() => setFollowingLoading(false))
+  }, [isAuthenticated, followingRefreshKey])
 
-  const handleDeclineRequest = useCallback((id) => {
-    setFriendRequests((prev) => prev.filter((r) => r.id !== id))
+  const handleUnfollow = useCallback(async (userId) => {
+    setPendingUnfollowIds((prev) => new Set([...prev, userId]))
+    try {
+      await unfollowUser(userId)
+      setFollowing((prev) => prev.filter((u) => u.id !== userId))
+    } catch {
+      // silent — user stays in list; they can retry
+    } finally {
+      setPendingUnfollowIds((prev) => {
+        const next = new Set(prev)
+        next.delete(userId)
+        return next
+      })
+    }
   }, [])
 
   const confirmDelete = useCallback(async () => {
@@ -525,13 +542,6 @@ function MyCreationsPage({
 
     return () => window.removeEventListener('keydown', onKey)
   }, [pendingDelete, isDeleting])
-
-  const showConnectionsBeforeActivity = friendRequests.length > 0
-
-  const totalConnections = useMemo(
-    () => friendRequests.length + friends.length,
-    [friendRequests.length, friends.length]
-  )
 
   if (!isAuthenticated) {
     return <GuestProfileView onGoSignIn={onGoSignIn} onGoSignUp={onGoSignUp} />
@@ -626,83 +636,62 @@ function MyCreationsPage({
 
 
   const renderConnectionsContent = () => {
-    if (friendRequests.length === 0 && friends.length === 0) {
-      return <p className="profile-section-empty">No connections yet.</p>
+    if (followingLoading) {
+      return <p className="profile-section-empty editor-status editor-status--loading">Loading…</p>
+    }
+
+    if (following.length === 0) {
+      return (
+        <>
+          <p className="profile-section-empty">No connections yet.</p>
+          <p className="profile-section-empty">Search for creators on Home to start following people.</p>
+        </>
+      )
     }
 
     return (
-      <div className="profile-connections">
-        <div className="profile-connections-block">
-          <div className="profile-connections-subheader">
-            <h4 className="profile-connections-subtitle">Friend Requests</h4>
-            <span className="profile-connections-subcount">{friendRequests.length}</span>
-          </div>
-
-          {friendRequests.length === 0 ? (
-            <p className="profile-section-empty profile-section-empty--compact">
-              No incoming friend requests.
-            </p>
-          ) : (
-            <ul className="profile-friend-list">
-              {friendRequests.map((req) => (
-                <li key={req.id} className="profile-friend-item">
-                  <div className="profile-friend-avatar" aria-hidden="true">
-                    {req.name.charAt(0).toUpperCase()}
-                  </div>
-
-                  <div className="profile-friend-info">
-                    <span className="profile-friend-name">{req.name}</span>
-                    {req.handle ? <span className="profile-friend-handle">{req.handle}</span> : null}
-                  </div>
-
-                  <div className="profile-friend-actions">
-                    <button
-                      type="button"
-                      className="profile-friend-btn profile-friend-btn--accept"
-                      onClick={() => handleAcceptRequest(req.id)}
-                    >
-                      Accept
-                    </button>
-                    <button
-                      type="button"
-                      className="profile-friend-btn profile-friend-btn--decline"
-                      onClick={() => handleDeclineRequest(req.id)}
-                    >
-                      Decline
-                    </button>
-                  </div>
-                </li>
-              ))}
-            </ul>
-          )}
-        </div>
-
-        <div className="profile-connections-block">
-          <div className="profile-connections-subheader">
-            <h4 className="profile-connections-subtitle">Friends</h4>
-            <span className="profile-connections-subcount">{friends.length}</span>
-          </div>
-
-          {friends.length === 0 ? (
-            <p className="profile-section-empty profile-section-empty--compact">No friends yet.</p>
-          ) : (
-            <ul className="profile-friend-list">
-              {friends.map((friend) => (
-                <li key={friend.id} className="profile-friend-item">
-                  <div className="profile-friend-avatar" aria-hidden="true">
-                    {friend.name.charAt(0).toUpperCase()}
-                  </div>
-
-                  <div className="profile-friend-info">
-                    <span className="profile-friend-name">{friend.name}</span>
-                    {friend.handle ? <span className="profile-friend-handle">{friend.handle}</span> : null}
-                  </div>
-                </li>
-              ))}
-            </ul>
-          )}
-        </div>
-      </div>
+      <ul className="profile-friend-list">
+        {following.map((user) => {
+          const initial = (user.displayName || user.username || '?').charAt(0).toUpperCase()
+          return (
+            <li key={user.id} className="profile-friend-item">
+              <button
+                type="button"
+                className="home-user-avatar-btn"
+                onClick={() => onNavigateToProfile?.(user)}
+                aria-label={`View ${user.displayName || user.username}'s profile`}
+                tabIndex={-1}
+              >
+                {user.avatarUrl ? (
+                  <img src={user.avatarUrl} alt="" className="home-user-avatar-img" aria-hidden="true" />
+                ) : (
+                  <div className="profile-friend-avatar" aria-hidden="true">{initial}</div>
+                )}
+              </button>
+              <button
+                type="button"
+                className="profile-friend-info home-user-info-btn"
+                onClick={() => onNavigateToProfile?.(user)}
+              >
+                <span className="profile-friend-name">{user.displayName || user.username}</span>
+                {user.username && <span className="profile-friend-handle">@{user.username}</span>}
+                {user.bio && <span className="home-user-bio">{user.bio}</span>}
+              </button>
+              <div className="profile-friend-actions">
+                <button
+                  type="button"
+                  className="profile-friend-btn profile-friend-btn--following"
+                  onClick={() => handleUnfollow(user.id)}
+                  disabled={pendingUnfollowIds.has(user.id)}
+                  aria-label={`Unfollow ${user.displayName || user.username}`}
+                >
+                  {pendingUnfollowIds.has(user.id) ? '…' : 'Following'}
+                </button>
+              </div>
+            </li>
+          )
+        })}
+      </ul>
     )
   }
 
