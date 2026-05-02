@@ -1,6 +1,7 @@
 import mongoose from 'mongoose'
 
 import { User } from '../models/userModel.js'
+import { Creation } from '../models/creationModel.js'
 
 const publicProfileShape = (doc, followingSet) => ({
 	id: doc._id.toString(),
@@ -148,7 +149,56 @@ export const getPublicUserProfile = async (req, res) => {
 }
 
 export const getHomeFeed = async (req, res) => {
-	// Creation statuses are only 'draft' and 'exported' — no public/shared status exists yet.
-	// Return empty array rather than exposing any creations until a publish flow is built.
-	return res.status(200).json({ creations: [] })
+	const currentUser = req.authUserDoc
+
+	try {
+		const followingIds = currentUser.following || []
+		
+		const creations = await Creation.find({
+			userId: { $in: followingIds },
+			status: 'published',
+		})
+			.sort({ publishedAt: -1 })
+			.limit(50)
+			.populate('userId', '_id username displayName avatarUrl')
+			.lean()
+
+		return res.status(200).json({ creations })
+	} catch (err) {
+		console.error('getHomeFeed error:', err)
+		return res.status(500).json({ error: 'Could not fetch feed.' })
+	}
 }
+
+export const getUserPublishedCreations = async (req, res) => {
+	const { username } = req.params
+	const normalized = typeof username === 'string' ? username.trim().toLowerCase() : ''
+
+	if (!normalized) {
+		return res.status(404).json({ error: 'User not found.' })
+	}
+
+	try {
+		const doc = await User.findOne({ username: normalized })
+			.select('_id')
+			.lean()
+
+		if (!doc) {
+			return res.status(404).json({ error: 'User not found.' })
+		}
+
+		const creations = await Creation.find({
+			userId: doc._id,
+			status: 'published',
+		})
+			.sort({ publishedAt: -1 })
+			.limit(50)
+			.lean()
+
+		return res.status(200).json({ creations })
+	} catch (err) {
+		console.error('getUserPublishedCreations error:', err)
+		return res.status(500).json({ error: 'Could not fetch creations.' })
+	}
+}
+

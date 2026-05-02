@@ -36,3 +36,10 @@ export const fetchHomeFeed = async () =>
 		path: '/api/me/feed',
 		fallbackErrorMessage: 'Could not fetch feed',
 	})
+
+export const fetchUserPublishedCreations = async (username) =>
+	getJson({
+		path: `/api/users/${encodeURIComponent(username)}/creations`,
+		fallbackErrorMessage: 'Could not fetch user creations',
+	})
+

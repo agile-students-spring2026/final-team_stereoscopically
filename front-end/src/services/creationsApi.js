@@ -63,3 +63,32 @@ export const deleteCreation = (id, { guestOwnerKey } = {}) =>
 		path: `/api/creations/${encodeURIComponent(id)}${ownershipQuerySuffix(guestOwnerKey)}`,
 		fallbackErrorMessage: 'Could not delete creation.',
 	})
+
+export const publishCreation = (id) =>
+	postJson({
+		path: `/api/creations/${encodeURIComponent(id)}/publish`,
+		payload: {},
+		fallbackErrorMessage: 'Could not publish creation.',
+	})
+
+export const unpublishCreation = (id) =>
+	postJson({
+		path: `/api/creations/${encodeURIComponent(id)}/unpublish`,
+		payload: {},
+		fallbackErrorMessage: 'Could not unpublish creation.',
+	})
+
+export const likeCreation = (id) =>
+	postJson({
+		path: `/api/creations/${encodeURIComponent(id)}/like`,
+		payload: {},
+		fallbackErrorMessage: 'Could not like creation.',
+	})
+
+export const unlikeCreation = (id) =>
+	postJson({
+		path: `/api/creations/${encodeURIComponent(id)}/unlike`,
+		payload: {},
+		fallbackErrorMessage: 'Could not unlike creation.',
+	})
+

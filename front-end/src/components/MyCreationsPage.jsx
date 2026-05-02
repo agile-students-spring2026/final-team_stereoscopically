@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
-import { deleteCreation, fetchCreations } from '../services/creationsApi.js'
+import { deleteCreation, fetchCreations, publishCreation, unpublishCreation } from '../services/creationsApi.js'
 import { changeEmail, changePassword, fetchCurrentUser } from '../services/authApi.js'
 import { fetchFollowing, unfollowUser } from '../services/usersApi.js'
 import { getCreationKindLabel, getCreationPreviewUrl } from '../utils/creationPreviewUrl.js'
@@ -410,6 +410,7 @@ function MyCreationsPage({
   const [showEditProfile, setShowEditProfile] = useState(false)
   const [showChangeEmail, setShowChangeEmail] = useState(false)
   const [showChangePassword, setShowChangePassword] = useState(false)
+  const [pendingPublishIds, setPendingPublishIds] = useState(new Set())
 
 
   useEffect(() => {
@@ -545,12 +546,44 @@ function MyCreationsPage({
     return () => window.removeEventListener('keydown', onKey)
   }, [pendingDelete, isDeleting])
 
+  const handlePublish = useCallback(async (creationId) => {
+    setPendingPublishIds((prev) => new Set([...prev, creationId]))
+    try {
+      const updated = await publishCreation(creationId)
+      setItems((prev) => prev.map((item) => (String(item._id ?? item.id) === creationId ? updated : item)))
+    } catch (err) {
+      console.error('Publish failed:', err)
+    } finally {
+      setPendingPublishIds((prev) => {
+        const next = new Set(prev)
+        next.delete(creationId)
+        return next
+      })
+    }
+  }, [])
+
+  const handleUnpublish = useCallback(async (creationId) => {
+    setPendingPublishIds((prev) => new Set([...prev, creationId]))
+    try {
+      const updated = await unpublishCreation(creationId)
+      setItems((prev) => prev.map((item) => (String(item._id ?? item.id) === creationId ? updated : item)))
+    } catch (err) {
+      console.error('Unpublish failed:', err)
+    } finally {
+      setPendingPublishIds((prev) => {
+        const next = new Set(prev)
+        next.delete(creationId)
+        return next
+      })
+    }
+  }, [])
+
   if (!isAuthenticated) {
     return <GuestProfileView onGoSignIn={onGoSignIn} onGoSignUp={onGoSignUp} />
   }
 
-  const draftItems = items.filter(row => row.status !== 'exported')
-  const exportedItems = items.filter(row => row.status === 'exported')
+  const draftItems = items.filter(row => row.status !== 'exported' && row.status !== 'published')
+  const exportedItems = items.filter(row => row.status === 'exported' || row.status === 'published')
 
   const renderDraftsContent = () => {
     if (loading) {
@@ -613,6 +646,8 @@ function MyCreationsPage({
         {exportedItems.map((row) => {
           const id = row._id ?? row.id
           const title = typeof row.title === 'string' && row.title.trim() ? row.title.trim() : 'Untitled'
+          const isPublished = row.status === 'published'
+          const isPending = pendingPublishIds.has(String(id))
 
           return (
             <li key={id} className="my-creations-item">
@@ -620,13 +655,38 @@ function MyCreationsPage({
               <div className="my-creations-item-body">
                 <div className="my-creations-item-main">
                   <span className="my-creations-item-title">{title}</span>
-                  <span className="my-creations-badge my-creations-badge--exported">Exported</span>
+                  <span className={`my-creations-badge ${isPublished ? 'my-creations-badge--published' : 'my-creations-badge--exported'}`}>
+                    {isPublished ? 'Published' : 'Exported'}
+                  </span>
                 </div>
                 <div className="my-creations-item-row2">
                   <div className="my-creations-item-meta">Updated {formatUpdated(row.updatedAt)}</div>
-                  <button type="button" className="my-creations-delete" onClick={(e) => requestDelete(e, row)} aria-label={`Delete ${title}`}>
-                    Delete
-                  </button>
+                  <div className="my-creations-item-actions">
+                    {isPublished ? (
+                      <button
+                        type="button"
+                        className="my-creations-unpublish"
+                        onClick={() => handleUnpublish(String(id))}
+                        disabled={isPending}
+                        aria-label={`Unpublish ${title}`}
+                      >
+                        {isPending ? '…' : 'Unpublish'}
+                      </button>
+                    ) : (
+                      <button
+                        type="button"
+                        className="my-creations-publish"
+                        onClick={() => handlePublish(String(id))}
+                        disabled={isPending}
+                        aria-label={`Publish ${title}`}
+                      >
+                        {isPending ? '…' : 'Publish'}
+                      </button>
+                    )}
+                    <button type="button" className="my-creations-delete" onClick={(e) => requestDelete(e, row)} aria-label={`Delete ${title}`}>
+                      Delete
+                    </button>
+                  </div>
                 </div>
               </div>
             </li>

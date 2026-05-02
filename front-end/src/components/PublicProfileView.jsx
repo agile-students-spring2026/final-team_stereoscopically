@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
-import { fetchPublicUserProfile, followUser, unfollowUser } from '../services/usersApi.js'
+import { fetchPublicUserProfile, followUser, unfollowUser, fetchUserPublishedCreations } from '../services/usersApi.js'
+import { getCreationPreviewUrl } from '../utils/creationPreviewUrl.js'
 
 function PublicProfileView({ user: initialUser, onBack, currentUser }) {
   const [profile, setProfile] = useState(initialUser || null)
@@ -9,6 +10,8 @@ function PublicProfileView({ user: initialUser, onBack, currentUser }) {
   const [isFollowing, setIsFollowing] = useState(initialUser?.isFollowing ?? false)
   const [isPending, setIsPending] = useState(false)
   const [followError, setFollowError] = useState(null)
+  const [creations, setCreations] = useState([])
+  const [creationsLoading, setCreationsLoading] = useState(false)
 
   useEffect(() => {
     const username = initialUser?.username
@@ -33,6 +36,20 @@ function PublicProfileView({ user: initialUser, onBack, currentUser }) {
         }
       })
     .finally(() => setLoading(false))
+  }, [initialUser?.username])
+
+  useEffect(() => {
+    const username = initialUser?.username
+    if (!username) return
+    setCreationsLoading(true)
+    fetchUserPublishedCreations(username)
+      .then(({ creations: data }) => {
+        setCreations(data || [])
+      })
+      .catch(() => {
+        setCreations([])
+      })
+      .finally(() => setCreationsLoading(false))
   }, [initialUser?.username])
 
   const handleFollow = async () => {
@@ -180,7 +197,38 @@ function PublicProfileView({ user: initialUser, onBack, currentUser }) {
       {profile && !loading && (
         <article className="card home-card" aria-labelledby="pub-profile-creations-heading">
           <h2 id="pub-profile-creations-heading">Shared Creations</h2>
-          <p className="editor-status">No shared creations yet.</p>
+          {creationsLoading ? (
+            <p className="editor-status editor-status--loading">Loading creations…</p>
+          ) : creations.length === 0 ? (
+            <p className="editor-status">No shared creations yet.</p>
+          ) : (
+            <ul className="public-profile-creations-grid" role="list">
+              {creations.map((creation) => {
+                const previewUrl = getCreationPreviewUrl(creation)
+                const [imageFailed, setImageFailed] = useState(false)
+
+                return (
+                  <li key={creation._id ?? creation.id} className="public-profile-creation-item">
+                    <div className="public-profile-creation-preview">
+                      {previewUrl && !imageFailed ? (
+                        <img
+                          src={previewUrl}
+                          alt={creation.title || 'Untitled'}
+                          className="public-profile-creation-image"
+                          onError={() => setImageFailed(true)}
+                        />
+                      ) : (
+                        <div className="public-profile-creation-placeholder" aria-hidden="true">
+                          <span>No preview</span>
+                        </div>
+                      )}
+                    </div>
+                    <p className="public-profile-creation-title">{creation.title || 'Untitled'}</p>
+                  </li>
+                )
+              })}
+            </ul>
+          )}
         </article>
       )}
     </section>
@@ -188,3 +236,4 @@ function PublicProfileView({ user: initialUser, onBack, currentUser }) {
 }
 
 export default PublicProfileView
+
