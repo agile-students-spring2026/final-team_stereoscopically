@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
 import * as usersApi from '../services/usersApi.js'
-import * as creationsApi from '../services/creationsApi.js'
 import { getCreationPreviewUrl } from '../utils/creationPreviewUrl.js'
 
 function UserAvatar({ user }) {
@@ -62,7 +61,6 @@ function UserRow({ user, isFollowing, isPending, onFollow, onUnfollow, onClick }
 }
 
 function CreationFeedItem({ creation }) {
-  const creationId = creation._id ?? creation.id
   const creator = creation.userId ? (typeof creation.userId === 'object' ? creation.userId : {}) : {}
   const creatorName = creator.displayName || creator.username || 'Unknown'
   const previewUrl = getCreationPreviewUrl(creation)
@@ -106,8 +104,6 @@ function HomeView({ isAuthenticated, onNavigateToProfile, onGoToProfile, followi
   const [feedLoading, setFeedLoading] = useState(false)
 
   const [pendingIds, setPendingIds] = useState(new Set())
-  const [pendingLikeIds, setPendingLikeIds] = useState(new Set())
-  const [likedCreationIds, setLikedCreationIds] = useState(new Set())
   const [followError, setFollowError] = useState(null)
 
   const followingIds = new Set(following.map((u) => u.id))
@@ -189,42 +185,6 @@ function HomeView({ isAuthenticated, onNavigateToProfile, onGoToProfile, followi
       setPendingIds((prev) => {
         const next = new Set(prev)
         next.delete(userId)
-        return next
-      })
-    }
-  }, [])
-
-  const handleLike = useCallback(async (creationId) => {
-    setPendingLikeIds((prev) => new Set([...prev, creationId]))
-    try {
-      await creationsApi.likeCreation(creationId)
-      setLikedCreationIds((prev) => new Set([...prev, creationId]))
-    } catch (err) {
-      console.error('Could not like creation:', err)
-    } finally {
-      setPendingLikeIds((prev) => {
-        const next = new Set(prev)
-        next.delete(creationId)
-        return next
-      })
-    }
-  }, [])
-
-  const handleUnlike = useCallback(async (creationId) => {
-    setPendingLikeIds((prev) => new Set([...prev, creationId]))
-    try {
-      await creationsApi.unlikeCreation(creationId)
-      setLikedCreationIds((prev) => {
-        const next = new Set(prev)
-        next.delete(creationId)
-        return next
-      })
-    } catch (err) {
-      console.error('Could not unlike creation:', err)
-    } finally {
-      setPendingLikeIds((prev) => {
-        const next = new Set(prev)
-        next.delete(creationId)
         return next
       })
     }
@@ -324,18 +284,12 @@ function HomeView({ isAuthenticated, onNavigateToProfile, onGoToProfile, followi
           </p>
         ) : (
           <ul className="home-feed-list" role="list">
-            {feed.map((creation) => {
-              const creationId = creation._id ?? creation.id
-              const isLiked = likedCreationIds.has(String(creationId))
-              const isPending = pendingLikeIds.has(String(creationId))
-
-              return (
-                <CreationFeedItem
-                  key={creationId}
-                  creation={creation}
-                />
-              )
-            })}
+            {feed.map((creation) => (
+              <CreationFeedItem
+                key={creation._id ?? creation.id}
+                creation={creation}
+              />
+            ))}
           </ul>
         )}
       </article>
