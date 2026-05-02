@@ -265,3 +265,24 @@ export const updateMe = async (req, res) => {
 	  nextCursor,
 	})
   }
+
+  export const getUserProfile = async (req, res) => {
+	const { userId } = req.params
+	
+	try {
+	  const user = await User.findById(userId)
+	  if (!user) {
+		return res.status(404).json({ error: 'User not found.' })
+	  }
+	  return res.status(200).json({
+		id: user._id.toString(),
+		displayName: user.displayName ?? '',
+		avatarUrl: user.avatarUrl ?? '',
+		bio: user.bio ?? '',
+		instagram: user.instagram ?? '',
+		x: user.x ?? '',
+	  })
+	} catch {
+	  return res.status(500).json({ error: 'Could not fetch profile.' })
+	}
+  }
