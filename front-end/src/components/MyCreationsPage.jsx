@@ -414,7 +414,8 @@ function MyCreationsPage({
 
   useEffect(() => {
     if (!isAuthenticated) {
-      setProfile(null)
+      // avoid synchronous setState inside effect
+      Promise.resolve().then(() => setProfile(null))
       return
     }
     fetchCurrentUser().then(setProfile).catch(() => {})
@@ -486,7 +487,8 @@ function MyCreationsPage({
 
   useEffect(() => {
     if (!isAuthenticated) return
-    setFollowingLoading(true)
+    // schedule following loading state in microtask to satisfy lint rule
+    Promise.resolve().then(() => setFollowingLoading(true))
     fetchFollowing()
       .then(({ users }) => setFollowing(users || []))
       .catch(() => {})

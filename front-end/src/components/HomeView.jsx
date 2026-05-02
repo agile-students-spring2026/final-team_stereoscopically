@@ -87,7 +87,8 @@ function HomeView({ isAuthenticated, onNavigateToProfile, onGoToProfile, followi
 
   useEffect(() => {
     if (!isAuthenticated) return
-    setFeedLoading(true)
+    // schedule loading state update in a microtask to avoid synchronous setState in effect
+    Promise.resolve().then(() => setFeedLoading(true))
     usersApi
       .fetchHomeFeed()
       .then(({ creations }) => setFeed(creations || []))

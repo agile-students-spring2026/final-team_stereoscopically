@@ -47,7 +47,8 @@ function GifEditorFlow({ gifSession, media, originalVideoFile, draft, onVideoSel
 
   const guestOwnership = useCallback(() => ({ guestOwnerKey: getOrCreateOwnerKey() }), [])
 
-  const resolveGifDraftTitle = useCallback(() => {
+  // kept as a plain function; using selectedMedia in body is fine without memoization
+  const resolveGifDraftTitle = () => {
     const trimmed = typeof draftTitle === 'string' ? draftTitle.trim() : ''
     return (
       trimmed ||
@@ -57,7 +58,7 @@ function GifEditorFlow({ gifSession, media, originalVideoFile, draft, onVideoSel
         kind: 'gif',
       })
     )
-  }, [draftTitle, selectedMedia, gifSession.resizePreset])
+  }
 
   const handleVideoPresetApply = useCallback(
     async (result) => {

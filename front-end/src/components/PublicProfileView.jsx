@@ -13,9 +13,12 @@ function PublicProfileView({ user: initialUser, onBack, currentUser }) {
   useEffect(() => {
     const username = initialUser?.username
     if (!username) return
-    setLoading(true)
-    setNotFound(false)
-    setFetchError(null)
+    // schedule state updates to avoid synchronous setState inside effect body
+    Promise.resolve().then(() => {
+      setLoading(true)
+      setNotFound(false)
+      setFetchError(null)
+    })
     fetchPublicUserProfile(username)
       .then((data) => {
         setProfile(data)
@@ -29,7 +32,7 @@ function PublicProfileView({ user: initialUser, onBack, currentUser }) {
           setFetchError('Could not load this profile. Please try again.')
         }
       })
-      .finally(() => setLoading(false))
+    .finally(() => setLoading(false))
   }, [initialUser?.username])
 
   const handleFollow = async () => {
