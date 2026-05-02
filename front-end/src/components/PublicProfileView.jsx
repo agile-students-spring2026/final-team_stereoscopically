@@ -66,7 +66,10 @@ function PublicProfileView({ user: initialUser, onBack, currentUser }) {
   useEffect(() => {
     const username = initialUser?.username
     if (!username) return
-    setCreationsLoading(true)
+    // schedule state updates to avoid synchronous setState inside effect body
+    Promise.resolve().then(() => {
+      setCreationsLoading(true)
+    })
     fetchUserPublishedCreations(username)
       .then(({ creations: data }) => {
         setCreations(data || [])

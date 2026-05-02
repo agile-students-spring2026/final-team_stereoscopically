@@ -61,7 +61,7 @@ function UserRow({ user, isFollowing, isPending, onFollow, onUnfollow, onClick }
   )
 }
 
-function CreationFeedItem({ creation, isLiked, isPending, onLike, onUnlike }) {
+function CreationFeedItem({ creation }) {
   const creationId = creation._id ?? creation.id
   const creator = creation.userId ? (typeof creation.userId === 'object' ? creation.userId : {}) : {}
   const creatorName = creator.displayName || creator.username || 'Unknown'
@@ -87,17 +87,6 @@ function CreationFeedItem({ creation, isLiked, isPending, onLike, onUnlike }) {
       <div className="home-feed-item-content">
         <span className="home-feed-item-title">{creation.title || 'Untitled'}</span>
         <span className="home-feed-item-creator">by {creatorName}</span>
-      </div>
-      <div className="home-feed-item-actions">
-        <button
-          type="button"
-          className={`profile-friend-btn ${isLiked ? 'profile-friend-btn--liked' : 'profile-friend-btn--like'}`}
-          onClick={() => (isLiked ? onUnlike(String(creationId)) : onLike(String(creationId)))}
-          disabled={isPending}
-          aria-label={isLiked ? `Unlike ${creation.title || 'Untitled'}` : `Like ${creation.title || 'Untitled'}`}
-        >
-          {isPending ? '…' : isLiked ? '❤️' : '🤍'}
-        </button>
       </div>
     </li>
   )
@@ -344,10 +333,6 @@ function HomeView({ isAuthenticated, onNavigateToProfile, onGoToProfile, followi
                 <CreationFeedItem
                   key={creationId}
                   creation={creation}
-                  isLiked={isLiked}
-                  isPending={isPending}
-                  onLike={handleLike}
-                  onUnlike={handleUnlike}
                 />
               )
             })}
