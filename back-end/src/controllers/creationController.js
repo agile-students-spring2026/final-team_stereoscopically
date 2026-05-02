@@ -162,7 +162,7 @@ export const updateCreation = async (req, res) => {
 		}
 	}
 
-	if (status !== undefined && !['draft', 'exported'].includes(status)) {
+	if (status !== undefined && !['draft', 'exported', 'published'].includes(status)) {
 		return res.status(400).json({ error: 'Invalid status.', code: 'INVALID_STATUS' })
 	}
 
@@ -243,3 +243,128 @@ export const deleteCreation = async (req, res) => {
 		return res.status(500).json({ error: 'Failed to delete creation.', code: 'DELETE_FAILED' })
 	}
 }
+
+export const publishCreation = async (req, res) => {
+	const { id } = req.params
+
+	if (!req.authUserDoc) {
+		return res.status(401).json({ error: 'Authentication required.', code: 'UNAUTHORIZED' })
+	}
+
+	try {
+		const creation = await Creation.findById(id)
+
+		const gate = assertCreationAccess(creation, req)
+		if (!gate.ok) {
+			return res.status(gate.response.status).json(gate.response.body)
+		}
+
+		if (creation.status === 'published') {
+			return res.status(400).json({ error: 'Creation is already published.', code: 'ALREADY_PUBLISHED' })
+		}
+
+		creation.status = 'published'
+		creation.publishedAt = new Date()
+
+		await creation.save()
+
+		return res.status(200).json(creation)
+	} catch (error) {
+		console.error('publishCreation error:', error)
+		return res.status(500).json({ error: 'Failed to publish creation.', code: 'PUBLISH_FAILED' })
+	}
+}
+
+export const unpublishCreation = async (req, res) => {
+	const { id } = req.params
+
+	if (!req.authUserDoc) {
+		return res.status(401).json({ error: 'Authentication required.', code: 'UNAUTHORIZED' })
+	}
+
+	try {
+		const creation = await Creation.findById(id)
+
+		const gate = assertCreationAccess(creation, req)
+		if (!gate.ok) {
+			return res.status(gate.response.status).json(gate.response.body)
+		}
+
+		if (creation.status !== 'published') {
+			return res.status(400).json({ error: 'Creation is not published.', code: 'NOT_PUBLISHED' })
+		}
+
+		creation.status = 'exported'
+		creation.publishedAt = null
+
+		await creation.save()
+
+		return res.status(200).json(creation)
+	} catch (error) {
+		console.error('unpublishCreation error:', error)
+		return res.status(500).json({ error: 'Failed to unpublish creation.', code: 'UNPUBLISH_FAILED' })
+	}
+}
+
+export const likeCreation = async (req, res) => {
+	const { id } = req.params
+
+	if (!req.authUserDoc) {
+		return res.status(401).json({ error: 'Authentication required.', code: 'UNAUTHORIZED' })
+	}
+
+	try {
+		const creation = await Creation.findById(id)
+
+		if (!creation) {
+			return res.status(404).json({ error: 'Creation not found.', code: 'NOT_FOUND' })
+		}
+
+		if (creation.status !== 'published') {
+			return res.status(403).json({ error: 'Only published creations can be liked.', code: 'NOT_PUBLISHED' })
+		}
+
+		const userId = req.authUserDoc._id
+		const alreadyLiked = creation.likedBy.some((id) => id.equals(userId))
+
+		if (!alreadyLiked) {
+			creation.likedBy.push(userId)
+			await creation.save()
+		}
+
+		return res.status(200).json({ liked: true, likeCount: creation.likedBy.length })
+	} catch (error) {
+		console.error('likeCreation error:', error)
+		return res.status(500).json({ error: 'Failed to like creation.', code: 'LIKE_FAILED' })
+	}
+}
+
+export const unlikeCreation = async (req, res) => {
+	const { id } = req.params
+
+	if (!req.authUserDoc) {
+		return res.status(401).json({ error: 'Authentication required.', code: 'UNAUTHORIZED' })
+	}
+
+	try {
+		const creation = await Creation.findById(id)
+
+		if (!creation) {
+			return res.status(404).json({ error: 'Creation not found.', code: 'NOT_FOUND' })
+		}
+
+		const userId = req.authUserDoc._id
+		const initialCount = creation.likedBy.length
+		creation.likedBy = creation.likedBy.filter((id) => !id.equals(userId))
+
+		if (creation.likedBy.length < initialCount) {
+			await creation.save()
+		}
+
+		return res.status(200).json({ liked: false, likeCount: creation.likedBy.length })
+	} catch (error) {
+		console.error('unlikeCreation error:', error)
+		return res.status(500).json({ error: 'Failed to unlike creation.', code: 'UNLIKE_FAILED' })
+	}
+}
+

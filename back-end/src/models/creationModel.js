@@ -20,9 +20,17 @@ const creationSchema = new mongoose.Schema(
 		},
 		status: {
 			type: String,
-			enum: ['draft', 'exported'],
+			enum: ['draft', 'exported', 'published'],
 			default: 'draft',
 			required: true,
+		},
+		likedBy: {
+			type: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
+			default: [],
+		},
+		publishedAt: {
+			type: Date,
+			default: null,
 		},
 		editorPayload: {
 			type: mongoose.Schema.Types.Mixed,
@@ -44,5 +52,7 @@ const creationSchema = new mongoose.Schema(
 
 creationSchema.index({ userId: 1, updatedAt: -1 })
 creationSchema.index({ ownerKey: 1, updatedAt: -1 })
+creationSchema.index({ status: 1, publishedAt: -1 })
+creationSchema.index({ userId: 1, status: 1, publishedAt: -1 })
 
 export const Creation = mongoose.model('Creation', creationSchema)

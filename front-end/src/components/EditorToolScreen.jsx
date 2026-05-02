@@ -1,3 +1,5 @@
+import { useState } from 'react'
+
 function EditorToolScreen({
   title,
   subtitle = '',
@@ -7,10 +9,24 @@ function EditorToolScreen({
   onApply,
   cancelLabel = 'Cancel',
   applyLabel = 'Apply',
+  applyingLabel = 'Applying…',
+  disabled = false,
   actions = null,
   hideActions = false,
   className = '',
 }) {
+  const [isApplying, setIsApplying] = useState(false)
+
+  const handleApply = async () => {
+    if (isApplying || disabled) return
+    setIsApplying(true)
+    try {
+      await onApply?.()
+    } finally {
+      setIsApplying(false)
+    }
+  }
+
   const rootClassName = ['editor-tool-screen', className]
     .filter(Boolean)
     .join(' ')
@@ -32,11 +48,16 @@ function EditorToolScreen({
             <div className="editor-actions editor-actions--inline editor-tool-screen-actions">{actions}</div>
           ) : (
             <div className="editor-actions editor-actions--inline editor-tool-screen-actions">
-              <button type="button" className="btn-secondary" onClick={onCancel}>
+              <button type="button" className="btn-secondary" onClick={onCancel} disabled={isApplying}>
                 {cancelLabel}
               </button>
-              <button type="button" className="btn-primary" onClick={onApply}>
-                {applyLabel}
+              <button
+                type="button"
+                className="btn-primary"
+                onClick={handleApply}
+                disabled={isApplying || disabled}
+              >
+                {isApplying ? applyingLabel : applyLabel}
               </button>
             </div>
           ))}

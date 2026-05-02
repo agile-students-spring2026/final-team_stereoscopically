@@ -1,4 +1,4 @@
-import { getJson, patchJson, postJson } from './backendMediaClient.js'
+import { getJson, patchJson, postJson, postMultipart } from './backendMediaClient.js'
 import { clearAuthToken, getAuthToken, setAuthToken } from '../auth/authSession.js'
 
 const pickToken = (body) =>
@@ -34,6 +34,17 @@ export const fetchCurrentUser = async () => {
   if (!getAuthToken()) return null
   return getJson({ path: '/api/me', fallbackErrorMessage: 'Could not load account' })
 }
+
+export const updateProfile = async (payload) =>
+  patchJson({ path: '/api/me', payload, fallbackErrorMessage: 'Could not update profile' })
+
+export const uploadAvatar = async (file) =>
+  postMultipart({
+    path: '/api/upload/image',
+    fileField: 'file',
+    file,
+    fallbackErrorMessage: 'Could not upload avatar',
+  })
 
 export const changeEmail = async ({ email }) => {
   const body = await patchJson({

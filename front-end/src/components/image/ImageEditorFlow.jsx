@@ -9,6 +9,7 @@ import PresetFilters from './PresetFilters'
 import PresetSizes from './PresetSizes'
 import AddText from './AddText'
 import ColorFilters from './ColorFilters'
+import SaveDraftModal from '../SaveDraftModal'
 
 const IMAGE_SCREENS = {
   EDITOR: 'editor',
@@ -70,6 +71,7 @@ function ImageEditorFlow({ imageSession, media, draft, textOverlay, onBack, onDr
   const [isSavingDraft, setIsSavingDraft] = useState(false)
   const [saveForLaterError, setSaveForLaterError] = useState(null)
   const [saveForLaterMessage, setSaveForLaterMessage] = useState(null)
+  const [showSaveDraftModal, setShowSaveDraftModal] = useState(false)
 
   const handleOpenFilters = () => setImageScreen(IMAGE_SCREENS.FILTERS_MAIN)
   const handleOpenSizes = () => setImageScreen(IMAGE_SCREENS.PRESET_SIZES)
@@ -130,25 +132,24 @@ function ImageEditorFlow({ imageSession, media, draft, textOverlay, onBack, onDr
     )
   }, [draftTitle, selectedMedia, selectedPreset])
 
-  const handleSaveForLaterImage = useCallback(async () => {
-    if (!selectedMedia) return
+  const handleSaveForLaterImage = useCallback(async (titleOverride) => {
+    if (!selectedMedia) return false
 
     setSaveForLaterError(null)
     setSaveForLaterMessage(null)
     setIsSavingDraft(true)
 
     try {
-      const title = resolveImageDraftTitle()
+      const title = typeof titleOverride === 'string' && titleOverride.trim()
+        ? titleOverride.trim()
+        : resolveImageDraftTitle()
 
       const editorPayload = buildImageCreationPayload({
         sourceMediaId: effectiveImageDraftSourceMediaId || effectiveBackendMediaId,
         workingMediaId: effectiveBackendMediaId || effectiveImageDraftSourceMediaId,
         previewMediaId: effectiveBackendMediaId || effectiveImageDraftSourceMediaId,
-
-        // these two are still important helper bases for restore/re-edit flows
         preEditWorkingMediaId: editBaseMediaId || null,
         preTextWorkingMediaId: preTextWorkingMediaId || null,
-
         selectedPreset,
         letterboxColor,
         lastCropBoxPx,
@@ -167,8 +168,10 @@ function ImageEditorFlow({ imageSession, media, draft, textOverlay, onBack, onDr
 
       setSaveForLaterMessage('Draft saved. View it in My Creations.')
       onDraftSaved?.()
+      return true
     } catch (err) {
       setSaveForLaterError(err?.message || 'Could not save draft.')
+      return false
     } finally {
       setIsSavingDraft(false)
     }
@@ -190,6 +193,18 @@ function ImageEditorFlow({ imageSession, media, draft, textOverlay, onBack, onDr
     selectedMedia,
     selectedPreset,
   ])
+
+  const handleSaveDraftModalConfirm = useCallback(async (name) => {
+    const trimmedName = name?.trim() || ''
+    if (trimmedName) onDraftTitleChange?.(trimmedName)
+    const ok = await handleSaveForLaterImage(trimmedName || undefined)
+    if (ok) setShowSaveDraftModal(false)
+  }, [handleSaveForLaterImage, onDraftTitleChange])
+
+  const handleOpenSaveDraftModal = useCallback(() => {
+    setSaveForLaterError(null)
+    setShowSaveDraftModal(true)
+  }, [])
 
   const renderImageEditor = () => (
     <ImageEditor
@@ -249,22 +264,32 @@ function ImageEditorFlow({ imageSession, media, draft, textOverlay, onBack, onDr
           console.warn('Could not persist export status:', err)
         }
       }}
-      draftTitleInput={draftTitle ?? ''}
-      onDraftTitleInputChange={(v) => onDraftTitleChange?.(v)}
-      onSaveForLater={handleSaveForLaterImage}
+      onSaveForLater={handleOpenSaveDraftModal}
       isSavingDraft={isSavingDraft}
-      saveDraftError={saveForLaterError}
+      saveDraftError={null}
       saveDraftMessage={saveForLaterMessage}
       showResetCrop={hasCropHistory}
     />
   )
 
+  const modal = showSaveDraftModal ? (
+    <SaveDraftModal
+      currentTitle={draftTitle || resolveImageDraftTitle()}
+      onConfirm={handleSaveDraftModalConfirm}
+      onCancel={() => { if (!isSavingDraft) setShowSaveDraftModal(false) }}
+      isSaving={isSavingDraft}
+      saveError={saveForLaterError}
+    />
+  ) : null
+
+  let screenContent
   switch (imageScreen) {
     case IMAGE_SCREENS.EDITOR:
-      return renderImageEditor()
+      screenContent = renderImageEditor()
+      break
 
     case IMAGE_SCREENS.FILTERS_MAIN:
-      return (
+      screenContent = (
         <FilterMain
           onPresetFilters={() => setImageScreen(IMAGE_SCREENS.IMAGE_PRESET_FILTERS)}
           onText={() => setImageScreen(IMAGE_SCREENS.ADD_TEXT)}
@@ -272,9 +297,10 @@ function ImageEditorFlow({ imageSession, media, draft, textOverlay, onBack, onDr
           onCancel={() => setImageScreen(IMAGE_SCREENS.EDITOR)}
         />
       )
+      break
 
     case IMAGE_SCREENS.IMAGE_PRESET_FILTERS:
-      return (
+      screenContent = (
         <PresetFilters
           imageSrc={effectiveImageSrc}
           selectedStyle={selectedImageFilterPreset}
@@ -290,6 +316,7 @@ function ImageEditorFlow({ imageSession, media, draft, textOverlay, onBack, onDr
           isLoadingPreview={isLoadingPresetFilterPreview}
         />
       )
+      break
 
     case IMAGE_SCREENS.ADD_TEXT: {
       const preTextImageSrc = preTextWorkingMediaId
@@ -300,7 +327,7 @@ function ImageEditorFlow({ imageSession, media, draft, textOverlay, onBack, onDr
         ? Math.max(2, Math.round(appliedTextOverlay.fontSize / 5))
         : undefined
 
-      return (
+      screenContent = (
         <AddText
           imageSrc={preTextImageSrc}
           initialText={appliedTextOverlay?.text ?? undefined}
@@ -318,10 +345,11 @@ function ImageEditorFlow({ imageSession, media, draft, textOverlay, onBack, onDr
           applyError={exportError}
         />
       )
+      break
     }
 
     case IMAGE_SCREENS.COLOR_FILTERS:
-      return (
+      screenContent = (
         <ColorFilters
           imageSrc={effectiveImageSrc}
           adjustments={colorAdjustments}
@@ -337,9 +365,10 @@ function ImageEditorFlow({ imageSession, media, draft, textOverlay, onBack, onDr
           isLoadingPreview={isLoadingColorFilterPreview}
         />
       )
+      break
 
     case IMAGE_SCREENS.PRESET_SIZES:
-      return (
+      screenContent = (
         <PresetSizes
           imageSrc={effectiveImageSrc}
           initialPreset={selectedPreset}
@@ -349,10 +378,18 @@ function ImageEditorFlow({ imageSession, media, draft, textOverlay, onBack, onDr
           isBusy={isExporting}
         />
       )
+      break
 
     default:
-      return renderImageEditor()
+      screenContent = renderImageEditor()
   }
+
+  return (
+    <>
+      {screenContent}
+      {modal}
+    </>
+  )
 }
 
 export default ImageEditorFlow

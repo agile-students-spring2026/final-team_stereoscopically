@@ -23,8 +23,6 @@ const ImageEditor = ({
   isSavingDraft = false,
   saveDraftError = null,
   saveDraftMessage = null,
-  draftTitleInput = '',
-  onDraftTitleInputChange,
   showResetCrop = false,
 }) => {
   // Track if cropper is active
@@ -116,8 +114,8 @@ const ImageEditor = ({
               {isResettingCrop ? 'Resetting...' : 'Reset Crop'}
             </button>
           )}
-          <button type="button" className="btn-primary" onClick={handleApplyCrop}>
-            Apply Crop
+          <button type="button" className="btn-primary" onClick={handleApplyCrop} disabled={isExporting}>
+            {isExporting ? 'Applying crop…' : 'Apply Crop'}
           </button>
         </div>
       </div>
@@ -168,31 +166,29 @@ const ImageEditor = ({
           />
         )}
       </div>
-      <div className="editor-draft-title-row">
-        <label className="editor-draft-title-label" htmlFor="image-draft-title">
-          Draft name
-        </label>
-        <input
-          id="image-draft-title"
-          type="text"
-          className="editor-draft-title-input"
-          maxLength={200}
-          value={draftTitleInput}
-          onChange={(e) => onDraftTitleInputChange?.(e.target.value)}
-          disabled={isUploading || isExporting || isSavingDraft}
-          placeholder="Name this draft"
-          autoComplete="off"
-        />
-      </div>
-
       <div className="card editor-actions editor-actions--stack">
-        <button type="button" className="btn-primary" onClick={handleCropClick}>
+        <button
+          type="button"
+          className="btn-primary"
+          onClick={handleCropClick}
+          disabled={isUploading || isExporting || isSavingDraft}
+        >
           Crop
         </button>
-        <button type="button" className="btn-primary" onClick={onSize || (() => {})}>
+        <button
+          type="button"
+          className="btn-primary"
+          onClick={onSize || (() => {})}
+          disabled={isUploading || isExporting || isSavingDraft}
+        >
           Resize
         </button>
-        <button type="button" className="btn-primary" onClick={onOpenFilters}>
+        <button
+          type="button"
+          className="btn-primary"
+          onClick={onOpenFilters}
+          disabled={isUploading || isExporting || isSavingDraft}
+        >
           Filters
         </button>
       </div>

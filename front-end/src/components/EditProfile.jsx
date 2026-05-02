@@ -1,15 +1,28 @@
 import { useState, useEffect } from 'react'
-import { getAuthToken } from '../auth/authSession'
+import { fetchCurrentUser, updateProfile, uploadAvatar } from '../services/authApi'
 
+const normalizeUsername = (v) => v.trim().toLowerCase().replace(/^@/, '')
+
+const normalizeHandle = (v) =>
+  v
+    .trim()
+    .replace(/^@/, '')
+    .replace(/^https?:\/\/(www\.)?(instagram|twitter|x)\.com\//i, '')
+    .split(/[/?#]/)[0]
+    .trim()
+
+const USERNAME_RE = /^[a-z0-9_.]+$/
 
 function EditProfile({ onSave, onCancel }) {
   const [form, setForm] = useState({
     displayName: '',
+    username: '',
     bio: '',
-    avatarUrl: '',
     instagram: '',
     x: '',
   })
+  const [currentAvatarUrl, setCurrentAvatarUrl] = useState('')
+  const [avatarFile, setAvatarFile] = useState(null)
   const [avatarPreview, setAvatarPreview] = useState(null)
   const [errors, setErrors] = useState({})
   const [isSaving, setIsSaving] = useState(false)
@@ -17,24 +30,24 @@ function EditProfile({ onSave, onCancel }) {
   useEffect(() => {
     const fetchProfile = async () => {
       try {
-        const res = await fetch('/api/me', {
-          headers: { Authorization: `Bearer ${getAuthToken()}` }
-        })
-        if (!res.ok) throw new Error('Failed to fetch profile')
-        const data = await res.json()
+        const data = await fetchCurrentUser()
+        if (!data) return
         setForm({
           displayName: data.displayName || '',
+          username: data.username || '',
           bio: data.bio || '',
-          avatarUrl: data.avatarUrl || '',
           instagram: data.instagram || '',
           x: data.x || '',
         })
+        setCurrentAvatarUrl(data.avatarUrl || '')
       } catch {
-        setErrors({ fetch: 'Could not load profile. Please try again.' })
+        // form stays empty on load failure
       }
     }
     fetchProfile()
   }, [])
+
+  const isSetupMode = !form.displayName.trim() || !form.username.trim()
 
   const handleChange = (e) => {
     const { name, value } = e.target
@@ -42,25 +55,40 @@ function EditProfile({ onSave, onCancel }) {
     if (errors[name]) setErrors((prev) => ({ ...prev, [name]: null }))
   }
 
+  const handleUsernameBlur = () => {
+    setForm((prev) => ({ ...prev, username: normalizeUsername(prev.username) }))
+  }
+
+  const handleHandleBlur = (field) => () => {
+    setForm((prev) => ({ ...prev, [field]: normalizeHandle(prev[field]) }))
+  }
+
   const handleAvatarFileChange = (e) => {
     const file = e.target.files?.[0]
     if (!file) return
+    setAvatarFile(file)
     setAvatarPreview(URL.createObjectURL(file))
+    if (errors.avatar) setErrors((prev) => ({ ...prev, avatar: null }))
   }
 
   const validate = () => {
-    const newErrors = {}
-    if (!form.displayName.trim()) newErrors.displayName = 'Display name is required.'
-    if (form.avatarUrl && !/^https?:\/\/.+/.test(form.avatarUrl)) {
-      newErrors.avatarUrl = 'Avatar URL must be a valid URL.'
+    const errs = {}
+    if (!form.displayName.trim()) errs.displayName = 'Display name is required.'
+    const normalizedUsername = normalizeUsername(form.username)
+    if (!normalizedUsername) {
+      errs.username = 'Username is required.'
+    } else if (normalizedUsername.length < 3 || normalizedUsername.length > 30) {
+      errs.username = 'Username must be 3–30 characters.'
+    } else if (!USERNAME_RE.test(normalizedUsername)) {
+      errs.username = 'Username may only contain letters, numbers, underscores, and periods.'
     }
-    if (form.instagram && !/^https?:\/\/.+/.test(form.instagram)) {
-      newErrors.instagram = 'Instagram URL must be a valid URL.'
+    if (form.instagram && normalizeHandle(form.instagram).length > 50) {
+      errs.instagram = 'Instagram handle too long.'
     }
-    if (form.x && !/^https?:\/\/.+/.test(form.x)) {
-      newErrors.x = 'X URL must be a valid URL.'
+    if (form.x && normalizeHandle(form.x).length > 50) {
+      errs.x = 'X handle too long.'
     }
-    return newErrors
+    return errs
   }
 
   const handleSave = async () => {
@@ -72,149 +100,211 @@ function EditProfile({ onSave, onCancel }) {
 
     setIsSaving(true)
     try {
-      const res = await fetch('/api/me', {
-        method: 'PATCH',
-        headers: { 
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${getAuthToken()}`,
-        },
-        body: JSON.stringify({
-          displayName: form.displayName,
-          bio: form.bio,
-          avatarUrl: form.avatarUrl,
-          instagram: form.instagram,
-          x: form.x,
-        }),
-      })
-
-      if (!res.ok) {
-        const errorData = await res.json()
-        if (errorData.errors) {
-          setErrors(errorData.errors)
-        } else {
-          setErrors({ api: errorData.message || 'Failed to save profile.' })
+      let avatarUrl
+      if (avatarFile) {
+        try {
+          const result = await uploadAvatar(avatarFile)
+          avatarUrl = result?.url
+        } catch (err) {
+          setErrors({ avatar: err?.message || 'Avatar upload failed.' })
+          return
         }
-        return
       }
 
-      const updated = await res.json()
-      onSave?.(updated)
-    } catch {
-      setErrors({ api: 'Network error. Please try again.' })
+      const payload = {
+        displayName: form.displayName.trim(),
+        username: normalizeUsername(form.username),
+        bio: form.bio.trim(),
+        instagram: normalizeHandle(form.instagram),
+        x: normalizeHandle(form.x),
+      }
+      if (avatarUrl) payload.avatarUrl = avatarUrl
+
+      await updateProfile(payload)
+      onSave?.()
+    } catch (err) {
+      setErrors({ api: err?.message || 'Failed to save profile.' })
     } finally {
       setIsSaving(false)
     }
   }
 
+  const avatarSrc = avatarPreview || currentAvatarUrl || null
+
   return (
-    <div className="app-container">
-      <div className="screen-header">
-        <div className="app-logo">StickerCreate</div>
-        <h2 className="screen-title">Edit Profile</h2>
-      </div>
+    <div className="edit-profile-screen">
+      <div className="auth-card edit-profile-card">
+        <div className="edit-profile-header">
+          <button type="button" className="auth-back-btn" onClick={onCancel} disabled={isSaving}>
+            ← Back
+          </button>
+          <h2 className="auth-card-title">
+            {isSetupMode ? 'Set Up Profile' : 'Edit Profile'}
+          </h2>
+        </div>
 
-      <div className="card">
-        {errors.fetch && <p className="error-text">{errors.fetch}</p>}
-        {errors.api && <p className="error-text">{errors.api}</p>}
+        {errors.api && (
+          <p className="profile-form-alert" role="alert">
+            {errors.api}
+          </p>
+        )}
 
-        <div className="form-group">
-          {avatarPreview && (
-            <img
-              src={avatarPreview}
-              alt="Avatar preview"
-              style={{ width: 64, height: 64, borderRadius: '50%', objectFit: 'cover', marginBottom: 8 }}
+        <div className="auth-form">
+          <div className="profile-form-field">
+            <span className="auth-label">Avatar</span>
+            {avatarSrc && (
+              <img
+                src={avatarSrc}
+                alt="Avatar preview"
+                className="edit-profile-avatar-preview"
+              />
+            )}
+            <label htmlFor="avatar-upload" className="btn-secondary edit-profile-upload-btn">
+              {avatarSrc ? 'Change Photo' : 'Upload Photo'}
+            </label>
+            <input
+              id="avatar-upload"
+              type="file"
+              accept="image/*"
+              className="hidden-file-input"
+              onChange={handleAvatarFileChange}
             />
-          )}
-          <label>Avatar</label>
-          <label htmlFor="avatar-upload" className="upload-button" style={{ cursor: 'pointer' }}>
-            Upload File
-          </label>
-          <input
-            id="avatar-upload"
-            type="file"
-            accept="image/*"
-            className="hidden-file-input"
-            onChange={handleAvatarFileChange}
-          />
+            {errors.avatar && (
+              <p className="profile-form-error" role="alert">
+                {errors.avatar}
+              </p>
+            )}
+          </div>
+
+          <div className="profile-form-field">
+            <label htmlFor="ep-displayName" className="auth-label">
+              Display Name{' '}
+              <span className="profile-form-required" aria-hidden="true">
+                *
+              </span>
+            </label>
+            <input
+              id="ep-displayName"
+              type="text"
+              name="displayName"
+              value={form.displayName}
+              onChange={handleChange}
+              placeholder="Your name"
+              className={`auth-input${errors.displayName ? ' auth-input--error' : ''}`}
+            />
+            {errors.displayName && (
+              <p className="profile-form-error" role="alert">
+                {errors.displayName}
+              </p>
+            )}
+          </div>
+
+          <div className="profile-form-field">
+            <label htmlFor="ep-username" className="auth-label">
+              Username{' '}
+              <span className="profile-form-required" aria-hidden="true">
+                *
+              </span>
+            </label>
+            <input
+              id="ep-username"
+              type="text"
+              name="username"
+              value={form.username}
+              onChange={handleChange}
+              onBlur={handleUsernameBlur}
+              placeholder="yourhandle"
+              className={`auth-input${errors.username ? ' auth-input--error' : ''}`}
+              autoCapitalize="none"
+              autoCorrect="off"
+            />
+            {errors.username && (
+              <p className="profile-form-error" role="alert">
+                {errors.username}
+              </p>
+            )}
+          </div>
+
+          <div className="profile-form-field">
+            <label htmlFor="ep-bio" className="auth-label">
+              Bio
+            </label>
+            <textarea
+              id="ep-bio"
+              name="bio"
+              value={form.bio}
+              onChange={handleChange}
+              placeholder="Tell us about yourself"
+              className="auth-input edit-profile-bio"
+              rows={3}
+            />
+          </div>
+
+          <div className="profile-form-field">
+            <label htmlFor="ep-instagram" className="auth-label">
+              Instagram
+            </label>
+            <input
+              id="ep-instagram"
+              type="text"
+              name="instagram"
+              value={form.instagram}
+              onChange={handleChange}
+              onBlur={handleHandleBlur('instagram')}
+              placeholder="yourhandle"
+              className={`auth-input${errors.instagram ? ' auth-input--error' : ''}`}
+              autoCapitalize="none"
+              autoCorrect="off"
+            />
+            {errors.instagram && (
+              <p className="profile-form-error" role="alert">
+                {errors.instagram}
+              </p>
+            )}
+          </div>
+
+          <div className="profile-form-field">
+            <label htmlFor="ep-x" className="auth-label">
+              X / Twitter
+            </label>
+            <input
+              id="ep-x"
+              type="text"
+              name="x"
+              value={form.x}
+              onChange={handleChange}
+              onBlur={handleHandleBlur('x')}
+              placeholder="yourhandle"
+              className={`auth-input${errors.x ? ' auth-input--error' : ''}`}
+              autoCapitalize="none"
+              autoCorrect="off"
+            />
+            {errors.x && (
+              <p className="profile-form-error" role="alert">
+                {errors.x}
+              </p>
+            )}
+          </div>
         </div>
 
-        <div className="form-group">
-          <label>Avatar URL</label>
-          <input
-            type="text"
-            name="avatarUrl"
-            value={form.avatarUrl}
-            onChange={handleChange}
-            placeholder="https://example.com/avatar.png"
-            className="text-input"
-          />
-          {errors.avatarUrl && <p className="error-text">{errors.avatarUrl}</p>}
+        <div className="edit-profile-actions">
+          <button
+            type="button"
+            className="btn-secondary"
+            onClick={onCancel}
+            disabled={isSaving}
+          >
+            Cancel
+          </button>
+          <button
+            type="button"
+            className="btn-primary"
+            onClick={handleSave}
+            disabled={isSaving}
+          >
+            {isSaving ? 'Saving profile…' : 'Save'}
+          </button>
         </div>
-
-        <div className="form-group">
-          <label>Display Name *</label>
-          <input
-            type="text"
-            name="displayName"
-            value={form.displayName}
-            onChange={handleChange}
-            placeholder="Your name"
-            className="text-input"
-          />
-          {errors.displayName && <p className="error-text">{errors.displayName}</p>}
-        </div>
-
-        <div className="form-group">
-          <label>Bio</label>
-          <textarea
-            name="bio"
-            value={form.bio}
-            onChange={handleChange}
-            placeholder="Tell us about yourself"
-            className="text-input"
-            rows={3}
-          />
-        </div>
-
-        <div className="form-group">
-          <label>Instagram URL</label>
-          <input
-            type="text"
-            name="instagram"
-            value={form.instagram}
-            onChange={handleChange}
-            placeholder="https://instagram.com/yourhandle"
-            className="text-input"
-          />
-          {errors.instagram && <p className="error-text">{errors.instagram}</p>}
-        </div>
-
-        <div className="form-group">
-          <label>X (Twitter) URL</label>
-          <input
-            type="text"
-            name="x"
-            value={form.x}
-            onChange={handleChange}
-            placeholder="https://x.com/yourhandle"
-            className="text-input"
-          />
-          {errors.x && <p className="error-text">{errors.x}</p>}
-        </div>
-      </div>
-
-      <div style={{ display: 'flex', gap: '1rem', marginTop: '1rem', justifyContent: 'center' }}>
-        <button type="button" className="btn-secondary" onClick={onCancel}>
-          Cancel
-        </button>
-        <button
-          type="button"
-          className="btn-primary"
-          onClick={handleSave}
-          disabled={isSaving}
-        >
-          {isSaving ? 'Saving...' : 'Save'}
-        </button>
       </div>
     </div>
   )

@@ -14,6 +14,7 @@ import GifSpeedControls from './GifSpeedControls'
 import GifTrimEditor from './GifTrimEditor'
 import GifResizePresets from './GifResizePresets'
 import GifTextOverlayEditor from './GifTextOverlayEditor'
+import SaveDraftModal from '../SaveDraftModal'
 
 function GifEditorFlow({ gifSession, media, originalVideoFile, draft, onVideoSelect, onBack, onDraftSaved }) {
   const { selectedMedia, backendVideoResult } = media
@@ -28,6 +29,7 @@ function GifEditorFlow({ gifSession, media, originalVideoFile, draft, onVideoSel
   const [isSavingDraft, setIsSavingDraft] = useState(false)
   const [saveForLaterError, setSaveForLaterError] = useState(null)
   const [saveForLaterMessage, setSaveForLaterMessage] = useState(null)
+  const [showSaveDraftModal, setShowSaveDraftModal] = useState(false)
 
   const handleGifTrimApply = useCallback(
     (nextRange) => {
@@ -45,17 +47,23 @@ function GifEditorFlow({ gifSession, media, originalVideoFile, draft, onVideoSel
 
   const guestOwnership = useCallback(() => ({ guestOwnerKey: getOrCreateOwnerKey() }), [])
 
-  const resolveGifDraftTitle = useCallback(() => {
-    const trimmed = typeof draftTitle === 'string' ? draftTitle.trim() : ''
-    return (
-      trimmed ||
-      buildSuggestedDraftTitle({
-        file: selectedMedia,
-        preset: gifSession.resizePreset ?? 'custom',
-        kind: 'gif',
-      })
-    )
-  }, [draftTitle, selectedMedia, gifSession.resizePreset])
+  // ...existing code...
+
+  const resolveGifDraftTitle = useCallback(
+    (file) => {
+      const f = file ?? selectedMedia
+      const trimmed = typeof draftTitle === 'string' ? draftTitle.trim() : ''
+      return (
+        trimmed ||
+        buildSuggestedDraftTitle({
+          file: f,
+          preset: gifSession.resizePreset ?? 'custom',
+          kind: 'gif',
+        })
+      )
+    },
+    [draftTitle, gifSession.resizePreset, selectedMedia],
+  )
 
   const handleVideoPresetApply = useCallback(
     async (result) => {
@@ -91,8 +99,8 @@ function GifEditorFlow({ gifSession, media, originalVideoFile, draft, onVideoSel
     [gifSession, onVideoSelect, originalVideoFile],
   )
 
-  const handleSaveForLaterVideo = useCallback(async () => {
-    if (!selectedMedia) return
+  const handleSaveForLaterVideo = useCallback(async (titleOverride) => {
+    if (!selectedMedia) return false
 
     setSaveForLaterError(null)
     setSaveForLaterMessage(null)
@@ -106,11 +114,14 @@ function GifEditorFlow({ gifSession, media, originalVideoFile, draft, onVideoSel
         'Video is not uploaded to the backend yet. Please wait and try saving again.',
       )
       setIsSavingDraft(false)
-      return
+      return false
     }
 
     try {
-      const title = resolveGifDraftTitle()
+      const title = typeof titleOverride === 'string' && titleOverride.trim()
+        ? titleOverride.trim()
+        : resolveGifDraftTitle()
+
       const editorPayload = buildVideoCreationPayload({
         sourceMediaId,
         workingMediaId,
@@ -133,12 +144,14 @@ function GifEditorFlow({ gifSession, media, originalVideoFile, draft, onVideoSel
 
       setSaveForLaterMessage('Draft saved. View it in My Creations.')
       onDraftSaved?.()
+      return true
     } catch (err) {
       setSaveForLaterError(err?.message || 'Could not save draft.')
+      return false
     } finally {
       setIsSavingDraft(false)
     }
-  }, [
+    }, [
     activeDraftId,
     resolveGifDraftTitle,
     guestOwnership,
@@ -149,6 +162,18 @@ function GifEditorFlow({ gifSession, media, originalVideoFile, draft, onVideoSel
     onDraftSaved,
     selectedMedia,
   ])
+
+  const handleSaveDraftModalConfirm = useCallback(async (name) => {
+    const trimmedName = name?.trim() || ''
+    if (trimmedName) onDraftTitleChange?.(trimmedName)
+    const ok = await handleSaveForLaterVideo(trimmedName || undefined)
+    if (ok) setShowSaveDraftModal(false)
+  }, [handleSaveForLaterVideo, onDraftTitleChange])
+
+  const handleOpenSaveDraftModal = useCallback(() => {
+    setSaveForLaterError(null)
+    setShowSaveDraftModal(true)
+  }, [])
 
   const handleExportGifAndPersist = useCallback(
     async (videoFile, trimOverrides) => {
@@ -208,9 +233,18 @@ function GifEditorFlow({ gifSession, media, originalVideoFile, draft, onVideoSel
       gifSession,
       onActiveDraftSaved,
       onDraftSaved,
-      selectedMedia,
     ],
   )
+
+  const modal = showSaveDraftModal ? (
+    <SaveDraftModal
+      currentTitle={draftTitle || resolveGifDraftTitle()}
+      onConfirm={handleSaveDraftModalConfirm}
+      onCancel={() => { if (!isSavingDraft) setShowSaveDraftModal(false) }}
+      isSaving={isSavingDraft}
+      saveError={saveForLaterError}
+    />
+  ) : null
 
   const videoKey = selectedMedia
     ? `${selectedMedia.name ?? selectedMedia.id ?? 'video'}-${selectedMedia.lastModified ?? ''}-${selectedMedia.size ?? ''}`
@@ -218,12 +252,15 @@ function GifEditorFlow({ gifSession, media, originalVideoFile, draft, onVideoSel
 
   if (gifSession.activeTool === gifSession.GIF_FLOW_TOOLS.FILTERS_MAIN) {
     return (
-      <GifFilterMain
-        onPresetFilters={() => gifSession.openGifTool(gifSession.GIF_FLOW_TOOLS.PRESET_FILTERS)}
-        onTextOverlay={() => gifSession.openGifTool(gifSession.GIF_FLOW_TOOLS.TEXT)}
-        onSpeed={() => gifSession.openGifTool(gifSession.GIF_FLOW_TOOLS.SPEED)}
-        onCancel={() => gifSession.openGifTool(gifSession.GIF_FLOW_TOOLS.EDITOR)}
-      />
+      <>
+        <GifFilterMain
+          onPresetFilters={() => gifSession.openGifTool(gifSession.GIF_FLOW_TOOLS.PRESET_FILTERS)}
+          onTextOverlay={() => gifSession.openGifTool(gifSession.GIF_FLOW_TOOLS.TEXT)}
+          onSpeed={() => gifSession.openGifTool(gifSession.GIF_FLOW_TOOLS.SPEED)}
+          onCancel={() => gifSession.openGifTool(gifSession.GIF_FLOW_TOOLS.EDITOR)}
+        />
+        {modal}
+      </>
     )
   }
 
@@ -231,116 +268,132 @@ function GifEditorFlow({ gifSession, media, originalVideoFile, draft, onVideoSel
     const sourceVideoForFilters = originalVideoFile || selectedMedia
 
     return (
-      <VideoPresetFilters
-        videoFile={sourceVideoForFilters}
-        selectedFilter={gifSession.selectedFilterPreset}
-        onSelectFilter={(presetId) => gifSession.selectFilterPreset(sourceVideoForFilters, presetId)}
-        onApply={async () => {
-          if (gifSession.selectedFilterPreset === 'default') {
-            await gifSession.selectFilterPreset(sourceVideoForFilters, 'default')
-            await handleVideoPresetApply(null)
-            return
-          }
+      <>
+        <VideoPresetFilters
+          videoFile={sourceVideoForFilters}
+          selectedFilter={gifSession.selectedFilterPreset}
+          onSelectFilter={(presetId) => gifSession.selectFilterPreset(sourceVideoForFilters, presetId)}
+          onApply={async () => {
+            if (gifSession.selectedFilterPreset === 'default') {
+              await gifSession.selectFilterPreset(sourceVideoForFilters, 'default')
+              await handleVideoPresetApply(null)
+              return
+            }
 
-          const preset = gifSession.selectedFilterPreset
-          const existingResult = gifSession.filterPreviewResult
+            const preset = gifSession.selectedFilterPreset
+            const existingResult = gifSession.filterPreviewResult
 
-          try {
-            const result =
-              existingResult?.preset === preset && existingResult?.url
-                ? existingResult
-                : await gifSession.applyVideoFilterAndReturn(
-                    sourceVideoForFilters,
-                    preset,
-                    existingResult,
-                  )
+            try {
+              const result =
+                existingResult?.preset === preset && existingResult?.url
+                  ? existingResult
+                  : await gifSession.applyVideoFilterAndReturn(
+                      sourceVideoForFilters,
+                      preset,
+                      existingResult,
+                    )
 
-            await handleVideoPresetApply(result)
-          } catch {
-            // Errors are already surfaced elsewhere.
-          }
-        }}
-        onCancel={() => gifSession.openGifTool(gifSession.GIF_FLOW_TOOLS.FILTERS_MAIN)}
-        isLoadingPreview={gifSession.isLoadingFilterPreview}
-        previewError={gifSession.filterPreviewError}
-        previewUrl={gifSession.filterPreviewUrl}
-      />
+              await handleVideoPresetApply(result)
+            } catch {
+              // Errors are already surfaced elsewhere.
+            }
+          }}
+          onCancel={() => gifSession.openGifTool(gifSession.GIF_FLOW_TOOLS.FILTERS_MAIN)}
+          isLoadingPreview={gifSession.isLoadingFilterPreview}
+          previewError={gifSession.filterPreviewError}
+          previewUrl={gifSession.filterPreviewUrl}
+        />
+        {modal}
+      </>
     )
   }
 
   if (gifSession.activeTool === gifSession.GIF_FLOW_TOOLS.TEXT) {
     return (
-      <GifTextOverlayEditor
-        videoFile={selectedMedia}
-        initialSettings={gifSession.textOverlaySettings}
-        onChange={gifSession.updateGifTextOverlaySettings}
-        onApply={gifSession.applyGifTextOverlaySettings}
-        onBack={() => gifSession.openGifTool(gifSession.GIF_FLOW_TOOLS.FILTERS_MAIN)}
-        onCancel={() => gifSession.openGifTool(gifSession.GIF_FLOW_TOOLS.EDITOR)}
-      />
+      <>
+        <GifTextOverlayEditor
+          videoFile={selectedMedia}
+          initialSettings={gifSession.textOverlaySettings}
+          onChange={gifSession.updateGifTextOverlaySettings}
+          onApply={gifSession.applyGifTextOverlaySettings}
+          onBack={() => gifSession.openGifTool(gifSession.GIF_FLOW_TOOLS.FILTERS_MAIN)}
+          onCancel={() => gifSession.openGifTool(gifSession.GIF_FLOW_TOOLS.EDITOR)}
+        />
+        {modal}
+      </>
     )
   }
 
   if (gifSession.activeTool === gifSession.GIF_FLOW_TOOLS.SPEED) {
     return (
-      <GifSpeedControls
-        videoFile={selectedMedia}
-        selectedSpeedPlaybackRate={gifSession.selectedSpeedPlaybackRate}
-        onSelectSpeed={gifSession.selectSpeed}
-        onApplySpeed={gifSession.applySpeed}
-        onBack={() => gifSession.openGifTool(gifSession.GIF_FLOW_TOOLS.FILTERS_MAIN)}
-        onCancel={() => gifSession.openGifTool(gifSession.GIF_FLOW_TOOLS.EDITOR)}
-      />
+      <>
+        <GifSpeedControls
+          videoFile={selectedMedia}
+          selectedSpeedPlaybackRate={gifSession.selectedSpeedPlaybackRate}
+          onSelectSpeed={gifSession.selectSpeed}
+          onApplySpeed={gifSession.applySpeed}
+          onBack={() => gifSession.openGifTool(gifSession.GIF_FLOW_TOOLS.FILTERS_MAIN)}
+          onCancel={() => gifSession.openGifTool(gifSession.GIF_FLOW_TOOLS.EDITOR)}
+        />
+        {modal}
+      </>
     )
   }
 
   if (gifSession.activeTool === gifSession.GIF_FLOW_TOOLS.RESIZE) {
     return (
-      <GifResizePresets
-        initialPreset={gifSession.resizePreset}
-        initialBorderColor={gifSession.resizeBorderColor}
-        videoFile={selectedMedia}
-        onApply={handleGifResizeApply}
-        onCancel={() => gifSession.openGifTool(gifSession.GIF_FLOW_TOOLS.EDITOR)}
-      />
+      <>
+        <GifResizePresets
+          initialPreset={gifSession.resizePreset}
+          initialBorderColor={gifSession.resizeBorderColor}
+          videoFile={selectedMedia}
+          onApply={handleGifResizeApply}
+          onCancel={() => gifSession.openGifTool(gifSession.GIF_FLOW_TOOLS.EDITOR)}
+        />
+        {modal}
+      </>
     )
   }
 
   if (gifSession.activeTool === gifSession.GIF_FLOW_TOOLS.TRIM) {
     return (
-      <GifTrimEditor
-        videoFile={selectedMedia}
-        initialTrimStart={gifSession.trimRange.start}
-        initialTrimEnd={gifSession.trimRange.end}
-        onApply={handleGifTrimApply}
-        onCancel={() => gifSession.openGifTool(gifSession.GIF_FLOW_TOOLS.EDITOR)}
-      />
+      <>
+        <GifTrimEditor
+          videoFile={selectedMedia}
+          initialTrimStart={gifSession.trimRange.start}
+          initialTrimEnd={gifSession.trimRange.end}
+          onApply={handleGifTrimApply}
+          onCancel={() => gifSession.openGifTool(gifSession.GIF_FLOW_TOOLS.EDITOR)}
+        />
+        {modal}
+      </>
     )
   }
 
   return (
-    <GifEditor
-      key={videoKey}
-      videoFile={selectedMedia}
-      gifSessionState={{
-        trimRange: gifSession.trimRange,
-        resizePreset: gifSession.resizePreset,
-        resizeBorderColor: gifSession.resizeBorderColor,
-        selectedSpeedPlaybackRate: gifSession.selectedSpeedPlaybackRate,
-        textOverlaySettings: gifSession.textOverlaySettings,
-      }}
-      onCancel={onBack}
-      onCreateGif={handleExportGifAndPersist}
-      onOpenTrim={() => gifSession.openGifTool(gifSession.GIF_FLOW_TOOLS.TRIM)}
-      onOpenResize={() => gifSession.openGifTool(gifSession.GIF_FLOW_TOOLS.RESIZE)}
-      onOpenFilters={() => gifSession.openGifTool(gifSession.GIF_FLOW_TOOLS.FILTERS_MAIN)}
-      onSaveForLater={handleSaveForLaterVideo}
-      draftTitleInput={draftTitle ?? ''}
-      onDraftTitleInputChange={(v) => onDraftTitleChange?.(v)}
-      isSavingDraft={isSavingDraft}
-      saveDraftError={saveForLaterError}
-      saveDraftMessage={saveForLaterMessage}
-    />
+    <>
+      <GifEditor
+        key={videoKey}
+        videoFile={selectedMedia}
+        gifSessionState={{
+          trimRange: gifSession.trimRange,
+          resizePreset: gifSession.resizePreset,
+          resizeBorderColor: gifSession.resizeBorderColor,
+          selectedSpeedPlaybackRate: gifSession.selectedSpeedPlaybackRate,
+          textOverlaySettings: gifSession.textOverlaySettings,
+        }}
+        onCancel={onBack}
+        onCreateGif={handleExportGifAndPersist}
+        onOpenTrim={() => gifSession.openGifTool(gifSession.GIF_FLOW_TOOLS.TRIM)}
+        onOpenResize={() => gifSession.openGifTool(gifSession.GIF_FLOW_TOOLS.RESIZE)}
+        onOpenFilters={() => gifSession.openGifTool(gifSession.GIF_FLOW_TOOLS.FILTERS_MAIN)}
+        onSaveForLater={handleOpenSaveDraftModal}
+        isSavingDraft={isSavingDraft}
+        saveDraftError={null}
+        saveDraftMessage={saveForLaterMessage}
+      />
+      {modal}
+    </>
   )
 }
 
