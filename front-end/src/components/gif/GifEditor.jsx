@@ -24,8 +24,6 @@ const GifEditor = ({
     isSavingDraft = false,
     saveDraftError = null,
     saveDraftMessage = null,
-    draftTitleInput = '',
-    onDraftTitleInputChange,
 }) => {
     const {
         trimRange = { start: 0, end: 0 },
@@ -188,31 +186,29 @@ const GifEditor = ({
                 )}
             </div>
 
-            <div className="editor-draft-title-row">
-                <label className="editor-draft-title-label" htmlFor="gif-draft-title">
-                    Draft name
-                </label>
-                <input
-                    id="gif-draft-title"
-                    type="text"
-                    className="editor-draft-title-input"
-                    maxLength={200}
-                    value={draftTitleInput}
-                    onChange={(e) => onDraftTitleInputChange?.(e.target.value)}
-                    disabled={isProcessing || isSavingDraft}
-                    placeholder="Name this draft"
-                    autoComplete="off"
-                />
-            </div>
-
             <div className="card editor-actions editor-actions--stack">
-                <button type="button" className="btn-primary" onClick={onOpenTrim}>
+                <button
+                    type="button"
+                    className="btn-primary"
+                    onClick={onOpenTrim}
+                    disabled={isProcessing || isSavingDraft}
+                >
                     Trim
                 </button>
-                <button type="button" className="btn-primary" onClick={onOpenResize}>
+                <button
+                    type="button"
+                    className="btn-primary"
+                    onClick={onOpenResize}
+                    disabled={isProcessing || isSavingDraft}
+                >
                     Resize
                 </button>
-                <button type="button" className="btn-primary" onClick={onOpenFilters}>
+                <button
+                    type="button"
+                    className="btn-primary"
+                    onClick={onOpenFilters}
+                    disabled={isProcessing || isSavingDraft}
+                >
                     Filters
                 </button>
             </div>

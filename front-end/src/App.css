@@ -10,7 +10,7 @@
   align-items: center;
   justify-content: flex-start;
   box-sizing: border-box;
-  padding: 2rem 1rem calc(1.25rem + var(--app-bottom-nav-height) + env(safe-area-inset-bottom));
+  padding: 2rem 1rem 1.25rem;
   background-color: #f5f5f5;
   gap: 1rem;
 }
@@ -2313,6 +2313,99 @@ input[type='range']::-moz-range-thumb {
 
 .my-creations-modal-btn--confirm:hover:not(:disabled) {
   background: #222;
+}
+
+/* ============================================================================
+   DRAFT RESTORE OVERLAY
+   ============================================================================ */
+
+.draft-loading-host {
+  position: relative;
+  width: 100%;
+}
+
+.draft-restore-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  background: rgba(0, 0, 0, 0.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.draft-restore-banner {
+  background: #fff;
+  border-radius: 16px;
+  padding: 2rem 2.5rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+  max-width: min(90vw, 22rem);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+}
+
+.draft-restore-banner__spinner {
+  display: block;
+  width: 36px;
+  height: 36px;
+  border: 3px solid #e0e0e0;
+  border-top-color: #646cff;
+  border-radius: 50%;
+  animation: draft-spin 0.8s linear infinite;
+}
+
+@keyframes draft-spin {
+  to { transform: rotate(360deg); }
+}
+
+.draft-restore-banner__text {
+  margin: 0;
+  font-size: 1.05rem;
+  font-weight: 600;
+  color: #1a1a1a;
+  text-align: center;
+}
+
+.draft-restore-banner__cancel {
+  appearance: none;
+  border: 1px solid #d0d0d0;
+  border-radius: 8px;
+  background: transparent;
+  padding: 0.45rem 1.25rem;
+  font: inherit;
+  font-size: 0.9rem;
+  color: #555;
+  cursor: pointer;
+  transition: background-color 150ms ease, border-color 150ms ease;
+}
+
+.draft-restore-banner__cancel:hover {
+  background: #f5f5f5;
+  border-color: #b0b0b0;
+}
+
+/* ============================================================================
+   SAVE DRAFT MODAL
+   ============================================================================ */
+
+.save-draft-modal {
+  max-width: 24rem;
+  width: 100%;
+}
+
+.save-draft-modal-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  width: 100%;
+}
+
+.save-draft-modal-label {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #333;
 }
 
 /* ============================================================================
