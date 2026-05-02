@@ -4,6 +4,7 @@ import { body } from 'express-validator'
 import {
 	changeEmail,
 	changePassword,
+	getLikes,
 	login,
 	me,
 	register,

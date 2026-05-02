@@ -246,3 +246,22 @@ export const updateMe = async (req, res) => {
 	  return res.status(500).json({ error: 'Could not update profile.' })
 	}
   }
+  export const getLikes = async (req, res) => {
+	const doc = req.authUserDoc
+	if (!doc) {
+	  return res.status(401).json({ error: 'Authentication required.' })
+	}
+  
+	const limit = Math.min(parseInt(req.query.limit) || 20, 100)
+	const cursor = req.query.cursor || null
+  
+	const liked = doc.likedStickers || []
+	const startIndex = cursor ? liked.indexOf(cursor) + 1 : 0
+	const page = liked.slice(startIndex, startIndex + limit)
+	const nextCursor = page.length === limit ? page[page.length - 1] : null
+  
+	return res.status(200).json({
+	  items: page,
+	  nextCursor,
+	})
+  }
