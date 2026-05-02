@@ -2,6 +2,31 @@ import { useEffect, useState } from 'react'
 import { fetchPublicUserProfile, followUser, unfollowUser, fetchUserPublishedCreations } from '../services/usersApi.js'
 import { getCreationPreviewUrl } from '../utils/creationPreviewUrl.js'
 
+function PublicProfileCreationItem({ creation }) {
+  const previewUrl = getCreationPreviewUrl(creation)
+  const [imageFailed, setImageFailed] = useState(false)
+
+  return (
+    <li className="public-profile-creation-item">
+      <div className="public-profile-creation-preview">
+        {previewUrl && !imageFailed ? (
+          <img
+            src={previewUrl}
+            alt={creation.title || 'Untitled'}
+            className="public-profile-creation-image"
+            onError={() => setImageFailed(true)}
+          />
+        ) : (
+          <div className="public-profile-creation-placeholder" aria-hidden="true">
+            <span>No preview</span>
+          </div>
+        )}
+      </div>
+      <p className="public-profile-creation-title">{creation.title || 'Untitled'}</p>
+    </li>
+  )
+}
+
 function PublicProfileView({ user: initialUser, onBack, currentUser }) {
   const [profile, setProfile] = useState(initialUser || null)
   const [loading, setLoading] = useState(Boolean(initialUser?.username))
@@ -203,30 +228,12 @@ function PublicProfileView({ user: initialUser, onBack, currentUser }) {
             <p className="editor-status">No shared creations yet.</p>
           ) : (
             <ul className="public-profile-creations-grid" role="list">
-              {creations.map((creation) => {
-                const previewUrl = getCreationPreviewUrl(creation)
-                const [imageFailed, setImageFailed] = useState(false)
-
-                return (
-                  <li key={creation._id ?? creation.id} className="public-profile-creation-item">
-                    <div className="public-profile-creation-preview">
-                      {previewUrl && !imageFailed ? (
-                        <img
-                          src={previewUrl}
-                          alt={creation.title || 'Untitled'}
-                          className="public-profile-creation-image"
-                          onError={() => setImageFailed(true)}
-                        />
-                      ) : (
-                        <div className="public-profile-creation-placeholder" aria-hidden="true">
-                          <span>No preview</span>
-                        </div>
-                      )}
-                    </div>
-                    <p className="public-profile-creation-title">{creation.title || 'Untitled'}</p>
-                  </li>
-                )
-              })}
+              {creations.map((creation) => (
+                <PublicProfileCreationItem
+                  key={creation._id ?? creation.id}
+                  creation={creation}
+                />
+              ))}
             </ul>
           )}
         </article>
