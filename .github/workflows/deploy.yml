@@ -10,14 +10,16 @@ concurrency:
   group: deploy-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: false
 
+# Note: `secrets` is not allowed in job-level `if` (invalid workflow). Gate each step instead.
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    if: ${{ secrets.DROPLET_DEPLOY_ENABLED == 'true' }}
     steps:
       - uses: actions/checkout@v4
+        if: ${{ secrets.DROPLET_DEPLOY_ENABLED == 'true' }}
 
       - name: Deploy via SSH
+        if: ${{ secrets.DROPLET_DEPLOY_ENABLED == 'true' }}
         uses: appleboy/ssh-action@v1.2.6
         with:
           host: ${{ secrets.DROPLET_HOST }}
