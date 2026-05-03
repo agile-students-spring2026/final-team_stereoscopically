@@ -5,6 +5,7 @@ import {
 	changeEmail,
 	changePassword,
 	getLikes,
+	getUserProfile,
 	login,
 	me,
 	register,
@@ -79,6 +80,8 @@ router.post('/api/auth/login', ...loginMiddleware)
 router.post('/api/auth/signin', ...loginMiddleware)
 router.get('/api/me', requireAuth, me)
 router.patch('/api/me', requireAuth, updateMe)
+router.get('/api/me/likes', requireAuth, getLikes)
+router.get('/api/users/:userId', requireAuth, getUserProfile)
 router.patch('/api/me/email', requireAuth, ...changeEmailBody, handleValidationErrors, changeEmail)
 router.patch(
 	'/api/me/password',

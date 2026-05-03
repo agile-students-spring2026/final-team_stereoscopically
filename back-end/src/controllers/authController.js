@@ -90,19 +90,31 @@ export const login = async (req, res) => {
 	}
 }
 
+const profileShape = (doc) => ({
+	id: doc._id.toString(),
+	email: doc.email,
+	username: doc.username ?? '',
+	displayName: doc.displayName ?? '',
+	avatarUrl: doc.avatarUrl ?? '',
+	bio: doc.bio ?? '',
+	instagram: doc.instagram ?? '',
+	x: doc.x ?? '',
+})
+
+const normalizeHandle = (raw) =>
+	raw
+		.trim()
+		.replace(/^@/, '')
+		.replace(/^https?:\/\/(www\.)?(instagram|twitter|x)\.com\//i, '')
+		.split(/[/?#]/)[0]
+		.trim()
+
 export const me = async (req, res) => {
 	const doc = req.authUserDoc
 	if (!doc) {
 		return res.status(401).json({ error: 'Authentication required.' })
 	}
-
-	return res.status(200).json({
-		id: doc._id.toString(),
-		email: doc.email,
-		displayName: doc.displayName ?? '',
-		avatarUrl: doc.avatarUrl ?? '',
-		bio: doc.bio ?? '',
-	})
+	return res.status(200).json(profileShape(doc))
 }
 
 export const changeEmail = async (req, res) => {
@@ -200,52 +212,84 @@ export const verifyCurrentPassword = async (req, res) => {
 export const updateMe = async (req, res) => {
 	const doc = req.authUserDoc
 	if (!doc) {
-	  return res.status(401).json({ error: 'Authentication required.' })
+		return res.status(401).json({ error: 'Authentication required.' })
 	}
-  
-	const { displayName, bio, avatarUrl, instagram, x } = req.body
-  
+
+	const { displayName, username, bio, avatarUrl, instagram, x } = req.body
+
 	if (displayName !== undefined) {
-	  if (typeof displayName !== 'string' || !displayName.trim()) {
-		return res.status(400).json({ error: 'Invalid display name.', code: 'INVALID_DISPLAY_NAME' })
-	  }
-	  if (displayName.length > 100) {
-		return res.status(400).json({ error: 'Display name too long.', code: 'DISPLAY_NAME_TOO_LONG' })
-	  }
-	  doc.displayName = displayName.trim()
+		if (typeof displayName !== 'string' || !displayName.trim()) {
+			return res.status(400).json({ error: 'Invalid display name.', code: 'INVALID_DISPLAY_NAME' })
+		}
+		if (displayName.trim().length > 100) {
+			return res.status(400).json({ error: 'Display name too long.', code: 'DISPLAY_NAME_TOO_LONG' })
+		}
+		doc.displayName = displayName.trim()
 	}
-  
+
+	if (username !== undefined) {
+		const normalized = typeof username === 'string'
+			? username.trim().toLowerCase().replace(/^@/, '')
+			: ''
+		if (!normalized) {
+			return res.status(400).json({ error: 'Username is required.', code: 'INVALID_USERNAME' })
+		}
+		if (normalized.length < 3 || normalized.length > 30) {
+			return res.status(400).json({ error: 'Username must be 3–30 characters.', code: 'USERNAME_LENGTH' })
+		}
+		if (!/^[a-z0-9_.]+$/.test(normalized)) {
+			return res.status(400).json({ error: 'Username may only contain letters, numbers, underscores, and periods.', code: 'USERNAME_FORMAT' })
+		}
+		if (normalized !== doc.username) {
+			const conflict = await User.findOne({ username: normalized, _id: { $ne: doc._id } }).lean()
+			if (conflict) {
+				return res.status(409).json({ error: 'Username already taken.', code: 'USERNAME_TAKEN' })
+			}
+		}
+		doc.username = normalized
+	}
+
 	if (bio !== undefined) {
-	  if (typeof bio !== 'string') {
-		return res.status(400).json({ error: 'Invalid bio.', code: 'INVALID_BIO' })
-	  }
-	  if (bio.length > 500) {
-		return res.status(400).json({ error: 'Bio too long.', code: 'BIO_TOO_LONG' })
-	  }
-	  doc.bio = bio.trim()
+		if (typeof bio !== 'string') {
+			return res.status(400).json({ error: 'Invalid bio.', code: 'INVALID_BIO' })
+		}
+		if (bio.trim().length > 500) {
+			return res.status(400).json({ error: 'Bio too long.', code: 'BIO_TOO_LONG' })
+		}
+		doc.bio = bio.trim()
 	}
-  
+
 	if (avatarUrl !== undefined) {
-	  if (avatarUrl && !/^https?:\/\/.+/.test(avatarUrl)) {
-		return res.status(400).json({ error: 'avatarUrl must be a valid URL.', code: 'INVALID_AVATAR_URL' })
-	  }
-	  doc.avatarUrl = avatarUrl.trim()
+		if (avatarUrl && !/^https?:\/\/.+/.test(avatarUrl)) {
+			return res.status(400).json({ error: 'avatarUrl must be a valid URL.', code: 'INVALID_AVATAR_URL' })
+		}
+		doc.avatarUrl = typeof avatarUrl === 'string' ? avatarUrl.trim() : ''
 	}
-  
+
+	if (instagram !== undefined) {
+		const handle = typeof instagram === 'string' ? normalizeHandle(instagram) : ''
+		if (handle.length > 50) {
+			return res.status(400).json({ error: 'Instagram handle too long.', code: 'INSTAGRAM_TOO_LONG' })
+		}
+		doc.instagram = handle
+	}
+
+	if (x !== undefined) {
+		const handle = typeof x === 'string' ? normalizeHandle(x) : ''
+		if (handle.length > 50) {
+			return res.status(400).json({ error: 'X handle too long.', code: 'X_TOO_LONG' })
+		}
+		doc.x = handle
+	}
+
 	try {
-	  await doc.save()
-	  return res.status(200).json({
-		id: doc._id.toString(),
-		email: doc.email,
-		displayName: doc.displayName ?? '',
-		avatarUrl: doc.avatarUrl ?? '',
-		bio: doc.bio ?? '',
-	  })
+		await doc.save()
+		return res.status(200).json(profileShape(doc))
 	} catch (err) {
-	  console.error('updateMe error:', err)
-	  return res.status(500).json({ error: 'Could not update profile.' })
+		console.error('updateMe error:', err)
+		return res.status(500).json({ error: 'Could not update profile.' })
 	}
-  }
+}
   export const getLikes = async (req, res) => {
 	const doc = req.authUserDoc
 	if (!doc) {
@@ -264,4 +308,25 @@ export const updateMe = async (req, res) => {
 	  items: page,
 	  nextCursor,
 	})
+  }
+
+  export const getUserProfile = async (req, res) => {
+	const { userId } = req.params
+	
+	try {
+	  const user = await User.findById(userId)
+	  if (!user) {
+		return res.status(404).json({ error: 'User not found.' })
+	  }
+	  return res.status(200).json({
+		id: user._id.toString(),
+		displayName: user.displayName ?? '',
+		avatarUrl: user.avatarUrl ?? '',
+		bio: user.bio ?? '',
+		instagram: user.instagram ?? '',
+		x: user.x ?? '',
+	  })
+	} catch {
+	  return res.status(500).json({ error: 'Could not fetch profile.' })
+	}
   }

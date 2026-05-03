@@ -5,6 +5,7 @@ import AuthLanding from './components/AuthLanding'
 import EditorContainer from './components/EditorContainer'
 import HomeView from './components/HomeView'
 import MyCreationsPage from './components/MyCreationsPage'
+import PublicProfileView from './components/PublicProfileView'
 import SignInPage from './components/SignInPage'
 import SignUpPage from './components/SignUpPage'
 import * as authApi from './services/authApi.js'
@@ -20,6 +21,7 @@ const APP_VIEWS = {
   HOME: 'home',
   CREATE: 'create',
   MY_CREATIONS: 'my-creations',
+  USER_PROFILE: 'user-profile',
 }
 
 function App() {
@@ -29,6 +31,9 @@ function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false)
   const [currentUser, setCurrentUser] = useState(null)
   const [activeView, setActiveView] = useState(APP_VIEWS.HOME)
+  const [profileTarget, setProfileTarget] = useState(null)
+  const [profileReturnView, setProfileReturnView] = useState(APP_VIEWS.HOME)
+  const [followingRefreshKey, setFollowingRefreshKey] = useState(0)
   const [creationsRefreshKey, setCreationsRefreshKey] = useState(0)
   const loadDraftRef = useRef(null)
 
@@ -68,6 +73,12 @@ function App() {
   const handleSelectCreation = useCallback((creation) => {
     setActiveView(APP_VIEWS.CREATE)
     setTimeout(() => loadDraftRef.current?.(creation), 0)
+  }, [])
+
+  const handleNavigateToProfile = useCallback((user, returnView = APP_VIEWS.HOME) => {
+    setProfileTarget(user)
+    setProfileReturnView(returnView)
+    setActiveView(APP_VIEWS.USER_PROFILE)
   }, [])
 
   if (appScreen === APP_SCREENS.LANDING) {
@@ -140,14 +151,36 @@ function App() {
             setIsAuthenticated(false)
             setAppScreen(APP_SCREENS.LANDING)
           }}
-          onCurrentUserUpdated={(user) => {
-            setCurrentUser(user)
+          onCurrentUserUpdated={(user) => setCurrentUser(user)}
+          onNavigateToProfile={(user) =>
+            handleNavigateToProfile(user, APP_VIEWS.MY_CREATIONS)
+          }
+          followingRefreshKey={followingRefreshKey}
+        />
+      )
+    }
+
+    if (activeView === APP_VIEWS.USER_PROFILE) {
+      return (
+        <PublicProfileView
+          user={profileTarget}
+          currentUser={currentUser}
+          onBack={() => {
+            setFollowingRefreshKey((k) => k + 1)
+            setActiveView(profileReturnView)
           }}
         />
       )
     }
 
-    return <HomeView />
+    return (
+      <HomeView
+        isAuthenticated={isAuthenticated}
+        onNavigateToProfile={handleNavigateToProfile}
+        onGoToProfile={() => setActiveView(APP_VIEWS.MY_CREATIONS)}
+        followingRefreshKey={followingRefreshKey}
+      />
+    )
   }
 
   return (

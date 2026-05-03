@@ -1,5 +1,7 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
-import { deleteCreation, fetchCreations } from '../services/creationsApi.js'
+import { useCallback, useEffect, useState } from 'react'
+import { deleteCreation, fetchCreations, publishCreation, unpublishCreation } from '../services/creationsApi.js'
+import { changeEmail, changePassword, fetchCurrentUser } from '../services/authApi.js'
+import { fetchFollowing, unfollowUser } from '../services/usersApi.js'
 import { getCreationKindLabel, getCreationPreviewUrl } from '../utils/creationPreviewUrl.js'
 import EditProfile from './EditProfile'
 
@@ -60,6 +62,303 @@ const formatUpdated = (iso) => {
   }
 }
 
+function ChangeEmailModal({ onClose }) {
+  const [email, setEmail] = useState('')
+  const [errors, setErrors] = useState({})
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [success, setSuccess] = useState(false)
+
+  useEffect(() => {
+    const onKey = (e) => {
+      if (e.key === 'Escape' && !isSubmitting) onClose()
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [isSubmitting, onClose])
+
+  const handleSubmit = async () => {
+    const errs = {}
+    const trimmed = email.trim()
+    if (!trimmed) {
+      errs.email = 'Email is required.'
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmed)) {
+      errs.email = 'Enter a valid email address.'
+    }
+    if (Object.keys(errs).length) {
+      setErrors(errs)
+      return
+    }
+
+    setIsSubmitting(true)
+    try {
+      await changeEmail({ email: trimmed })
+      setSuccess(true)
+    } catch (err) {
+      setErrors({ api: err?.message || 'Could not update email.' })
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
+
+  return (
+    <div
+      className="my-creations-modal-backdrop"
+      role="presentation"
+      onClick={!isSubmitting ? onClose : undefined}
+    >
+      <div
+        className="my-creations-modal account-modal"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="change-email-title"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <h2 className="my-creations-modal-title" id="change-email-title">
+          Change Email
+        </h2>
+
+        {success ? (
+          <>
+            <p className="profile-form-success">Email updated successfully.</p>
+            <div className="my-creations-modal-actions" style={{ marginTop: '1rem' }}>
+              <button type="button" className="my-creations-modal-btn" onClick={onClose}>
+                Done
+              </button>
+            </div>
+          </>
+        ) : (
+          <>
+            {errors.api && (
+              <p className="my-creations-modal-error" role="alert">
+                {errors.api}
+              </p>
+            )}
+            <div className="account-modal-form">
+              <div className="profile-form-field">
+                <label htmlFor="ce-email" className="auth-label">
+                  New Email
+                </label>
+                <input
+                  id="ce-email"
+                  type="email"
+                  value={email}
+                  onChange={(e) => {
+                    setEmail(e.target.value)
+                    if (errors.email) setErrors((p) => ({ ...p, email: null }))
+                  }}
+                  placeholder="new@example.com"
+                  className={`auth-input${errors.email ? ' auth-input--error' : ''}`}
+                  autoComplete="email"
+                  disabled={isSubmitting}
+                />
+                {errors.email && (
+                  <p className="profile-form-error" role="alert">
+                    {errors.email}
+                  </p>
+                )}
+              </div>
+            </div>
+            <div className="my-creations-modal-actions" style={{ marginTop: '1.25rem' }}>
+              <button
+                type="button"
+                className="my-creations-modal-btn"
+                onClick={onClose}
+                disabled={isSubmitting}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                className="my-creations-modal-btn my-creations-modal-btn--confirm"
+                onClick={handleSubmit}
+                disabled={isSubmitting}
+              >
+                {isSubmitting ? 'Updating email…' : 'Update Email'}
+              </button>
+            </div>
+          </>
+        )}
+      </div>
+    </div>
+  )
+}
+
+function ChangePasswordModal({ onClose }) {
+  const [form, setForm] = useState({
+    currentPassword: '',
+    newPassword: '',
+    confirmPassword: '',
+  })
+  const [errors, setErrors] = useState({})
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [success, setSuccess] = useState(false)
+
+  useEffect(() => {
+    const onKey = (e) => {
+      if (e.key === 'Escape' && !isSubmitting) onClose()
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [isSubmitting, onClose])
+
+  const handleChange = (e) => {
+    const { name, value } = e.target
+    setForm((p) => ({ ...p, [name]: value }))
+    if (errors[name]) setErrors((p) => ({ ...p, [name]: null }))
+  }
+
+  const handleSubmit = async () => {
+    const errs = {}
+    if (!form.currentPassword) errs.currentPassword = 'Current password is required.'
+    if (!form.newPassword) {
+      errs.newPassword = 'New password is required.'
+    } else if (form.newPassword.length < 8) {
+      errs.newPassword = 'Password must be at least 8 characters.'
+    }
+    if (form.newPassword && form.newPassword !== form.confirmPassword) {
+      errs.confirmPassword = 'Passwords do not match.'
+    }
+    if (Object.keys(errs).length) {
+      setErrors(errs)
+      return
+    }
+
+    setIsSubmitting(true)
+    try {
+      await changePassword({
+        currentPassword: form.currentPassword,
+        newPassword: form.newPassword,
+      })
+      setSuccess(true)
+    } catch (err) {
+      setErrors({ api: err?.message || 'Could not update password.' })
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
+
+  return (
+    <div
+      className="my-creations-modal-backdrop"
+      role="presentation"
+      onClick={!isSubmitting ? onClose : undefined}
+    >
+      <div
+        className="my-creations-modal account-modal"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="change-password-title"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <h2 className="my-creations-modal-title" id="change-password-title">
+          Change Password
+        </h2>
+
+        {success ? (
+          <>
+            <p className="profile-form-success">Password updated successfully.</p>
+            <div className="my-creations-modal-actions" style={{ marginTop: '1rem' }}>
+              <button type="button" className="my-creations-modal-btn" onClick={onClose}>
+                Done
+              </button>
+            </div>
+          </>
+        ) : (
+          <>
+            {errors.api && (
+              <p className="my-creations-modal-error" role="alert">
+                {errors.api}
+              </p>
+            )}
+            <div className="account-modal-form">
+              <div className="profile-form-field">
+                <label htmlFor="cp-current" className="auth-label">
+                  Current Password
+                </label>
+                <input
+                  id="cp-current"
+                  type="password"
+                  name="currentPassword"
+                  value={form.currentPassword}
+                  onChange={handleChange}
+                  className={`auth-input${errors.currentPassword ? ' auth-input--error' : ''}`}
+                  autoComplete="current-password"
+                  disabled={isSubmitting}
+                />
+                {errors.currentPassword && (
+                  <p className="profile-form-error" role="alert">
+                    {errors.currentPassword}
+                  </p>
+                )}
+              </div>
+
+              <div className="profile-form-field">
+                <label htmlFor="cp-new" className="auth-label">
+                  New Password
+                </label>
+                <input
+                  id="cp-new"
+                  type="password"
+                  name="newPassword"
+                  value={form.newPassword}
+                  onChange={handleChange}
+                  className={`auth-input${errors.newPassword ? ' auth-input--error' : ''}`}
+                  autoComplete="new-password"
+                  disabled={isSubmitting}
+                />
+                {errors.newPassword && (
+                  <p className="profile-form-error" role="alert">
+                    {errors.newPassword}
+                  </p>
+                )}
+              </div>
+
+              <div className="profile-form-field">
+                <label htmlFor="cp-confirm" className="auth-label">
+                  Confirm New Password
+                </label>
+                <input
+                  id="cp-confirm"
+                  type="password"
+                  name="confirmPassword"
+                  value={form.confirmPassword}
+                  onChange={handleChange}
+                  className={`auth-input${errors.confirmPassword ? ' auth-input--error' : ''}`}
+                  autoComplete="new-password"
+                  disabled={isSubmitting}
+                />
+                {errors.confirmPassword && (
+                  <p className="profile-form-error" role="alert">
+                    {errors.confirmPassword}
+                  </p>
+                )}
+              </div>
+            </div>
+            <div className="my-creations-modal-actions" style={{ marginTop: '1.25rem' }}>
+              <button
+                type="button"
+                className="my-creations-modal-btn"
+                onClick={onClose}
+                disabled={isSubmitting}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                className="my-creations-modal-btn my-creations-modal-btn--confirm"
+                onClick={handleSubmit}
+                disabled={isSubmitting}
+              >
+                {isSubmitting ? 'Updating password…' : 'Update Password'}
+              </button>
+            </div>
+          </>
+        )}
+      </div>
+    </div>
+  )
+}
+
 function GuestProfileView({ onGoSignIn, onGoSignUp }) {
   return (
     <div className="profile-guest">
@@ -95,17 +394,33 @@ function MyCreationsPage({
   onGoSignIn,
   onGoSignUp,
   onSignOut,
+  onNavigateToProfile,
+  followingRefreshKey = 0,
 }) {
+  const [profile, setProfile] = useState(null)
   const [items, setItems] = useState([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
   const [pendingDelete, setPendingDelete] = useState(null)
   const [isDeleting, setIsDeleting] = useState(false)
   const [deleteDialogError, setDeleteDialogError] = useState(null)
-  const [friendRequests, setFriendRequests] = useState([])
-  const [friends, setFriends] = useState([])
+  const [following, setFollowing] = useState([])
+  const [followingLoading, setFollowingLoading] = useState(false)
+  const [pendingUnfollowIds, setPendingUnfollowIds] = useState(new Set())
   const [showEditProfile, setShowEditProfile] = useState(false)
+  const [showChangeEmail, setShowChangeEmail] = useState(false)
+  const [showChangePassword, setShowChangePassword] = useState(false)
+  const [pendingPublishIds, setPendingPublishIds] = useState(new Set())
 
+
+  useEffect(() => {
+    if (!isAuthenticated) {
+      // avoid synchronous setState inside effect
+      Promise.resolve().then(() => setProfile(null))
+      return
+    }
+    fetchCurrentUser().then(setProfile).catch(() => {})
+  }, [isAuthenticated])
 
   useEffect(() => {
     if (!isAuthenticated) {
@@ -171,16 +486,30 @@ function MyCreationsPage({
     [isDeleting]
   )
 
-  const handleAcceptRequest = useCallback((id) => {
-    const req = friendRequests.find((r) => r.id === id)
-    if (req) {
-      setFriends((prev) => [...prev, req])
-    }
-    setFriendRequests((prev) => prev.filter((r) => r.id !== id))
-  }, [friendRequests])
+  useEffect(() => {
+    if (!isAuthenticated) return
+    // schedule following loading state in microtask to satisfy lint rule
+    Promise.resolve().then(() => setFollowingLoading(true))
+    fetchFollowing()
+      .then(({ users }) => setFollowing(users || []))
+      .catch(() => {})
+      .finally(() => setFollowingLoading(false))
+  }, [isAuthenticated, followingRefreshKey])
 
-  const handleDeclineRequest = useCallback((id) => {
-    setFriendRequests((prev) => prev.filter((r) => r.id !== id))
+  const handleUnfollow = useCallback(async (userId) => {
+    setPendingUnfollowIds((prev) => new Set([...prev, userId]))
+    try {
+      await unfollowUser(userId)
+      setFollowing((prev) => prev.filter((u) => u.id !== userId))
+    } catch {
+      // silent — user stays in list; they can retry
+    } finally {
+      setPendingUnfollowIds((prev) => {
+        const next = new Set(prev)
+        next.delete(userId)
+        return next
+      })
+    }
   }, [])
 
   const confirmDelete = useCallback(async () => {
@@ -217,29 +546,54 @@ function MyCreationsPage({
     return () => window.removeEventListener('keydown', onKey)
   }, [pendingDelete, isDeleting])
 
-  const showConnectionsBeforeActivity = friendRequests.length > 0
+  const handlePublish = useCallback(async (creationId) => {
+    setPendingPublishIds((prev) => new Set([...prev, creationId]))
+    try {
+      const updated = await publishCreation(creationId)
+      setItems((prev) => prev.map((item) => (String(item._id ?? item.id) === creationId ? updated : item)))
+    } catch (err) {
+      console.error('Publish failed:', err)
+    } finally {
+      setPendingPublishIds((prev) => {
+        const next = new Set(prev)
+        next.delete(creationId)
+        return next
+      })
+    }
+  }, [])
 
-  const totalConnections = useMemo(
-    () => friendRequests.length + friends.length,
-    [friendRequests.length, friends.length]
-  )
+  const handleUnpublish = useCallback(async (creationId) => {
+    setPendingPublishIds((prev) => new Set([...prev, creationId]))
+    try {
+      const updated = await unpublishCreation(creationId)
+      setItems((prev) => prev.map((item) => (String(item._id ?? item.id) === creationId ? updated : item)))
+    } catch (err) {
+      console.error('Unpublish failed:', err)
+    } finally {
+      setPendingPublishIds((prev) => {
+        const next = new Set(prev)
+        next.delete(creationId)
+        return next
+      })
+    }
+  }, [])
 
   if (!isAuthenticated) {
     return <GuestProfileView onGoSignIn={onGoSignIn} onGoSignUp={onGoSignUp} />
   }
 
-  const draftItems = items.filter(row => row.status !== 'exported')
-  const exportedItems = items.filter(row => row.status === 'exported')
+  const draftItems = items.filter(row => row.status !== 'exported' && row.status !== 'published')
+  const exportedItems = items.filter(row => row.status === 'exported' || row.status === 'published')
 
   const renderDraftsContent = () => {
     if (loading) {
       return <p className="profile-section-empty editor-status editor-status--loading">Loading…</p>
     }
-  
+
     if (error) {
       return <p className="profile-section-empty editor-status editor-status--error">{error}</p>
     }
-  
+
     if (!draftItems.length) {
       return (
         <>
@@ -248,13 +602,13 @@ function MyCreationsPage({
         </>
       )
     }
-  
+
     return (
       <ul className="my-creations-list profile-drafts-list">
         {draftItems.map((row) => {
           const id = row._id ?? row.id
           const title = typeof row.title === 'string' && row.title.trim() ? row.title.trim() : 'Untitled'
-  
+
           return (
             <li
               key={id}
@@ -286,26 +640,53 @@ function MyCreationsPage({
     if (!exportedItems.length) {
       return <p className="profile-section-empty profile-section-empty--compact">No exported stickers yet</p>
     }
-  
+
     return (
       <ul aria-label="Exported creations">
         {exportedItems.map((row) => {
           const id = row._id ?? row.id
           const title = typeof row.title === 'string' && row.title.trim() ? row.title.trim() : 'Untitled'
-  
+          const isPublished = row.status === 'published'
+          const isPending = pendingPublishIds.has(String(id))
+
           return (
             <li key={id} className="my-creations-item">
               <CreationPreviewThumb row={row} title={title} />
               <div className="my-creations-item-body">
                 <div className="my-creations-item-main">
                   <span className="my-creations-item-title">{title}</span>
-                  <span className="my-creations-badge my-creations-badge--exported">Exported</span>
+                  <span className={`my-creations-badge ${isPublished ? 'my-creations-badge--published' : 'my-creations-badge--exported'}`}>
+                    {isPublished ? 'Published' : 'Exported'}
+                  </span>
                 </div>
                 <div className="my-creations-item-row2">
                   <div className="my-creations-item-meta">Updated {formatUpdated(row.updatedAt)}</div>
-                  <button type="button" className="my-creations-delete" onClick={(e) => requestDelete(e, row)} aria-label={`Delete ${title}`}>
-                    Delete
-                  </button>
+                  <div className="my-creations-item-actions">
+                    {isPublished ? (
+                      <button
+                        type="button"
+                        className="my-creations-unpublish"
+                        onClick={() => handleUnpublish(String(id))}
+                        disabled={isPending}
+                        aria-label={`Unpublish ${title}`}
+                      >
+                        {isPending ? '…' : 'Unpublish'}
+                      </button>
+                    ) : (
+                      <button
+                        type="button"
+                        className="my-creations-publish"
+                        onClick={() => handlePublish(String(id))}
+                        disabled={isPending}
+                        aria-label={`Publish ${title}`}
+                      >
+                        {isPending ? '…' : 'Publish'}
+                      </button>
+                    )}
+                    <button type="button" className="my-creations-delete" onClick={(e) => requestDelete(e, row)} aria-label={`Delete ${title}`}>
+                      Delete
+                    </button>
+                  </div>
                 </div>
               </div>
             </li>
@@ -317,83 +698,62 @@ function MyCreationsPage({
 
 
   const renderConnectionsContent = () => {
-    if (friendRequests.length === 0 && friends.length === 0) {
-      return <p className="profile-section-empty">No connections yet.</p>
+    if (followingLoading) {
+      return <p className="profile-section-empty editor-status editor-status--loading">Loading…</p>
+    }
+
+    if (following.length === 0) {
+      return (
+        <>
+          <p className="profile-section-empty">No connections yet.</p>
+          <p className="profile-section-empty">Search for creators on Home to start following people.</p>
+        </>
+      )
     }
 
     return (
-      <div className="profile-connections">
-        <div className="profile-connections-block">
-          <div className="profile-connections-subheader">
-            <h4 className="profile-connections-subtitle">Friend Requests</h4>
-            <span className="profile-connections-subcount">{friendRequests.length}</span>
-          </div>
-
-          {friendRequests.length === 0 ? (
-            <p className="profile-section-empty profile-section-empty--compact">
-              No incoming friend requests.
-            </p>
-          ) : (
-            <ul className="profile-friend-list">
-              {friendRequests.map((req) => (
-                <li key={req.id} className="profile-friend-item">
-                  <div className="profile-friend-avatar" aria-hidden="true">
-                    {req.name.charAt(0).toUpperCase()}
-                  </div>
-
-                  <div className="profile-friend-info">
-                    <span className="profile-friend-name">{req.name}</span>
-                    {req.handle ? <span className="profile-friend-handle">{req.handle}</span> : null}
-                  </div>
-
-                  <div className="profile-friend-actions">
-                    <button
-                      type="button"
-                      className="profile-friend-btn profile-friend-btn--accept"
-                      onClick={() => handleAcceptRequest(req.id)}
-                    >
-                      Accept
-                    </button>
-                    <button
-                      type="button"
-                      className="profile-friend-btn profile-friend-btn--decline"
-                      onClick={() => handleDeclineRequest(req.id)}
-                    >
-                      Decline
-                    </button>
-                  </div>
-                </li>
-              ))}
-            </ul>
-          )}
-        </div>
-
-        <div className="profile-connections-block">
-          <div className="profile-connections-subheader">
-            <h4 className="profile-connections-subtitle">Friends</h4>
-            <span className="profile-connections-subcount">{friends.length}</span>
-          </div>
-
-          {friends.length === 0 ? (
-            <p className="profile-section-empty profile-section-empty--compact">No friends yet.</p>
-          ) : (
-            <ul className="profile-friend-list">
-              {friends.map((friend) => (
-                <li key={friend.id} className="profile-friend-item">
-                  <div className="profile-friend-avatar" aria-hidden="true">
-                    {friend.name.charAt(0).toUpperCase()}
-                  </div>
-
-                  <div className="profile-friend-info">
-                    <span className="profile-friend-name">{friend.name}</span>
-                    {friend.handle ? <span className="profile-friend-handle">{friend.handle}</span> : null}
-                  </div>
-                </li>
-              ))}
-            </ul>
-          )}
-        </div>
-      </div>
+      <ul className="profile-friend-list">
+        {following.map((user) => {
+          const initial = (user.displayName || user.username || '?').charAt(0).toUpperCase()
+          return (
+            <li key={user.id} className="profile-friend-item">
+              <button
+                type="button"
+                className="home-user-avatar-btn"
+                onClick={() => onNavigateToProfile?.(user)}
+                aria-label={`View ${user.displayName || user.username}'s profile`}
+                tabIndex={-1}
+              >
+                {user.avatarUrl ? (
+                  <img src={user.avatarUrl} alt="" className="home-user-avatar-img" aria-hidden="true" />
+                ) : (
+                  <div className="profile-friend-avatar" aria-hidden="true">{initial}</div>
+                )}
+              </button>
+              <button
+                type="button"
+                className="profile-friend-info home-user-info-btn"
+                onClick={() => onNavigateToProfile?.(user)}
+              >
+                <span className="profile-friend-name">{user.displayName || user.username}</span>
+                {user.username && <span className="profile-friend-handle">@{user.username}</span>}
+                {user.bio && <span className="home-user-bio">{user.bio}</span>}
+              </button>
+              <div className="profile-friend-actions">
+                <button
+                  type="button"
+                  className="profile-friend-btn profile-friend-btn--following"
+                  onClick={() => handleUnfollow(user.id)}
+                  disabled={pendingUnfollowIds.has(user.id)}
+                  aria-label={`Unfollow ${user.displayName || user.username}`}
+                >
+                  {pendingUnfollowIds.has(user.id) ? '…' : 'Following'}
+                </button>
+              </div>
+            </li>
+          )
+        })}
+      </ul>
     )
   }
 
@@ -422,7 +782,7 @@ function MyCreationsPage({
     <div className="profile-section profile-section--connections">
       <div className="profile-section-header">
         <h3 className="profile-section-title">Connections</h3>
-        <span className="profile-section-count">{totalConnections}</span>
+        <span className="profile-section-count">{following.length}</span>
       </div>
 
       <div className="profile-section-body">{renderConnectionsContent()}</div>
@@ -432,7 +792,10 @@ function MyCreationsPage({
   if (showEditProfile) {
     return (
       <EditProfile
-        onSave={() => setShowEditProfile(false)}
+        onSave={() => {
+          fetchCurrentUser().then(setProfile).catch(() => {})
+          setShowEditProfile(false)
+        }}
         onCancel={() => setShowEditProfile(false)}
       />
     )
@@ -442,11 +805,35 @@ function MyCreationsPage({
     <div className="profile-page" role="region" aria-label="Profile">
       <div className="profile-header">
         <div className="profile-avatar" aria-hidden="true">
-          <span className="profile-avatar-initials">SC</span>
+          {profile?.avatarUrl ? (
+            <img
+              src={profile.avatarUrl}
+              alt="Avatar"
+              style={{ width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover' }}
+            />
+          ) : (
+            <span className="profile-avatar-initials">
+              {profile?.displayName?.charAt(0).toUpperCase() ||
+                profile?.username?.charAt(0).toUpperCase() ||
+                '?'}
+            </span>
+          )}
         </div>
 
-        <p className="profile-name">Your Name</p>
-        <p className="profile-bio">No bio yet.</p>
+        {profile?.displayName && profile?.username ? (
+          <>
+            <p className="profile-name">{profile.displayName}</p>
+            <p className="profile-username">@{profile.username}</p>
+          </>
+        ) : (
+          <p className="profile-name profile-name--incomplete">
+            Profile not set up yet.{' '}
+            <button type="button" className="profile-setup-link" onClick={() => setShowEditProfile(true)}>
+              Set up your profile
+            </button>
+          </p>
+        )}
+        {profile?.bio ? <p className="profile-bio">{profile.bio}</p> : null}
 
         <button
           type="button"
@@ -456,37 +843,56 @@ function MyCreationsPage({
           Edit Profile
         </button>
 
-        <div className="profile-socials">
-          <button type="button" className="profile-social-link">
-            Instagram
-          </button>
-
-          <button type="button" className="profile-social-link">
-            Twitter
-          </button>
-        </div>
+        {(profile?.instagram || profile?.x) ? (
+          <div className="profile-socials">
+            {profile.instagram ? (
+              <a
+                href={`https://instagram.com/${profile.instagram}`}
+                className="profile-social-link"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                Instagram
+              </a>
+            ) : null}
+            {profile.x ? (
+              <a
+                href={`https://x.com/${profile.x}`}
+                className="profile-social-link"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                X
+              </a>
+            ) : null}
+          </div>
+        ) : null}
       </div>
 
       {draftsSection}
-      {showConnectionsBeforeActivity ? connectionsSection : activitySection}
-      {showConnectionsBeforeActivity ? activitySection : connectionsSection}
+      {activitySection}
+      {connectionsSection}
 
       <div className="profile-account">
         <p className="profile-account-title">Account</p>
 
         <div className="profile-account-actions">
-          <button type="button" className="profile-account-action">
+          <button
+            type="button"
+            className="profile-account-action"
+            onClick={() => setShowChangeEmail(true)}
+          >
             <span>Change Email</span>
-            <span className="profile-account-action-arrow" aria-hidden="true">
-              ›
-            </span>
+            <span className="profile-account-action-arrow" aria-hidden="true">›</span>
           </button>
 
-          <button type="button" className="profile-account-action">
+          <button
+            type="button"
+            className="profile-account-action"
+            onClick={() => setShowChangePassword(true)}
+          >
             <span>Change Password</span>
-            <span className="profile-account-action-arrow" aria-hidden="true">
-              ›
-            </span>
+            <span className="profile-account-action-arrow" aria-hidden="true">›</span>
           </button>
 
           <button
@@ -544,6 +950,14 @@ function MyCreationsPage({
             </div>
           </div>
         </div>
+      ) : null}
+
+      {showChangeEmail ? (
+        <ChangeEmailModal onClose={() => setShowChangeEmail(false)} />
+      ) : null}
+
+      {showChangePassword ? (
+        <ChangePasswordModal onClose={() => setShowChangePassword(false)} />
       ) : null}
     </div>
   )
