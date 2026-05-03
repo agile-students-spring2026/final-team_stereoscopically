@@ -132,7 +132,7 @@ describe('editor consistency contracts', () => {
     cleanup()
   })
 
-  it('renders image filter hub with Text label and Back action', async () => {
+  it('renders image filter hub with Text label and Back to editor action', async () => {
     const onCancel = vi.fn()
 
     const { container, cleanup } = await renderComponentToDom(
@@ -146,18 +146,18 @@ describe('editor consistency contracts', () => {
 
     const labels = Array.from(container.querySelectorAll('button')).map((button) => button.textContent?.trim())
     expect(labels).toContain('Text')
-  expect(labels).toContain('Back')
+    expect(labels).toContain('Back to editor')
 
-  const backButton = Array.from(container.querySelectorAll('button')).find((button) => button.textContent?.trim() === 'Back')
-  expect(backButton).toBeTruthy()
+    const backButton = Array.from(container.querySelectorAll('button')).find((button) => button.textContent?.trim() === 'Back to editor')
+    expect(backButton).toBeTruthy()
 
-  backButton.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+    backButton.dispatchEvent(new MouseEvent('click', { bubbles: true }))
     expect(onCancel).toHaveBeenCalledTimes(1)
 
     cleanup()
   })
 
-  it('renders image text editor with Back, Cancel, and Apply actions', async () => {
+  it('renders image text editor with Filter menu, Back to editor, and Apply actions', async () => {
     const onBack = vi.fn()
     const onCancel = vi.fn()
     const onApply = vi.fn()
@@ -173,16 +173,16 @@ describe('editor consistency contracts', () => {
 
     const getButton = (label) => Array.from(container.querySelectorAll('button')).find((button) => button.textContent?.trim() === label)
 
-    const backButton = getButton('Back')
-    const cancelButton = getButton('Cancel')
+    const filterMenuButton = getButton('Filter menu')
+    const backToEditorButton = getButton('Back to editor')
     const applyButton = getButton('Apply')
 
-    expect(backButton).toBeTruthy()
-    expect(cancelButton).toBeTruthy()
+    expect(filterMenuButton).toBeTruthy()
+    expect(backToEditorButton).toBeTruthy()
     expect(applyButton).toBeTruthy()
 
-    backButton.dispatchEvent(new MouseEvent('click', { bubbles: true }))
-    cancelButton.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+    filterMenuButton.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+    backToEditorButton.dispatchEvent(new MouseEvent('click', { bubbles: true }))
     applyButton.dispatchEvent(new MouseEvent('click', { bubbles: true }))
 
     expect(onBack).toHaveBeenCalledTimes(1)
@@ -192,7 +192,7 @@ describe('editor consistency contracts', () => {
     cleanup()
   })
 
-  it('renders GIF speed tool with Back, Cancel, and Apply actions', async () => {
+  it('renders GIF speed tool with Filter menu, Back to editor, and Apply actions', async () => {
     const onBack = vi.fn()
     const onCancel = vi.fn()
     const onApplySpeed = vi.fn()
@@ -210,16 +210,16 @@ describe('editor consistency contracts', () => {
 
     const getButton = (label) => Array.from(container.querySelectorAll('button')).find((button) => button.textContent?.trim() === label)
 
-    const backButton = getButton('Back')
-    const cancelButton = getButton('Cancel')
+    const filterMenuButton = getButton('Filter menu')
+    const backToEditorButton = getButton('Back to editor')
     const applyButton = getButton('Apply')
 
-    expect(backButton).toBeTruthy()
-    expect(cancelButton).toBeTruthy()
+    expect(filterMenuButton).toBeTruthy()
+    expect(backToEditorButton).toBeTruthy()
     expect(applyButton).toBeTruthy()
 
-    backButton.dispatchEvent(new MouseEvent('click', { bubbles: true }))
-    cancelButton.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+    filterMenuButton.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+    backToEditorButton.dispatchEvent(new MouseEvent('click', { bubbles: true }))
     applyButton.dispatchEvent(new MouseEvent('click', { bubbles: true }))
 
     expect(onBack).toHaveBeenCalledTimes(1)

@@ -96,10 +96,6 @@ function ImageEditorFlow({ imageSession, media, draft, textOverlay, onBack, onDr
   const handleAddTextScreenApply = async (textRequest) => {
     const baseForText = preTextWorkingMediaId || effectiveBackendMediaId
 
-    if (!preTextWorkingMediaId && effectiveBackendMediaId) {
-      onPreTextWorkingMediaIdChange(effectiveBackendMediaId)
-    }
-
     const applied = await handleAddTextApply({
       ...textRequest,
       _overrideBaseMediaId: baseForText || undefined,
@@ -222,10 +218,31 @@ function ImageEditorFlow({ imageSession, media, draft, textOverlay, onBack, onDr
       onOpenFilters={handleOpenFilters}
       onSize={handleOpenSizes}
       onExport={async () => {
+        if (!selectedPreset) {
+          window.alert('Please open Resize → Preset Sizes and choose an export format before exporting.')
+          return
+        }
+        if (
+          !window.confirm(
+            'Export uses your Preset Size (letterbox). Please confirm you have applied the correct output size in Preset Sizes. Continue?',
+          )
+        ) {
+          return
+        }
+        const defaultTitle = resolveImageDraftTitle()
+        const entered = window.prompt('Name this sticker (shown in My Creations)', defaultTitle)
+        if (entered === null) return
+        const exportTitle = entered.trim() || defaultTitle
+        if (!exportTitle.trim()) {
+          window.alert('Please enter a name.')
+          return
+        }
+        onDraftTitleChange?.(exportTitle)
+
         const exported = await handleExport()
         if (!exported?.id) return
         try {
-          const persistTitle = resolveImageDraftTitle()
+          const persistTitle = exportTitle
           if (activeDraftId) {
             await updateCreation(
               activeDraftId,

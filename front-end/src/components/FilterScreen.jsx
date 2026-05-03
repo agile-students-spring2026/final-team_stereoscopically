@@ -8,6 +8,7 @@ function FilterScreen({
   videoSrc,
   onApply,
   onCancel,
+  cancelLabel = 'Cancel',
   previewInteractive = false,
   onPreviewPointerDown,
   onPreviewPointerMove,
@@ -24,6 +25,7 @@ function FilterScreen({
       title={title}
       onCancel={onCancel}
       onApply={onApply}
+      cancelLabel={cancelLabel}
       preview={(
         <div
           ref={previewContainerRef}

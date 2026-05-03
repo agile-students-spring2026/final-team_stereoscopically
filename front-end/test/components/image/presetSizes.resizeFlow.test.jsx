@@ -45,7 +45,7 @@ describe('PresetSizes resize flow', () => {
     expect(container.querySelector('img[alt="Resize preview"]')).toBeTruthy()
 
     const labels = Array.from(container.querySelectorAll('button')).map((button) => button.textContent?.trim())
-    expect(labels).toContain('Cancel')
+    expect(labels).toContain('Back to editor')
     expect(labels).toContain('Reset')
     expect(labels).toContain('Apply')
 
