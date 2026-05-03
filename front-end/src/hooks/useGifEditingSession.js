@@ -14,6 +14,7 @@ import {
   VALID_GIF_RESIZE_PRESETS,
 } from '../components/gif/gifEditorConstants'
 import { downloadFile } from '../utils/downloadFile'
+import { getVideoDraftRestoreState } from '../utils/draftRestoreState.js'
 
 /**
  * Normalize a committed trim range against a concrete video duration.
@@ -170,12 +171,19 @@ const useGifEditingSession = () => {
   }, [])
 
   /**
+   * Persist text overlay to session without changing the active tool (e.g. leaving Text via Back / Cancel).
+   */
+  const commitGifTextOverlaySettings = useCallback((nextSettings) => {
+    setTextOverlaySettings(sanitizeGifTextSettings(nextSettings))
+  }, [])
+
+  /**
    * Apply text overlay settings and return to editor.
    */
   const applyGifTextOverlaySettings = useCallback((nextSettings) => {
-    setTextOverlaySettings(sanitizeGifTextSettings(nextSettings))
+    commitGifTextOverlaySettings(nextSettings)
     setActiveTool(GIF_FLOW_TOOLS.EDITOR)
-  }, [])
+  }, [commitGifTextOverlaySettings])
 
   /**
    * Reset text overlay settings to defaults.
@@ -346,19 +354,21 @@ const useGifEditingSession = () => {
   const restoreGifSession = useCallback((payload = {}) => {
     setActiveTool(GIF_FLOW_TOOLS.EDITOR)
 
-    const safeStart = Math.max(0, Number(payload.trimRange?.start) || 0)
-    const rawEnd = Number(payload.trimRange?.end)
+    const videoRestore = getVideoDraftRestoreState(payload)
+
+    const safeStart = Math.max(0, Number(videoRestore.trimRange?.start) || 0)
+    const rawEnd = Number(videoRestore.trimRange?.end)
     const safeEnd = Number.isFinite(rawEnd) ? Math.max(safeStart, rawEnd) : safeStart
     setTrimRange({ start: safeStart, end: safeEnd })
 
-    const safePreset = VALID_GIF_RESIZE_PRESETS.has(payload.resizePreset)
-      ? payload.resizePreset
+    const safePreset = VALID_GIF_RESIZE_PRESETS.has(videoRestore.resizePreset)
+      ? videoRestore.resizePreset
       : DEFAULT_GIF_RESIZE_PRESET
 
     setResizePreset(safePreset)
 
-    const rawColor = typeof payload.resizeBorderColor === 'string'
-      ? payload.resizeBorderColor.trim().toLowerCase()
+    const rawColor = typeof videoRestore.resizeBorderColor === 'string'
+      ? videoRestore.resizeBorderColor.trim().toLowerCase()
       : ''
     const safeBorderColor =
       (rawColor && GIF_BORDER_COLOR_KEYWORDS.has(rawColor)) ||
@@ -368,18 +378,18 @@ const useGifEditingSession = () => {
     setResizeBorderColor(safeBorderColor)
 
     setSelectedSpeedPlaybackRate(
-      GIF_SPEED_PLAYBACK_RATES.includes(payload.selectedSpeedPlaybackRate)
-        ? payload.selectedSpeedPlaybackRate
+      GIF_SPEED_PLAYBACK_RATES.includes(videoRestore.selectedSpeedPlaybackRate)
+        ? videoRestore.selectedSpeedPlaybackRate
         : DEFAULT_GIF_SPEED_PLAYBACK_RATE
     )
 
     setTextOverlaySettings(
-      payload.textOverlaySettings
-        ? sanitizeGifTextSettings(payload.textOverlaySettings)
+      videoRestore.textOverlaySettings
+        ? sanitizeGifTextSettings(videoRestore.textOverlaySettings)
         : createInitialGifTextSettings()
     )
 
-    setSelectedFilterPreset(payload.selectedFilterPreset || 'default')
+    setSelectedFilterPreset(videoRestore.selectedFilterPreset || 'default')
     setFilterPreviewUrl(null)
     setFilterPreviewResult(null)
     setFilterPreviewError(null)
@@ -433,6 +443,7 @@ const useGifEditingSession = () => {
     textOverlaySettings,
     setGifTextOverlaySettings,
     updateGifTextOverlaySettings,
+    commitGifTextOverlaySettings,
     applyGifTextOverlaySettings,
     resetGifTextOverlaySettings,
 
@@ -467,7 +478,7 @@ const useGifEditingSession = () => {
       trimRange, applyTrimRange, resizePreset, resizeBorderColor, 
       applyResizeSettings, selectedSpeedPlaybackRate, selectSpeed, 
       applySpeed, textOverlaySettings, setGifTextOverlaySettings, 
-      updateGifTextOverlaySettings, applyGifTextOverlaySettings, 
+      updateGifTextOverlaySettings, commitGifTextOverlaySettings, applyGifTextOverlaySettings, 
       resetGifTextOverlaySettings, activeTool, openGifTool, 
       selectedFilterPreset, selectFilterPreset, filterPreviewUrl, 
       filterPreviewResult, isLoadingFilterPreview, filterPreviewError, 

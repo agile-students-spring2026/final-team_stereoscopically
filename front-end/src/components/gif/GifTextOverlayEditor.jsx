@@ -8,7 +8,8 @@ import {
 } from '../../utils/overlayPlacement'
 import useVideoPreviewUrl from '../../hooks/useVideoPreviewUrl'
 import EditorToolScreen from '../EditorToolScreen'
-import { GIF_TEXT_FONT_FAMILIES } from './gifEditorConstants'
+import { DEFAULT_GIF_RESIZE_PRESET, GIF_TEXT_FONT_FAMILIES } from './gifEditorConstants'
+import { gifTextPreviewOverlayFontCssPx } from '../../utils/gifTextOverlayPreviewSizing'
 
 const DEFAULT_TEXT_OVERLAY_SETTINGS = {
   text: '',
@@ -32,7 +33,18 @@ function buildTextOverlayDraft(initialSettings) {
   }
 }
 
-function GifTextOverlayEditor({ videoFile, initialSettings, onBack, onCancel, onApply }) {
+function GifTextOverlayEditor({
+  videoFile,
+  initialSettings,
+  resizePreset = DEFAULT_GIF_RESIZE_PRESET,
+  onBack,
+  onCancel,
+  onApply,
+  /** Persist current draft to session before navigating away (Save for later uses session, not local draft). */
+  onCommitDraft,
+  /** Keep parent session in sync while editing so Save for later always persists text. */
+  onDraftSessionSync,
+}) {
   const [draft, setDraft] = useState(() => buildTextOverlayDraft(initialSettings))
 
   const [previewContainerSize, setPreviewContainerSize] = useState({ width: 1, height: 1 })
@@ -113,15 +125,19 @@ function GifTextOverlayEditor({ videoFile, initialSettings, onBack, onCancel, on
   }, [videoUrl])
 
   const updateDraft = useCallback((partial) => {
-    setDraft((current) => ({
-      ...current,
-      ...partial,
-      position: {
-        ...current.position,
-        ...(partial?.position || {}),
-      },
-    }))
-  }, [])
+    setDraft((current) => {
+      const next = {
+        ...current,
+        ...partial,
+        position: {
+          ...current.position,
+          ...(partial?.position || {}),
+        },
+      }
+      onDraftSessionSync?.(next)
+      return next
+    })
+  }, [onDraftSessionSync])
 
   const safePositionX = clamp(asNumberOrFallback(draft.position?.x, 50), 0, 100)
   const safePositionY = clamp(asNumberOrFallback(draft.position?.y, 50), 0, 100)
@@ -132,12 +148,23 @@ function GifTextOverlayEditor({ videoFile, initialSettings, onBack, onCancel, on
   )
   const renderedVideoBox = getSafeFrame(videoFrame, previewContainerSize)
 
-  const previewOverlayFontPx = useMemo(() => {
-    const naturalWidth = Math.max(1, naturalVideoSize.width)
-    const displayWidth = Math.max(1, renderedVideoBox.width)
-
-    return clamp(safeTextSize * (displayWidth / naturalWidth), 8, 240)
-  }, [naturalVideoSize.width, renderedVideoBox.width, safeTextSize])
+  const previewOverlayFontPx = useMemo(
+    () =>
+      gifTextPreviewOverlayFontCssPx({
+        sourceWidth: naturalVideoSize.width,
+        sourceHeight: naturalVideoSize.height,
+        resizePreset,
+        uiTextSize: safeTextSize,
+        contentRectWidthPx: renderedVideoBox.width,
+      }),
+    [
+      naturalVideoSize.width,
+      naturalVideoSize.height,
+      renderedVideoBox.width,
+      resizePreset,
+      safeTextSize,
+    ],
+  )
 
   const updatePlacementFromPointer = useCallback((event) => {
     const rect = event.currentTarget.getBoundingClientRect()
@@ -329,11 +356,25 @@ function GifTextOverlayEditor({ videoFile, initialSettings, onBack, onCancel, on
       )}
       actions={(
         <>
-          <button type="button" className="btn-secondary" onClick={onBack}>
-            Back
+          <button
+            type="button"
+            className="btn-secondary"
+            onClick={() => {
+              onCommitDraft?.(draft)
+              onBack?.()
+            }}
+          >
+            Filter menu
           </button>
-          <button type="button" className="btn-secondary" onClick={onCancel}>
-            Cancel
+          <button
+            type="button"
+            className="btn-secondary"
+            onClick={() => {
+              onCommitDraft?.(draft)
+              onCancel?.()
+            }}
+          >
+            Back to editor
           </button>
           <button type="button" className="btn-primary" onClick={() => onApply?.(draft)}>
             Apply

@@ -29,6 +29,16 @@ describe('buildCreationPayload', () => {
     expect(payload.workingMediaId).toBe('src_vid_1')
     expect(payload.backendMediaId).toBe('src_vid_1')
     expect(payload.trimRange).toEqual({ start: 0, end: 0 })
+    expect(payload.previewPosterMediaId).toBeNull()
+  })
+
+  it('includes previewPosterMediaId when provided', () => {
+    const payload = buildVideoCreationPayload({
+      sourceMediaId: 'src_vid_1',
+      workingMediaId: 'work_vid_1',
+      previewPosterMediaId: 'poster_1',
+    })
+    expect(payload.previewPosterMediaId).toBe('poster_1')
   })
 
   it('derives default title from filename', () => {

@@ -55,6 +55,7 @@ function EditorContainer({ onDraftSaved, onSelectCreation }) {
     sourceUrl,
     applyTransformedImage,
     appliedTextOverlay,
+    preTextWorkingMediaId,
     onPreTextWorkingMediaIdChange: setPreTextWorkingMediaId,
   })
 
@@ -217,7 +218,8 @@ function EditorContainer({ onDraftSaved, onSelectCreation }) {
   }
 
   const handleLoadDraft = useCallback(
-    async (creation) => {
+    async (creation, options = {}) => {
+      const { openAsFollowedShare = false } = options
       const payload = creation?.editorPayload
       if (!payload) return
 
@@ -225,6 +227,7 @@ function EditorContainer({ onDraftSaved, onSelectCreation }) {
       setShowDraftLoadCancel(false)
 
       const draftId = String(creation._id ?? creation.id)
+      const ownedDraftId = openAsFollowedShare ? null : draftId
       const loadedTitle =
         typeof creation?.title === 'string' && creation.title.trim() ? creation.title.trim() : null
       const { sourceMediaId, workingMediaId, resumeMediaId } = resolveDraftMediaIds(payload)
@@ -237,7 +240,7 @@ function EditorContainer({ onDraftSaved, onSelectCreation }) {
         resetImageEditingSessionState()
         gifSession.resetGifSession()
         setPendingVideoDraftPayload(null)
-        setActiveDraftId(draftId)
+        setActiveDraftId(ownedDraftId)
         setDraftTitle(
           loadedTitle ||
             buildSuggestedDraftTitle({
@@ -293,7 +296,7 @@ function EditorContainer({ onDraftSaved, onSelectCreation }) {
         resetSelection()
         resetImageEditingSessionState()
         gifSession.resetGifSession()
-        setActiveDraftId(draftId)
+        setActiveDraftId(ownedDraftId)
         setDraftTitle(
           loadedTitle ||
             buildSuggestedDraftTitle({
