@@ -99,6 +99,7 @@ export const buildVideoCreationPayload = ({
   sourceMediaId,
   workingMediaId,
   previewMediaId,
+  previewPosterMediaId,
   trimRange,
   resizePreset,
   resizeBorderColor,
@@ -113,6 +114,7 @@ export const buildVideoCreationPayload = ({
     version: 3,
     ...mediaIds,
     previewMediaId: previewMediaId ?? null,
+    previewPosterMediaId: previewPosterMediaId ?? null,
 
     // Legacy alias for backward compatibility while clients migrate.
     backendMediaId: mediaIds.workingMediaId,

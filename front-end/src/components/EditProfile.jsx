@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { fetchCurrentUser, updateProfile, uploadAvatar } from '../services/authApi'
+import { normalizeUserMediaSrc } from '../utils/mediaPublicUrl.js'
 
 const normalizeUsername = (v) => v.trim().toLowerCase().replace(/^@/, '')
 
@@ -129,7 +130,7 @@ function EditProfile({ onSave, onCancel }) {
     }
   }
 
-  const avatarSrc = avatarPreview || currentAvatarUrl || null
+  const avatarSrc = avatarPreview || (currentAvatarUrl ? normalizeUserMediaSrc(currentAvatarUrl) : null)
 
   return (
     <div className="edit-profile-screen">

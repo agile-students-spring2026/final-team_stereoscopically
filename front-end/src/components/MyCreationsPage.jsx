@@ -1,30 +1,34 @@
 import { useCallback, useEffect, useState } from 'react'
 import { deleteCreation, fetchCreations, publishCreation, unpublishCreation } from '../services/creationsApi.js'
-import { changeEmail, changePassword, fetchCurrentUser } from '../services/authApi.js'
+import { changeEmail, changePassword, fetchCurrentUser, verifyCurrentPassword } from '../services/authApi.js'
+import { normalizeUserMediaSrc } from '../utils/mediaPublicUrl.js'
 import { fetchFollowing, unfollowUser } from '../services/usersApi.js'
-import { getCreationKindLabel, getCreationPreviewUrl } from '../utils/creationPreviewUrl.js'
+import { getCreationThumbDescriptor } from '../utils/creationPreviewUrl.js'
 import EditProfile from './EditProfile'
 
 
 function CreationPreviewThumb({ row, title }) {
-  const url = getCreationPreviewUrl(row)
-  const kind = getCreationKindLabel(row)
+  const { mode, url, posterUrl, kind } = getCreationThumbDescriptor(row)
   const [failed, setFailed] = useState(false)
 
   if (url && !failed) {
-    if (kind === 'video') {
+    if (mode === 'video') {
       return (
         <div className="my-creations-thumb-wrap">
           <video
-            src={url}
+            key={url}
             className="my-creations-thumb"
+            src={url}
+            poster={posterUrl || undefined}
             muted
             autoPlay
             loop
             playsInline
             preload="metadata"
             onError={() => setFailed(true)}
-          />
+          >
+            <source src={url} type="video/mp4" />
+          </video>
         </div>
       )
     }
@@ -56,7 +60,7 @@ const formatUpdated = (iso) => {
   try {
     const d = new Date(iso)
     if (Number.isNaN(d.getTime())) return '—'
-    return d.toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' })
+    return d.toLocaleString('en-US', { dateStyle: 'medium', timeStyle: 'short' })
   } catch {
     return '—'
   }
@@ -183,6 +187,43 @@ function ChangeEmailModal({ onClose }) {
   )
 }
 
+function PasswordVisibilityToggle({ pressed, disabled, onToggle, labelShow = 'Show password', labelHide = 'Hide password' }) {
+  const eyepaths = (
+    <g stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+      <circle cx="12" cy="12" r="3" />
+    </g>
+  )
+
+  return (
+    <button
+      type="button"
+      className="account-modal-password-visibility-btn"
+      onClick={onToggle}
+      disabled={disabled}
+      aria-label={pressed ? labelHide : labelShow}
+      aria-pressed={pressed}
+      tabIndex={disabled ? -1 : 0}
+    >
+      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+        {pressed ? (
+          <>
+            {eyepaths}
+            <path
+              d="M4 18L18 4"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+            />
+          </>
+        ) : (
+          eyepaths
+        )}
+      </svg>
+    </button>
+  )
+}
+
 function ChangePasswordModal({ onClose }) {
   const [form, setForm] = useState({
     currentPassword: '',
@@ -191,25 +232,61 @@ function ChangePasswordModal({ onClose }) {
   })
   const [errors, setErrors] = useState({})
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [isVerifying, setIsVerifying] = useState(false)
+  const [currentPasswordVerified, setCurrentPasswordVerified] = useState(false)
+  const [showCurrentPassword, setShowCurrentPassword] = useState(false)
+  const [showNewPassword, setShowNewPassword] = useState(false)
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false)
   const [success, setSuccess] = useState(false)
 
   useEffect(() => {
     const onKey = (e) => {
-      if (e.key === 'Escape' && !isSubmitting) onClose()
+      if (e.key === 'Escape' && !isSubmitting && !isVerifying) onClose()
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [isSubmitting, onClose])
+  }, [isSubmitting, isVerifying, onClose])
 
   const handleChange = (e) => {
     const { name, value } = e.target
     setForm((p) => ({ ...p, [name]: value }))
-    if (errors[name]) setErrors((p) => ({ ...p, [name]: null }))
+    if (errors[name]) setErrors((prev) => ({ ...prev, [name]: undefined }))
+    if (errors.api) setErrors((prev) => ({ ...prev, api: undefined }))
+    if (name === 'currentPassword') {
+      setCurrentPasswordVerified(false)
+    }
+  }
+
+  const currentPwFieldBusy = isSubmitting || isVerifying || currentPasswordVerified
+
+  const handleVerifyCurrentPassword = async () => {
+    if (!form.currentPassword.trim()) {
+      setErrors((p) => ({ ...p, currentPassword: 'Current password is required.' }))
+      setCurrentPasswordVerified(false)
+      return
+    }
+
+    setIsVerifying(true)
+    setErrors((p) => ({ ...p, currentPassword: undefined, api: undefined }))
+    try {
+      await verifyCurrentPassword({ currentPassword: form.currentPassword })
+      setCurrentPasswordVerified(true)
+      setShowCurrentPassword(false)
+    } catch {
+      setCurrentPasswordVerified(false)
+      setErrors((p) => ({ ...p, currentPassword: 'Wrong' }))
+    } finally {
+      setIsVerifying(false)
+    }
   }
 
   const handleSubmit = async () => {
     const errs = {}
-    if (!form.currentPassword) errs.currentPassword = 'Current password is required.'
+    if (!form.currentPassword.trim()) {
+      errs.currentPassword = 'Current password is required.'
+    } else if (!currentPasswordVerified) {
+      errs.currentPassword = 'Verify your current password first.'
+    }
     if (!form.newPassword) {
       errs.newPassword = 'New password is required.'
     } else if (form.newPassword.length < 8) {
@@ -230,6 +307,8 @@ function ChangePasswordModal({ onClose }) {
         newPassword: form.newPassword,
       })
       setSuccess(true)
+      setShowNewPassword(false)
+      setShowConfirmPassword(false)
     } catch (err) {
       setErrors({ api: err?.message || 'Could not update password.' })
     } finally {
@@ -241,7 +320,7 @@ function ChangePasswordModal({ onClose }) {
     <div
       className="my-creations-modal-backdrop"
       role="presentation"
-      onClick={!isSubmitting ? onClose : undefined}
+      onClick={!isSubmitting && !isVerifying ? onClose : undefined}
     >
       <div
         className="my-creations-modal account-modal"
@@ -275,19 +354,44 @@ function ChangePasswordModal({ onClose }) {
                 <label htmlFor="cp-current" className="auth-label">
                   Current Password
                 </label>
-                <input
-                  id="cp-current"
-                  type="password"
-                  name="currentPassword"
-                  value={form.currentPassword}
-                  onChange={handleChange}
-                  className={`auth-input${errors.currentPassword ? ' auth-input--error' : ''}`}
-                  autoComplete="current-password"
-                  disabled={isSubmitting}
-                />
+                <div className="account-modal-password-row">
+                  <div className="account-modal-password-input-wrap">
+                    <input
+                      id="cp-current"
+                      type={showCurrentPassword ? 'text' : 'password'}
+                      name="currentPassword"
+                      value={form.currentPassword}
+                      onChange={handleChange}
+                      className={`auth-input account-modal-password-row-input auth-input--with-visibility-toggle${errors.currentPassword ? ' auth-input--error' : ''}`}
+                      autoComplete="current-password"
+                      disabled={currentPwFieldBusy}
+                      spellCheck={false}
+                    />
+                    <PasswordVisibilityToggle
+                      pressed={showCurrentPassword}
+                      disabled={currentPwFieldBusy}
+                      onToggle={() => setShowCurrentPassword((v) => !v)}
+                      labelShow="Show current password"
+                      labelHide="Hide current password"
+                    />
+                  </div>
+                  <button
+                    type="button"
+                    className="btn-secondary account-modal-verify-btn"
+                    disabled={isSubmitting || isVerifying || currentPasswordVerified || !form.currentPassword.trim()}
+                    onClick={handleVerifyCurrentPassword}
+                  >
+                    {isVerifying ? 'Checking…' : currentPasswordVerified ? 'Verified' : 'Verify'}
+                  </button>
+                </div>
                 {errors.currentPassword && (
                   <p className="profile-form-error" role="alert">
                     {errors.currentPassword}
+                  </p>
+                )}
+                {currentPasswordVerified && (
+                  <p className="profile-form-success" role="status">
+                    Current password confirmed. You can enter a new password below.
                   </p>
                 )}
               </div>
@@ -296,16 +400,26 @@ function ChangePasswordModal({ onClose }) {
                 <label htmlFor="cp-new" className="auth-label">
                   New Password
                 </label>
-                <input
-                  id="cp-new"
-                  type="password"
-                  name="newPassword"
-                  value={form.newPassword}
-                  onChange={handleChange}
-                  className={`auth-input${errors.newPassword ? ' auth-input--error' : ''}`}
-                  autoComplete="new-password"
-                  disabled={isSubmitting}
-                />
+                <div className="account-modal-password-input-wrap account-modal-password-input-wrap--full">
+                  <input
+                    id="cp-new"
+                    type={showNewPassword ? 'text' : 'password'}
+                    name="newPassword"
+                    value={form.newPassword}
+                    onChange={handleChange}
+                    className={`auth-input account-modal-password-row-input auth-input--with-visibility-toggle${errors.newPassword ? ' auth-input--error' : ''}`}
+                    autoComplete="new-password"
+                    disabled={isSubmitting || !currentPasswordVerified}
+                    spellCheck={false}
+                  />
+                  <PasswordVisibilityToggle
+                    pressed={showNewPassword}
+                    disabled={isSubmitting || !currentPasswordVerified}
+                    onToggle={() => setShowNewPassword((v) => !v)}
+                    labelShow="Show new password"
+                    labelHide="Hide new password"
+                  />
+                </div>
                 {errors.newPassword && (
                   <p className="profile-form-error" role="alert">
                     {errors.newPassword}
@@ -317,16 +431,26 @@ function ChangePasswordModal({ onClose }) {
                 <label htmlFor="cp-confirm" className="auth-label">
                   Confirm New Password
                 </label>
-                <input
-                  id="cp-confirm"
-                  type="password"
-                  name="confirmPassword"
-                  value={form.confirmPassword}
-                  onChange={handleChange}
-                  className={`auth-input${errors.confirmPassword ? ' auth-input--error' : ''}`}
-                  autoComplete="new-password"
-                  disabled={isSubmitting}
-                />
+                <div className="account-modal-password-input-wrap account-modal-password-input-wrap--full">
+                  <input
+                    id="cp-confirm"
+                    type={showConfirmPassword ? 'text' : 'password'}
+                    name="confirmPassword"
+                    value={form.confirmPassword}
+                    onChange={handleChange}
+                    className={`auth-input account-modal-password-row-input auth-input--with-visibility-toggle${errors.confirmPassword ? ' auth-input--error' : ''}`}
+                    autoComplete="new-password"
+                    disabled={isSubmitting || !currentPasswordVerified}
+                    spellCheck={false}
+                  />
+                  <PasswordVisibilityToggle
+                    pressed={showConfirmPassword}
+                    disabled={isSubmitting || !currentPasswordVerified}
+                    onToggle={() => setShowConfirmPassword((v) => !v)}
+                    labelShow="Show confirm password"
+                    labelHide="Hide confirm password"
+                  />
+                </div>
                 {errors.confirmPassword && (
                   <p className="profile-form-error" role="alert">
                     {errors.confirmPassword}
@@ -339,7 +463,7 @@ function ChangePasswordModal({ onClose }) {
                 type="button"
                 className="my-creations-modal-btn"
                 onClick={onClose}
-                disabled={isSubmitting}
+                disabled={isSubmitting || isVerifying}
               >
                 Cancel
               </button>
@@ -347,7 +471,7 @@ function ChangePasswordModal({ onClose }) {
                 type="button"
                 className="my-creations-modal-btn my-creations-modal-btn--confirm"
                 onClick={handleSubmit}
-                disabled={isSubmitting}
+                disabled={isSubmitting || isVerifying || !currentPasswordVerified}
               >
                 {isSubmitting ? 'Updating password…' : 'Update Password'}
               </button>
@@ -364,7 +488,12 @@ function GuestProfileView({ onGoSignIn, onGoSignUp }) {
     <div className="profile-guest">
       <div className="profile-guest-card">
         <div className="profile-guest-icon" aria-hidden="true">
-          <span className="profile-guest-icon-glyph">○</span>
+          <svg className="profile-guest-icon-svg" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" focusable="false">
+            <path
+              fill="currentColor"
+              d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"
+            />
+          </svg>
         </div>
 
         <h2 className="profile-guest-title">Sign in to see your profile</h2>
@@ -595,12 +724,7 @@ function MyCreationsPage({
     }
 
     if (!draftItems.length) {
-      return (
-        <>
-          <p className="profile-section-empty">No saved stickers yet.</p>
-          <p className="profile-section-empty">No drafts yet</p>
-        </>
-      )
+      return <p className="profile-section-empty">No drafts yet</p>
     }
 
     return (
@@ -638,11 +762,11 @@ function MyCreationsPage({
   }
   const renderExportedContent = () => {
     if (!exportedItems.length) {
-      return <p className="profile-section-empty profile-section-empty--compact">No exported stickers yet</p>
+      return <p className="profile-section-empty">No exported stickers yet</p>
     }
 
     return (
-      <ul aria-label="Exported creations">
+      <ul aria-label="Exported creations" className="my-creations-list profile-exported-list">
         {exportedItems.map((row) => {
           const id = row._id ?? row.id
           const title = typeof row.title === 'string' && row.title.trim() ? row.title.trim() : 'Untitled'
@@ -704,10 +828,9 @@ function MyCreationsPage({
 
     if (following.length === 0) {
       return (
-        <>
-          <p className="profile-section-empty">No connections yet.</p>
-          <p className="profile-section-empty">Search for creators on Home to start following people.</p>
-        </>
+        <p className="profile-section-empty">
+          No connections yet. Search for creators on Home to start following people.
+        </p>
       )
     }
 
@@ -725,7 +848,7 @@ function MyCreationsPage({
                 tabIndex={-1}
               >
                 {user.avatarUrl ? (
-                  <img src={user.avatarUrl} alt="" className="home-user-avatar-img" aria-hidden="true" />
+                  <img src={normalizeUserMediaSrc(user.avatarUrl)} alt="" className="home-user-avatar-img" aria-hidden="true" />
                 ) : (
                   <div className="profile-friend-avatar" aria-hidden="true">{initial}</div>
                 )}
@@ -807,7 +930,7 @@ function MyCreationsPage({
         <div className="profile-avatar" aria-hidden="true">
           {profile?.avatarUrl ? (
             <img
-              src={profile.avatarUrl}
+              src={normalizeUserMediaSrc(profile.avatarUrl)}
               alt="Avatar"
               style={{ width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover' }}
             />
