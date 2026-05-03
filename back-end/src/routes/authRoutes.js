@@ -14,6 +14,7 @@ import {
 } from '../controllers/authController.js'
 import { requireAuth } from '../middleware/authMiddleware.js'
 import { handleValidationErrors } from '../middleware/validateRequest.js'
+import { isAllowedAvatarUrl } from '../utils/avatarUrlPolicy.js'
 
 const router = Router()
 
@@ -41,12 +42,8 @@ const registerBody = [
 		.trim()
 		.custom((value) => {
 			if (!value) return true
-			try {
-				const u = new URL(value)
-				return Boolean(u.protocol === 'http:' || u.protocol === 'https:')
-			} catch {
-				throw new Error('avatarUrl must be a valid HTTP or HTTPS URL')
-			}
+			if (isAllowedAvatarUrl(value)) return true
+			throw new Error('avatarUrl must be a valid HTTP or HTTPS URL, or /api/media/<id> from upload')
 		}),
 ]
 
