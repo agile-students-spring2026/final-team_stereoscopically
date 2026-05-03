@@ -2,8 +2,9 @@ import { ObjectId } from 'mongodb'
 import { getMediaBucket } from '../config/database.js'
 import { createMedia, getMediaFileInfo, openMediaDownloadStream } from './mediaStore.js'
 
-export const buildMediaUrl = (req, id) => `${req.protocol}://${req.get('host')}/api/media/${id}`
-export const buildExportDownloadUrl = (req, id) => `${req.protocol}://${req.get('host')}/api/export/${id}/download`
+// Path-only URLs so browsers always resolve against the page origin (Nginx `/api/` proxy + Vite dev proxy).
+export const buildMediaUrl = (_req, id) => `/api/media/${id}`
+export const buildExportDownloadUrl = (_req, id) => `/api/export/${id}/download`
 
 const streamToBuffer = async (stream) =>
 	await new Promise((resolve, reject) => {
