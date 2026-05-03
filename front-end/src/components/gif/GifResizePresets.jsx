@@ -120,7 +120,7 @@ function GifResizePresets({
       actions={(
         <>
           <button type="button" className="btn-secondary" onClick={onCancel}>
-            Cancel
+            Back to editor
           </button>
           <button type="button" className="btn-secondary" onClick={handleReset}>
             Reset

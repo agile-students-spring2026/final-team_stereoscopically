@@ -52,7 +52,7 @@ describe('GifResizePresets resize flow', () => {
 
     const labels = Array.from(container.querySelectorAll('button')).map((button) => button.textContent?.trim())
     expect(labels).toContain('Transparent')
-    expect(labels).toContain('Cancel')
+    expect(labels).toContain('Back to editor')
     expect(labels).toContain('Reset')
     expect(labels).toContain('Apply')
 

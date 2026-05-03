@@ -2,6 +2,13 @@ export const DEFAULT_GIF_RESIZE_PRESET = 'square'
 export const DEFAULT_GIF_RESIZE_BORDER_COLOR = '#000000'
 export const GIF_TRANSPARENT_BORDER_COLOR = 'transparent'
 
+/** Must match back-end GIF_RESIZE_PRESET_DIMENSIONS (gifMediaService trim pipeline). */
+export const GIF_RESIZE_PRESET_DIMENSIONS = Object.freeze({
+  square: Object.freeze({ width: 320, height: 320 }),
+  landscape: Object.freeze({ width: 320, height: 180 }),
+  portrait: Object.freeze({ width: 180, height: 320 }),
+})
+
 export const GIF_RESIZE_PRESET_OPTIONS = Object.freeze([
   Object.freeze({ key: 'square', label: 'Square', subtitle: '1:1' }),
   Object.freeze({ key: 'landscape', label: 'Landscape', subtitle: '16:9' }),
