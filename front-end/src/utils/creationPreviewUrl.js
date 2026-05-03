@@ -1,15 +1,14 @@
-import { getBackendBaseUrl } from '../services/backendMediaClient.js'
 import { resolveDraftMediaIds } from './draftMediaIds.js'
 
 /**
- * URL for a small list preview, or null to show a kind placeholder.
+ * Same-origin path for list previews so Nginx `/api/` and Vite dev proxy both work.
  */
 export const getCreationPreviewUrl = (creation) => {
   if (!creation || typeof creation !== 'object') return null
 
   const exportId = creation.exportAssetId
   if (typeof exportId === 'string' && exportId.trim()) {
-    return `${getBackendBaseUrl()}/api/media/${encodeURIComponent(exportId.trim())}`
+    return `/api/media/${encodeURIComponent(exportId.trim())}`
   }
 
   const p = creation.editorPayload
@@ -26,7 +25,7 @@ export const getCreationPreviewUrl = (creation) => {
   const mediaId = previewMediaId || resumeMediaId || workingMediaId || sourceMediaId
 
   if (mediaId) {
-    return `${getBackendBaseUrl()}/api/media/${encodeURIComponent(mediaId)}`
+    return `/api/media/${encodeURIComponent(mediaId)}`
   }
 
   return null
@@ -37,4 +36,37 @@ export const getCreationKindLabel = (creation) => {
   if (p && typeof p === 'object' && p.kind === 'video') return 'video'
   if (p && typeof p === 'object' && p.kind === 'image') return 'image'
   return null
+}
+
+/**
+ * Thumbnail / modal preview: how to render {@link getCreationPreviewUrl} for this row.
+ * - Video **drafts** (no export yet): `<video>` with optional JPEG `poster` (first-frame) for fast paint + motion.
+ * - Video **exported** in this app: preview URL is usually a **GIF** — use `<img>` (GIF animates).
+ */
+export const getCreationThumbDescriptor = (creation) => {
+  const kind = getCreationKindLabel(creation)
+  const p = creation?.editorPayload
+  const posterId =
+    typeof p?.previewPosterMediaId === 'string' && p.previewPosterMediaId.trim()
+      ? p.previewPosterMediaId.trim()
+      : ''
+  const posterUrl = posterId ? `/api/media/${encodeURIComponent(posterId)}` : null
+
+  const hasExport =
+    typeof creation?.exportAssetId === 'string' && Boolean(creation.exportAssetId.trim())
+
+  const url = getCreationPreviewUrl(creation)
+  if (!url) {
+    return { mode: 'placeholder', url: null, posterUrl: null, kind }
+  }
+
+  if (kind === 'video' && hasExport) {
+    return { mode: 'image', url, posterUrl: null, kind }
+  }
+
+  if (kind === 'video') {
+    return { mode: 'video', url, posterUrl, kind }
+  }
+
+  return { mode: 'image', url, posterUrl: null, kind }
 }
