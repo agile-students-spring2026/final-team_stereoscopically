@@ -22,7 +22,7 @@ Per [`instructions-3-database.md`](./instructions-3-database.md), dynamic data i
 
 ## Deployed app
 
-Production URL: *(replace when live — prefer HTTPS).*  
+Production URL: http://67.205.189.121
 Deployment notes: [`instructions-4-deployment.md`](./instructions-4-deployment.md).
 
 ## Run locally
