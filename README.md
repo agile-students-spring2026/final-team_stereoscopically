@@ -52,11 +52,15 @@ Course back-end bar is documented in [`instructions-2-back-end.md`](./instructio
 
 ## Extra credit (Sprint 4)
 
-| Item | Where |
-|------|--------|
-| Docker Compose | [`docker-compose.yml`](./docker-compose.yml), `back-end/Dockerfile`, `front-end/Dockerfile` |
-| CI | `.github/workflows/ci.yml` |
-| CD | `.github/workflows/deploy.yml` |
+Each of the 3 extra options in Sprint 4 is worth 5% extra to our team's Sprint 4 Quality Score, for up to 15% extra. If our Sprint 4 Quality Score exceeds 100%, it will still count toward our overall course average.
+
+We have also sent the same details to admins directly in our team's Discord channel.
+
+Completed Sprint 4 extra credit options:
+
+- Docker Compose: [`docker-compose.yml`](./docker-compose.yml), `back-end/Dockerfile`, `front-end/Dockerfile`
+- Continuous Integration: `.github/workflows/ci.yml`
+- Continuous Deployment: `.github/workflows/deploy.yml`
 
 ## Package readmes
 
