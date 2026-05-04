@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { getAuthToken } from '../auth/authSession'
+import { normalizeUserMediaSrc } from '../utils/mediaPublicUrl.js'
 
 function OtherUserProfile({ userId, onBack }) {
   const [profile, setProfile] = useState(null)
@@ -111,7 +112,7 @@ function OtherUserProfile({ userId, onBack }) {
         <div className="profile-avatar" aria-hidden="true">
           {profile?.avatarUrl ? (
             <img
-              src={profile.avatarUrl}
+              src={normalizeUserMediaSrc(profile.avatarUrl)}
               alt={profile.displayName}
               style={{ width: 64, height: 64, borderRadius: '50%', objectFit: 'cover' }}
             />

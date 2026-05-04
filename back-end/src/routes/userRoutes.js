@@ -6,8 +6,10 @@ import {
 	getHomeFeed,
 	getPublicUserProfile,
 	getUserPublishedCreations,
+	saveFeedCreation,
 	searchUsers,
 	unfollowUser,
+	unsaveFeedCreation,
 } from '../controllers/userController.js'
 import { requireAuth } from '../middleware/authMiddleware.js'
 import { optionalAuth } from '../middleware/optionalAuth.js'
@@ -21,5 +23,7 @@ router.post('/api/users/:userId/follow', requireAuth, followUser)
 router.delete('/api/users/:userId/follow', requireAuth, unfollowUser)
 router.get('/api/me/following', requireAuth, getFollowing)
 router.get('/api/me/feed', requireAuth, getHomeFeed)
+router.post('/api/me/saved-feed-creations/:creationId', requireAuth, saveFeedCreation)
+router.delete('/api/me/saved-feed-creations/:creationId', requireAuth, unsaveFeedCreation)
 
 export default router

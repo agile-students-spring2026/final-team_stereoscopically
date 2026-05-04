@@ -37,6 +37,19 @@ export const fetchHomeFeed = async () =>
 		fallbackErrorMessage: 'Could not fetch feed',
 	})
 
+export const saveFeedCreation = async (creationId) =>
+	postJson({
+		path: `/api/me/saved-feed-creations/${encodeURIComponent(creationId)}`,
+		payload: {},
+		fallbackErrorMessage: 'Could not save sticker',
+	})
+
+export const unsaveFeedCreation = async (creationId) =>
+	deleteJson({
+		path: `/api/me/saved-feed-creations/${encodeURIComponent(creationId)}`,
+		fallbackErrorMessage: 'Could not remove saved sticker',
+	})
+
 export const fetchUserPublishedCreations = async (username) =>
 	getJson({
 		path: `/api/users/${encodeURIComponent(username)}/creations`,

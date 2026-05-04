@@ -1,17 +1,10 @@
 # Backend API
 
-## Overview
-
-This backend provides image-processing endpoints for the StickerCreate app. It is built with Express, uses MongoDB Atlas for persistence, and stores uploaded/generated media in GridFS.
+REST API for **StickerCreate**: JWT auth, profiles, follow graph, home feed, private feed bookmarks, creations (drafts / exports / publish), likes, and image/video tooling (Sharp, ffmpeg) with media in **MongoDB GridFS**.
 
 ## Stack
 
-- Node.js
-- Express
-- Multer (multipart upload handling)
-- Sharp (image processing)
-- Fluent-ffmpeg + @ffmpeg-installer/ffmpeg (video trim/filter processing)
-- Mongoose Models for app data and JWT auth flows
+Node.js, Express, Mongoose, Multer, Sharp, fluent-ffmpeg, bcrypt, jsonwebtoken.
 
 ## Setup
 
@@ -20,31 +13,20 @@ npm install
 cp .env.example .env
 ```
 
-Configure `.env` from `.env.example` with your MongoDB Atlas URI (`MONGODB_URI`) and auth secret (`JWT_SECRET`) before running the server.
+Set **`MONGODB_URI`** and **`JWT_SECRET`** (and optional **`JWT_EXPIRES_IN`**, default `7d`). Never commit real secrets.
 
-### Authentication compliance (JWT + validation)
-
-The database sprint requires JWT-based authorization, secrets in `.env` (never committed), and validating incoming body fields before persisting to MongoDB via Mongoose:
-
-- Registration and login use **bcrypt-hashed passwords** (`passwordHash` in the DB; plaintext passwords never stored).
-- Successful **register/signup** or **login/signin** returns a JWT signed with **HS256**, configured via `JWT_SECRET` with expiry `JWT_EXPIRES_IN` (default `7d`).
-- Protected routes validate the bearer token middleware-side; **`GET /api/me`** resolves the authenticated user document.
-- Authenticated users can update their own email (`PATCH /api/me/email`) and password (`PATCH /api/me/password`) after request validation.
-- JWT invalidation policy (MVP): tokens are stateless and are not force-revoked server-side on password/email change; they naturally expire by `JWT_EXPIRES_IN`.
-- `express-validator` runs on auth JSON bodies prior to Mongoose reads/writes; validation failures return **`400`** with an `errors` array.
-
-Aliases for the same handlers: **`POST /api/auth/register`** and **`POST /api/auth/signup`**; **`POST /api/auth/login`** and **`POST /api/auth/signin`**.
-
-Integration tests under `test/auth.routes.test.js` run only when **`MONGODB_URI`** and **`JWT_SECRET`** are set in the environment (same as other Atlas-backed route tests).
+**Auth (summary):** Register/login hash passwords with bcrypt; JWT is **HS256**; `express-validator` on auth bodies; **`GET /api/me`** for the current user. Aliases: **`/api/auth/register`** & **`/api/auth/signup`**; **`/api/auth/login`** & **`/api/auth/signin`**. Integration tests need **`MONGODB_URI`** + **`JWT_SECRET`** in the environment.
 
 ## Scripts
 
-- `npm run dev` - start the API server
-- `npm run start` - start the API server
-- `npm test` - run backend tests (Mocha)
-- `npm run coverage` - run tests with coverage (c8)
+| Command | Purpose |
+|--------|---------|
+| `npm run dev` / `npm start` | API server (default **`http://localhost:4000`**) |
+| `npm test` | Mocha (`test/**/*.test.js` + `test/integration-root.mjs`) |
+| `npm run coverage` | c8 report over **`./src`** |
+| `npm run coverage:check` | Same run with **coverage thresholds** (see repo `instructions-2-back-end.md`) |
 
-Default server URL: `http://localhost:4000`
+**Feed bookmarks (signed-in):** **`GET /api/me/feed`** returns `{ creations }` where each item may include **`isSaved`**. **`POST /api/me/saved-feed-creations/:creationId`** and **`DELETE /api/me/saved-feed-creations/:creationId`** toggle a private bookmark (published item from someone you follow; no notification to the author).
 
 ## API endpoints
 
@@ -71,7 +53,7 @@ Default server URL: `http://localhost:4000`
 
 - `email` (required string, normalized and validated).
 - `password` (required string, 8–128 characters).
-- `displayName`, `bio`, `avatarUrl` (optional strings; `avatarUrl` must use `http:` or `https:` when supplied).
+- `displayName`, `bio`, `avatarUrl` (optional; `avatarUrl` must be `http(s):` **or** an uploaded media path `/api/media/<24-hex ObjectId>`).
 
 Success **`201`** response:
 

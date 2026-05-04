@@ -177,10 +177,10 @@ function AddText({
       actions={(
         <>
           <button type="button" className="btn-secondary" onClick={onBack}>
-            Back
+            Filter menu
           </button>
           <button type="button" className="btn-secondary" onClick={onCancel}>
-            Cancel
+            Back to editor
           </button>
           <button type="button" className="btn-primary" onClick={handleApply}>
             Apply

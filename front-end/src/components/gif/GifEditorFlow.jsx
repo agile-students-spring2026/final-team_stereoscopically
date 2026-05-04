@@ -126,6 +126,7 @@ function GifEditorFlow({ gifSession, media, originalVideoFile, draft, onVideoSel
         sourceMediaId,
         workingMediaId,
         previewMediaId: workingMediaId,
+        previewPosterMediaId: backendVideoResult?.posterId ?? null,
         trimRange: gifSession.trimRange,
         resizePreset: gifSession.resizePreset,
         resizeBorderColor: gifSession.resizeBorderColor,
@@ -177,17 +178,35 @@ function GifEditorFlow({ gifSession, media, originalVideoFile, draft, onVideoSel
 
   const handleExportGifAndPersist = useCallback(
     async (videoFile, trimOverrides) => {
+      if (
+        !window.confirm(
+          'Export GIF uses your Trim range, Resize frame (square / landscape / portrait), and any text overlay. Please confirm you have finished Trim and Resize as you want. Continue?',
+        )
+      ) {
+        return
+      }
+      const defaultTitle = resolveGifDraftTitle(videoFile)
+      const entered = window.prompt('Name this GIF (shown in My Creations)', defaultTitle)
+      if (entered === null) return
+      const exportTitle = entered.trim() || defaultTitle
+      if (!exportTitle.trim()) {
+        window.alert('Please enter a name.')
+        return
+      }
+      onDraftTitleChange?.(exportTitle)
+
       const exported = await gifSession.createAndExportGif(videoFile, trimOverrides)
       if (!exported?.id) return
       const sourceMediaId = effectiveVideoDraftSourceMediaId || null
       const workingMediaId = backendVideoResult?.id || sourceMediaId
       if (!workingMediaId) return
       try {
-        const title = resolveGifDraftTitle()
+        const title = exportTitle
         const editorPayload = buildVideoCreationPayload({
           sourceMediaId,
           workingMediaId,
           previewMediaId: workingMediaId,
+          previewPosterMediaId: backendVideoResult?.posterId ?? null,
           trimRange: gifSession.trimRange,
           resizePreset: gifSession.resizePreset,
           resizeBorderColor: gifSession.resizeBorderColor,
@@ -233,6 +252,7 @@ function GifEditorFlow({ gifSession, media, originalVideoFile, draft, onVideoSel
       gifSession,
       onActiveDraftSaved,
       onDraftSaved,
+      onDraftTitleChange,
     ],
   )
 
@@ -314,7 +334,9 @@ function GifEditorFlow({ gifSession, media, originalVideoFile, draft, onVideoSel
         <GifTextOverlayEditor
           videoFile={selectedMedia}
           initialSettings={gifSession.textOverlaySettings}
-          onChange={gifSession.updateGifTextOverlaySettings}
+          resizePreset={gifSession.resizePreset}
+          onCommitDraft={gifSession.commitGifTextOverlaySettings}
+          onDraftSessionSync={gifSession.commitGifTextOverlaySettings}
           onApply={gifSession.applyGifTextOverlaySettings}
           onBack={() => gifSession.openGifTool(gifSession.GIF_FLOW_TOOLS.FILTERS_MAIN)}
           onCancel={() => gifSession.openGifTool(gifSession.GIF_FLOW_TOOLS.EDITOR)}

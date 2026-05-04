@@ -20,6 +20,7 @@ function PresetFilters({
       imageSrc={previewSrc || imageSrc}
       onApply={onApply}
       onCancel={onCancel}
+      cancelLabel="Filter menu"
       previewOverlay={isLoadingPreview ? (
         <div className="editor-preview-overlay editor-preview-overlay--loading">
           <EditorStatus tone="loading" centered className="editor-preview-overlay__status">
@@ -34,7 +35,6 @@ function PresetFilters({
           type="button"
           className={`btn-secondary preset-filters-button ${selectedStyle === id ? 'active' : ''}`}
           onClick={() => onSelectStyle?.(id)}
-          disabled={isLoadingPreview}
         >
           {label}
         </button>

@@ -59,6 +59,7 @@ function VideoPresetFilters({
       videoSrc={previewUrl || videoUrl}
       onApply={handleApply}
       onCancel={onCancel}
+      cancelLabel="Filter menu"
       previewOverlay={isLoadingPreview ? (
         <div className="editor-preview-overlay editor-preview-overlay--loading">
           <EditorStatus tone="loading" centered className="editor-preview-overlay__status">

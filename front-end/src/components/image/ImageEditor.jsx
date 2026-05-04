@@ -52,7 +52,11 @@ const ImageEditor = ({
       await onCropApply?.(cropData)
       setIsCropping(false)
     } catch (err) {
-      setCropError('Could not apply crop. Please try again.')
+      setCropError(
+        typeof err?.message === 'string' && err.message.trim()
+          ? err.message.trim()
+          : 'Could not apply crop. Please try again.',
+      )
       console.error('Crop failed:', err)
     }
   }

@@ -1,129 +1,68 @@
-# StickerCreate Web App
+# StickerCreate
 
-## Description
+Web app to **crop / resize / filter** images and **trim → resize → filter → export** videos to **GIF**, with **accounts**, **drafts**, **publish + follow feed**, and **private bookmarks** on feed items (no notification to creators).
 
-This project came from a desire to make online chats more engaging and entertaining with properly formatted custom stickers. Often times the gifs, emojis, and stickers that internet chat users want to send are sized incorrectly and difficult to edit. Our integrated app will allow users to create and resize their personal stickers, edit and apply filters, and create gifs from videos all in one place.
+**Stack:** React (Vite) front-end · Express + MongoDB/GridFS back-end · Docker Compose for local full stack.
 
-## Product Vision Statement
+## Database
 
-Our vision is to build a lightweight application that allows users to quickly resize images and convert videos into GIFs. 
+Per [`instructions-3-database.md`](./instructions-3-database.md), dynamic data is stored in **MongoDB** (**MongoDB Atlas** in production). Set **`MONGODB_URI`** and **`JWT_SECRET`** only in **`.env`** files (`back-end/.env` from [`.env.example`](./back-end/.env.example) for the API; repo-root **`.env`** from [`.env.deploy.example`](./.env.deploy.example) for Docker). Those files are **gitignored**—never commit URIs, passwords, or other secrets. For grading, we submit any required `.env` contents to course staff via the **course Discord** in **our team's channel**.
 
-The Minimum Viable Product will allow users to: 
-- Upload image and video files
-- Resize images to standard preset sizes or custom dimensions
-- Convert videos into GIF format
-- Preview a creation
-- Download finished stickers or GIFs directly to device
+## Team
 
+- Bella D'Aquino — [GitHub](https://github.com/belladaq)
+- Faith Winford — [GitHub](https://github.com/fwinford)
+- Lily Luo — [GitHub](https://github.com/lilyluo7412)
+- Lia Yoonseo Jang — [GitHub](https://github.com/LiaYoonseoJang)
 
-## Team Members 
+## Contributing & UX
 
-- Bella D'Aquino - [GitHub Account Link](https://github.com/belladaq)
-- Faith Winford - [GitHub Account Link](https://github.com/fwinford)
-- Lily Luo - [GitHub Account Link](https://github.com/lilyluo7412)
-- Lia Yoonseo Jang - [GitHub Account Link](https://github.com/LiaYoonseoJang)
+- [CONTRIBUTING.md](https://github.com/agile-students-spring2026/final-team_stereoscopically/blob/master/CONTRIBUTING.md)
+- [UX-DESIGN.md](https://github.com/agile-students-spring2026/final-team_stereoscopically/blob/master/UX-DESIGN.md)
 
+## Deployed app
 
-## Contributions
-Find the guidelines for contributing to this project at [this link](https://github.com/agile-students-spring2026/final-team_stereoscopically/blob/master/CONTRIBUTING.md). 
+Production URL: *(replace when live — prefer HTTPS).*  
+Deployment notes: [`instructions-4-deployment.md`](./instructions-4-deployment.md).
 
+## Run locally
 
-## UX Design
+**Prerequisites:** Node.js, npm; for API tests/coverage, MongoDB + `JWT_SECRET`.
 
-Find the wireframes, app map, and clickable prototype for this project at [this link](https://github.com/agile-students-spring2026/final-team_stereoscopically/blob/master/UX-DESIGN.md).
+1. **API:** `cd back-end && npm install && cp .env.example .env` → set `MONGODB_URI`, `JWT_SECRET` → `npm run dev` (default port **4000**).
+2. **UI:** `cd front-end && npm install && npm run dev` → open **http://localhost:5173**.
 
-## Deployed application
+**Docker (all-in-one):** from repo root, copy `.env.deploy.example` to `.env`, set at least `JWT_SECRET`, then `docker compose up --build`. Open **http://localhost:8080** (see [`front-end/nginx.default.conf`](./front-end/nginx.default.conf)); API is proxied under **`/api/`**.
 
-**Production front-end (Sprint 4):** *[replace with your DigitalOcean live URL and keep it HTTPS when possible](#)*
+## Tests & coverage
 
-Instructions: [`instructions-4-deployment.md`](./instructions-4-deployment.md).
+| Area | Command |
+|------|---------|
+| Back-end tests | `cd back-end && npm test` |
+| Back-end coverage report | `cd back-end && npm run coverage` |
+| Back-end coverage gate | `cd back-end && npm run coverage:check` |
+| Front-end tests | `cd front-end && npm test -- --run` |
 
-## Running the App Locally
+Course back-end bar is documented in [`instructions-2-back-end.md`](./instructions-2-back-end.md).
 
-Follow these steps to get the front-end running locally in a development environment.
+## CI / CD (optional)
 
-### Prerequesites 
-Ensure you have Node.js and npm installed
+- **CI:** [`.github/workflows/ci.yml`](./.github/workflows/ci.yml) — lint, build, Vitest, back-end tests (Mongo service), `docker compose build`.
+- **CD:** [`.github/workflows/deploy.yml`](./.github/workflows/deploy.yml) — runs when secret `DROPLET_DEPLOY_ENABLED` is the string `true`; see workflow file for SSH / path secrets.
 
-### Step by Step Instructions
+## Extra credit (Sprint 4)
 
-- Clone the repository to your local machine
-- Navigate to the front-end directory
-- Install dependencies: `npm install`
- 
-- Start the development server: `npm run dev`
-- Also start the back-end server in `back-end` (`npm install` then `npm run dev`) so API requests work at `http://localhost:4000`.
+Each of the 3 extra options in Sprint 4 is worth 5% extra to our team's Sprint 4 Quality Score, for up to 15% extra. If our Sprint 4 Quality Score exceeds 100%, it will still count toward our overall course average.
 
-- Open the app in your browser by navigating to: `http://localhost:5173/`
+We have also sent the same details to admins directly in our team's Discord channel.
 
-**Docker Compose (below):** use **`http://localhost:8080/`** instead—you do **not** need local `npm run dev` for the bundled front-end or API while those containers run.
+Completed Sprint 4 extra credit options:
 
-### Run unit tests
+- Docker Compose: [`docker-compose.yml`](./docker-compose.yml), `back-end/Dockerfile`, `front-end/Dockerfile`
+- Continuous Integration: `.github/workflows/ci.yml`
+- Continuous Deployment: `.github/workflows/deploy.yml`
 
-- **Back-end** (Mocha + Chai): from the `back-end` directory, run `npm test`.
-- **Front-end** (Vitest): run `npm test` in `front-end` (script uses `vitest run`).
+## Package readmes
 
-### Check Back-End Coverage (c8)
-
-- Run: `npm run coverage` in `back-end`
-- This generates a terminal coverage summary and an HTML report.
-
-## Docker (optional / extra credit)
-
-Prerequisites: Docker with Compose (`docker compose`), and a JWT secret (`JWT_SECRET`).
-
-1. Copy [`.env.deploy.example`](./.env.deploy.example) to **`.env`** in the repo root and set **`JWT_SECRET`**. Omit **`MONGODB_URI`** if you want the bundled MongoDB service from Compose; otherwise set it to Atlas (matching your usual database policy).
-
-2. From the repo root:
-
-```bash
-docker compose up --build
-```
-
-3. Open **`http://localhost:8080/`** (API is under `/api/...` via Nginx; see [`front-end/nginx.default.conf`](./front-end/nginx.default.conf)). Direct API on the host defaults to port **4000**; if that port is busy, set **`HOST_API_PORT`** in `.env`.
-
-## Continuous Integration / Continuous Deployment
-
-### CI (automated builds and tests — extra credit)
-
-Workflow: **[`.github/workflows/ci.yml`](./.github/workflows/ci.yml)**
-
-On every **push** and **pull_request**, GitHub Actions:
-
-- Runs **front-end**: `eslint`, production `vite build`, and **Vitest**
-- Spins up **MongoDB 7**, exports `JWT_SECRET`, runs **back-end** `npm test` (covers integration routes that rely on Mongoose / GridFS)
-- Runs **`docker compose build`** so container images stay buildable without credentials
-
-Failed jobs show under the Actions tab.
-
-### CD (optional / extra credit)
-
-Workflow: **[`.github/workflows/deploy.yml`](./.github/workflows/deploy.yml)**
-
-Triggered on **`push`** to **`main`** or **`master`** and via **workflow_dispatch**. The deploy job runs **only when** repository secret **`DROPLET_DEPLOY_ENABLED`** is literally **`true`** (anything else skips the job cleanly).
-
-Suggested secrets:
-
-| Secret | Purpose |
-|--------|---------|
-| `DROPLET_DEPLOY_ENABLED` | Set string `true` to turn on deployments |
-| `DROPLET_HOST` | Droplet public IP or DNS name |
-| `DROPLET_USER` | SSH username (often `root` or a deploy account) |
-| `DROPLET_SSH_KEY` | Private key that can run `docker compose up` remotely |
-| `DROPLET_APP_PATH` | Absolute path on the droplet containing this repo |
-
-On the droplet, install Docker Compose, clone the repo once under `DROPLET_APP_PATH`, add a production **`.env`**, then the workflow runs `git pull` and **`docker compose up -d --build`**.
-
-Customize the SSH script inside the workflow if your server layout differs.
-
-## Extra credit
-
-Sprint 4 extra credit (per course instructions): **up to three options at 5% each** toward the Sprint 4 Quality Score. Our team is claiming the following.
-
-| # | Option | Status | Where / how |
-|---|--------|--------|--------------|
-| 1 | **Deployment with Docker containers** | **Completed (in-repo)** | Root [`docker-compose.yml`](./docker-compose.yml) orchestrates **`mongo`**, **`api`** ([`back-end/Dockerfile`](./back-end/Dockerfile)), and **`web`** ([`front-end/Dockerfile`](./front-end/Dockerfile)); Nginx config [`front-end/nginx.default.conf`](./front-end/nginx.default.conf) serves the SPA and proxies **`/api/`** to the API container. Quick start steps are under **Docker** above. |
-| 2 | **Continuous Integration (GitHub Actions)** | **Completed (in-repo)** | [`.github/workflows/ci.yml`](./.github/workflows/ci.yml) runs on **every push and pull_request**: front-end lint, build, and tests; back-end tests with a **MongoDB 7** service container; **`docker compose build`** to verify images build. |
-| 3 | **Continuous Deployment** | **Completed (workflow in-repo; enable on Droplet)** | [`.github/workflows/deploy.yml`](./.github/workflows/deploy.yml) SSHes to DigitalOcean **when** secret **`DROPLET_DEPLOY_ENABLED`** is set to the string **`true`**, runs `git pull` and **`docker compose up -d --build`**. Droplet secrets and path are documented in **CD** above. |
-
-We will send the **same summary** (this table and links) to course admins via the **team Discord channel**, as required.
+- [`front-end/README.md`](./front-end/README.md) — Vite app, scripts, tests  
+- [`back-end/readme.md`](./back-end/readme.md) — API, scripts, endpoint reference  

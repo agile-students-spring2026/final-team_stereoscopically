@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { fetchPublicUserProfile, followUser, unfollowUser, fetchUserPublishedCreations } from '../services/usersApi.js'
 import { getCreationPreviewUrl } from '../utils/creationPreviewUrl.js'
+import { normalizeUserMediaSrc } from '../utils/mediaPublicUrl.js'
 
 function PublicProfileCreationItem({ creation }) {
   const previewUrl = getCreationPreviewUrl(creation)
@@ -152,7 +153,7 @@ function PublicProfileView({ user: initialUser, onBack, currentUser }) {
           <div className="profile-avatar">
             {profile.avatarUrl ? (
               <img
-                src={profile.avatarUrl}
+                src={normalizeUserMediaSrc(profile.avatarUrl)}
                 alt=""
                 style={{ width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover' }}
               />

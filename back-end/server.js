@@ -13,10 +13,14 @@ import userRoutes from './src/routes/userRoutes.js'
 
 const app = express()
 
+// Behind Docker / Nginx, trust first proxy hop for sane req.ip / protocol when needed later.
+app.set('trust proxy', 1)
+
 app.use(cors())
 app.use(express.json())
-app.use(authRoutes)
+// userRoutes FIRST: `/api/users/search` must not be captured by `/api/users/:userId` in authRoutes.
 app.use(userRoutes)
+app.use(authRoutes)
 app.use(mediaRoutes)
 app.use(creationRoutes)
 app.use(notFoundHandler)

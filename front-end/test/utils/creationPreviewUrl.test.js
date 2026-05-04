@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { getCreationPreviewUrl } from '../../src/utils/creationPreviewUrl'
+import { getCreationPreviewUrl, getCreationThumbDescriptor } from '../../src/utils/creationPreviewUrl'
 
 describe('getCreationPreviewUrl', () => {
   it('prefers exported asset id when present', () => {
@@ -42,5 +42,45 @@ describe('getCreationPreviewUrl', () => {
     })
 
     expect(url).toContain('/api/media/work_v')
+  })
+})
+
+describe('getCreationThumbDescriptor', () => {
+  it('uses video + JPEG poster for video drafts when previewPosterMediaId is set', () => {
+    const d = getCreationThumbDescriptor({
+      editorPayload: {
+        kind: 'video',
+        sourceMediaId: 'src_v',
+        workingMediaId: 'work_v',
+        previewPosterMediaId: 'poster_jpg_1',
+      },
+    })
+    expect(d.mode).toBe('video')
+    expect(d.kind).toBe('video')
+    expect(d.url).toContain('/api/media/work_v')
+    expect(d.posterUrl).toContain('/api/media/poster_jpg_1')
+  })
+
+  it('falls back to video URL for video drafts without poster', () => {
+    const d = getCreationThumbDescriptor({
+      editorPayload: { kind: 'video', workingMediaId: 'work_v' },
+    })
+    expect(d.mode).toBe('video')
+    expect(d.url).toContain('/api/media/work_v')
+    expect(d.posterUrl).toBeNull()
+  })
+
+  it('uses image mode for exported video rows (preview is GIF asset)', () => {
+    const d = getCreationThumbDescriptor({
+      exportAssetId: 'gif_export_1',
+      editorPayload: {
+        kind: 'video',
+        workingMediaId: 'work_v',
+        previewPosterMediaId: 'poster_jpg_1',
+      },
+    })
+    expect(d.mode).toBe('image')
+    expect(d.url).toContain('/api/media/gif_export_1')
+    expect(d.posterUrl).toBeNull()
   })
 })

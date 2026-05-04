@@ -136,10 +136,10 @@ describe('MyCreationsPage', () => {
     const confirmButton = container.querySelector('.my-creations-modal .my-creations-modal-btn--danger')
     expect(confirmButton).toBeTruthy()
     confirmButton.dispatchEvent(new MouseEvent('click', { bubbles: true }))
-    await waitForText(container, 'No saved stickers yet.')
+    await waitForText(container, 'No drafts yet')
 
     expect(deleteCreationMock).toHaveBeenCalledWith('c-1')
-    expect(container.textContent).toContain('No saved stickers yet.')
+    expect(container.textContent).toContain('No drafts yet')
     expect(container.textContent).not.toContain('Remove Me')
     cleanup()
   })

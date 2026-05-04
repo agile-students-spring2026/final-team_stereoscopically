@@ -70,9 +70,9 @@ function App() {
     }
   }, [])
 
-  const handleSelectCreation = useCallback((creation) => {
+  const handleSelectCreation = useCallback((creation, options = {}) => {
     setActiveView(APP_VIEWS.CREATE)
-    setTimeout(() => loadDraftRef.current?.(creation), 0)
+    setTimeout(() => loadDraftRef.current?.(creation, options), 0)
   }, [])
 
   const handleNavigateToProfile = useCallback((user, returnView = APP_VIEWS.HOME) => {
@@ -179,6 +179,9 @@ function App() {
         onNavigateToProfile={handleNavigateToProfile}
         onGoToProfile={() => setActiveView(APP_VIEWS.MY_CREATIONS)}
         followingRefreshKey={followingRefreshKey}
+        onOpenFeedSticker={(creation) =>
+          handleSelectCreation(creation, { openAsFollowedShare: true })
+        }
       />
     )
   }

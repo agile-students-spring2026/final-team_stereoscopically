@@ -16,10 +16,10 @@ function GifToolPlaceholder({ title, description, onBack, onCancel }) {
       actions={(
         <>
           <button type="button" className="btn-secondary" onClick={onBack}>
-            Back
+            Filter menu
           </button>
-          <button type="button" className="btn-primary" onClick={onCancel}>
-            Cancel
+          <button type="button" className="btn-secondary" onClick={onCancel}>
+            Back to editor
           </button>
         </>
       )}

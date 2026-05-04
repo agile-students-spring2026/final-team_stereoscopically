@@ -30,10 +30,11 @@ function ColorFilters({
       imageSrc={previewSrc || imageSrc}
       onApply={onApply}
       onCancel={onCancel}
+      cancelLabel="Back to editor"
       previewOverlay={isLoadingPreview ? (
-        <div className="editor-preview-overlay editor-preview-overlay--loading">
+        <div className="editor-preview-overlay editor-preview-overlay--loading editor-preview-overlay--nonblocking">
           <EditorStatus tone="loading" centered className="editor-preview-overlay__status">
-            Applying adjustments…
+            Updating preview…
           </EditorStatus>
         </div>
       ) : null}
@@ -54,7 +55,6 @@ function ColorFilters({
               value={brightness}
               onChange={(e) => onAdjustmentsChange?.({ brightness: Number(e.target.value) })}
               className="slider-wrapper editor-slider"
-              disabled={isLoadingPreview}
             />
           </label>
         </div>
@@ -68,7 +68,6 @@ function ColorFilters({
               value={contrast}
               onChange={(e) => onAdjustmentsChange?.({ contrast: Number(e.target.value) })}
               className="slider-wrapper editor-slider"
-              disabled={isLoadingPreview}
             />
           </label>
         </div>
@@ -82,7 +81,6 @@ function ColorFilters({
               value={saturation}
               onChange={(e) => onAdjustmentsChange?.({ saturation: Number(e.target.value) })}
               className="slider-wrapper editor-slider"
-              disabled={isLoadingPreview}
             />
           </label>
         </div>
@@ -96,7 +94,6 @@ function ColorFilters({
               value={sharpness}
               onChange={(e) => onAdjustmentsChange?.({ sharpness: Number(e.target.value) })}
               className="slider-wrapper editor-slider"
-              disabled={isLoadingPreview}
             />
           </label>
         </div>

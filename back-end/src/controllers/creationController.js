@@ -11,6 +11,7 @@ const collectPayloadMediaIds = ({ editorPayload = {}, exportAssetId = null } = {
 		editorPayload?.backendMediaId,
 		editorPayload?.preEditWorkingMediaId,
 		editorPayload?.preTextWorkingMediaId,
+		editorPayload?.previewPosterMediaId,
 		exportAssetId,
 	]
 

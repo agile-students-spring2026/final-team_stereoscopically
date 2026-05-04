@@ -22,6 +22,9 @@ const DEFAULT_COLOR_ADJUSTMENTS = Object.freeze({
   sharpness: 100,
 })
 
+const COLOR_FILTER_PREVIEW_DEBOUNCE_MS = 450
+const COLOR_FILTER_LOADING_OVERLAY_DELAY_MS = 320
+
 const clamp = (value, min, max) => Math.min(max, Math.max(min, value))
 const pctToFactor = (pct) => Math.min(2, Math.max(0, pct / 100))
 
@@ -44,6 +47,28 @@ const isDefaultColorAdjustments = (nextAdjustments = DEFAULT_COLOR_ADJUSTMENTS) 
 
 const hasUsableTextOverlay = (overlay) =>
   typeof overlay?.text === 'string' && overlay.text.trim().length > 0
+
+/** Avoid double-burning text: committed canvas (`effective`) may already embed overlay pixels while overlay state stays for edits. */
+const resolveDecorativeRasterBaseMediaId = ({
+  baseMediaId,
+  effectiveBackendMediaId,
+  preTextWorkingMediaId,
+  textOverlay,
+}) => {
+  if (!baseMediaId) return baseMediaId
+  if (!hasUsableTextOverlay(textOverlay)) return baseMediaId
+  const preId =
+    typeof preTextWorkingMediaId === 'string' ? preTextWorkingMediaId.trim() : ''
+  if (
+    !preId ||
+    !effectiveBackendMediaId ||
+    baseMediaId !== effectiveBackendMediaId ||
+    preId === effectiveBackendMediaId
+  ) {
+    return baseMediaId
+  }
+  return preId
+}
 
 const toBackendTextRequest = (overlay) => {
   const x = Number.isFinite(Number(overlay?.x)) ? Number(overlay.x) : 0.5
@@ -73,6 +98,7 @@ const useImageEditingSession = ({
   sourceUrl,
   applyTransformedImage,
   appliedTextOverlay = null,
+  preTextWorkingMediaId = null,
   onPreTextWorkingMediaIdChange = null,
 }) => {
   const [selectedPreset, setSelectedPreset] = useState(null)
@@ -225,8 +251,15 @@ const useImageEditingSession = ({
       throw new Error('Image is not ready on the server yet.')
     }
 
-    let currentResult = buildBackendMediaResult(baseMediaId)
-    let currentMediaId = baseMediaId
+    const rasterBaseMediaId = resolveDecorativeRasterBaseMediaId({
+      baseMediaId,
+      effectiveBackendMediaId,
+      preTextWorkingMediaId,
+      textOverlay,
+    })
+
+    let currentResult = buildBackendMediaResult(rasterBaseMediaId)
+    let currentMediaId = rasterBaseMediaId
 
     if (presetFilter && presetFilter !== DEFAULT_IMAGE_FILTER_PRESET) {
       currentResult = await applyPresetImageFilterFromBackend({
@@ -248,12 +281,29 @@ const useImageEditingSession = ({
       currentMediaId = currentResult.id
     }
 
+    const overlayUsable = hasUsableTextOverlay(textOverlay)
+    const preId =
+      typeof preTextWorkingMediaId === 'string' ? preTextWorkingMediaId.trim() : ''
+
+    /** Legacy / missing saves: overlay state exists but pre-text id was never stored—the working image already has text pixels. */
+    const skipComposeTextAgain =
+      overlayUsable &&
+      !preId &&
+      effectiveBackendMediaId &&
+      rasterBaseMediaId === effectiveBackendMediaId
+
+    const shouldUpdatePreTextCheckpoint = overlayUsable && !skipComposeTextAgain
+
     const preTextBaseId = currentMediaId
-    if (updatePreTextBase && typeof onPreTextWorkingMediaIdChange === 'function') {
+    if (
+      updatePreTextBase &&
+      shouldUpdatePreTextCheckpoint &&
+      typeof onPreTextWorkingMediaIdChange === 'function'
+    ) {
       onPreTextWorkingMediaIdChange(preTextBaseId)
     }
 
-    if (hasUsableTextOverlay(textOverlay)) {
+    if (overlayUsable && !skipComposeTextAgain) {
       const textResult = await addTextToImageFromBackend({
         mediaId: currentMediaId,
         ...toBackendTextRequest(textOverlay),
@@ -275,6 +325,8 @@ const useImageEditingSession = ({
     colorAdjustments,
     onPreTextWorkingMediaIdChange,
     selectedImageFilterPreset,
+    effectiveBackendMediaId,
+    preTextWorkingMediaId,
   ])
 
   const rebuildDecorativePipelineFromBase = useCallback(async ({
@@ -310,20 +362,97 @@ const useImageEditingSession = ({
     selectedImageFilterPreset,
   ])
 
-  const applyRenderedPipelineResult = useCallback((file, objectUrl, result) => {
-    if (previewUrl && previewUrl !== sourceUrl) {
-      URL.revokeObjectURL(previewUrl)
+  /** Run preset/color/text on pre-letterbox pixels when a preset size is active; letterbox is re-applied on commit. */
+  const resolveDecorativePipelineInputMediaId = useCallback(() => {
+    const fromEditBase = editBaseMediaIdRef.current
+    if (fromEditBase) return fromEditBase
+    const presetW = selectedPreset?.width
+    const presetH = selectedPreset?.height
+    const preLetterboxId =
+      typeof presetExportSourceIdRef.current === 'string'
+        ? presetExportSourceIdRef.current.trim()
+        : ''
+    if (
+      Number.isFinite(Number(presetW)) &&
+      Number.isFinite(Number(presetH)) &&
+      presetW > 0 &&
+      presetH > 0 &&
+      preLetterboxId
+    ) {
+      return preLetterboxId
+    }
+    return effectiveBackendMediaId
+  }, [effectiveBackendMediaId, selectedPreset])
+
+  const commitDecorativePipelineResult = useCallback(async (file, objectUrl, result) => {
+    if (!result?.id) return
+
+    const presetW = selectedPreset?.width
+    const presetH = selectedPreset?.height
+    const shouldReLetterbox =
+      Number.isFinite(Number(presetW)) &&
+      Number.isFinite(Number(presetH)) &&
+      presetW > 0 &&
+      presetH > 0
+
+    const revokeOldPreview = () => {
+      if (previewUrl && previewUrl !== sourceUrl) {
+        URL.revokeObjectURL(previewUrl)
+      }
     }
 
+    if (shouldReLetterbox) {
+      try {
+        revokeOldPreview()
+        skipFilterResetRef.current = true
+
+        const exported = await exportImageFromBackend({
+          mediaId: result.id,
+          width: presetW,
+          height: presetH,
+          letterboxColor,
+        })
+
+        const { file: nextFile, objectUrl: nextUrl } = await loadBackendImageResultAsLocal(
+          exported,
+          hasUsableTextOverlay(appliedTextOverlay) ? 'text-overlay.png' : 'sticker.png',
+        )
+
+        applyTransformedImage(nextFile, nextUrl, exported)
+        presetExportSourceIdRef.current = result.id
+        setLatestExportResult(exported)
+        setLastExportLetterbox(letterboxColor)
+        editBaseMediaIdRef.current = null
+        setSelectedImageFilterPreset(DEFAULT_IMAGE_FILTER_PRESET)
+        setColorAdjustments(DEFAULT_COLOR_ADJUSTMENTS)
+        return
+      } catch (err) {
+        console.error('Re-letterbox after filter pipeline failed:', err)
+        setExportError(err?.message || 'Failed to apply output frame after filters.')
+      }
+    }
+
+    revokeOldPreview()
     skipFilterResetRef.current = true
     applyTransformedImage(file, objectUrl, result)
     setLatestExportResult(null)
     setLastExportLetterbox(null)
-  }, [applyTransformedImage, previewUrl, sourceUrl])
+    editBaseMediaIdRef.current = null
+    setSelectedImageFilterPreset(DEFAULT_IMAGE_FILTER_PRESET)
+    setColorAdjustments(DEFAULT_COLOR_ADJUSTMENTS)
+  }, [
+    appliedTextOverlay,
+    applyTransformedImage,
+    letterboxColor,
+    loadBackendImageResultAsLocal,
+    previewUrl,
+    selectedPreset,
+    sourceUrl,
+  ])
 
   const loadPresetFilterPreview = useCallback(async (preset) => {
     const nextPreset = preset || DEFAULT_IMAGE_FILTER_PRESET
-    const filterMediaId = editBaseMediaIdRef.current || effectiveBackendMediaId
+    const filterMediaId = resolveDecorativePipelineInputMediaId()
     const baselinePreviewSrc = effectiveImageSrc || sourceUrl
     setPresetFilterError(null)
     const requestId = ++presetFilterRequestIdRef.current
@@ -360,7 +489,6 @@ const useImageEditingSession = ({
       if (requestId !== presetFilterRequestIdRef.current) {
         return null
       }
-      setPresetFilterPreviewSrc(baselinePreviewSrc)
       setPresetFilterError(err?.message || 'Preview update failed.')
       return null
     } finally {
@@ -374,6 +502,7 @@ const useImageEditingSession = ({
     effectiveBackendMediaId,
     effectiveImageSrc,
     renderDecorativePipelineFromBase,
+    resolveDecorativePipelineInputMediaId,
     sourceUrl,
   ])
 
@@ -384,11 +513,7 @@ const useImageEditingSession = ({
   }, [loadPresetFilterPreview])
 
   const applyImagePresetFilter = useCallback(async () => {
-    if (!editBaseMediaIdRef.current && effectiveBackendMediaId) {
-      editBaseMediaIdRef.current = effectiveBackendMediaId
-    }
-
-    const baseMediaId = editBaseMediaIdRef.current || effectiveBackendMediaId
+    const baseMediaId = resolveDecorativePipelineInputMediaId()
     if (!baseMediaId) {
       const message = 'Image is not ready on the server yet.'
       setExportError(message)
@@ -407,7 +532,7 @@ const useImageEditingSession = ({
         textOverlay: appliedTextOverlay,
       })
 
-      applyRenderedPipelineResult(file, objectUrl, result)
+      await commitDecorativePipelineResult(file, objectUrl, result)
       return true
     } catch (err) {
       const message = err?.message || 'Could not apply preset.'
@@ -417,29 +542,21 @@ const useImageEditingSession = ({
     }
   }, [
     appliedTextOverlay,
-    applyRenderedPipelineResult,
     colorAdjustments,
-    effectiveBackendMediaId,
+    commitDecorativePipelineResult,
     rebuildDecorativePipelineFromBase,
+    resolveDecorativePipelineInputMediaId,
     selectedImageFilterPreset,
   ])
 
   useEffect(() => {
     const normalized = normalizeColorAdjustments(colorAdjustments)
-    const adjustmentMediaId = editBaseMediaIdRef.current || effectiveBackendMediaId
+    const adjustmentMediaId = resolveDecorativePipelineInputMediaId()
     const baselinePreviewSrc = effectiveImageSrc || sourceUrl
-
-    if (isDefaultColorAdjustments(normalized)) {
-      queueMicrotask(() => {
-        setColorFilterPreviewSrc(baselinePreviewSrc)
-        setColorFilterError(null)
-        setIsLoadingColorFilterPreview(false)
-      })
-      return
-    }
 
     if (!adjustmentMediaId) {
       queueMicrotask(() => {
+        setColorFilterPreviewSrc(baselinePreviewSrc)
         setColorFilterError('Image is not ready on the server yet.')
         setIsLoadingColorFilterPreview(false)
       })
@@ -452,13 +569,18 @@ const useImageEditingSession = ({
     })
 
     const timer = window.setTimeout(async () => {
+      let loadingOverlayTimer = null
       try {
-        setIsLoadingColorFilterPreview(true)
+        loadingOverlayTimer = window.setTimeout(() => {
+          if (requestId === colorFilterRequestIdRef.current) {
+            setIsLoadingColorFilterPreview(true)
+          }
+        }, COLOR_FILTER_LOADING_OVERLAY_DELAY_MS)
 
         const { result } = await renderDecorativePipelineFromBase({
           baseMediaId: adjustmentMediaId,
           presetFilter: selectedImageFilterPreset,
-          nextColorAdjustments: colorAdjustments,
+          nextColorAdjustments: normalized,
           textOverlay: appliedTextOverlay,
           updatePreTextBase: false,
         })
@@ -467,14 +589,14 @@ const useImageEditingSession = ({
         setColorFilterPreviewSrc(`${result.url}?cb=${Date.now()}`)
       } catch (err) {
         if (requestId !== colorFilterRequestIdRef.current) return
-        setColorFilterPreviewSrc(baselinePreviewSrc)
         setColorFilterError(err?.message || 'Preview update failed.')
       } finally {
+        if (loadingOverlayTimer) window.clearTimeout(loadingOverlayTimer)
         if (requestId === colorFilterRequestIdRef.current) {
           setIsLoadingColorFilterPreview(false)
         }
       }
-    }, 220)
+    }, COLOR_FILTER_PREVIEW_DEBOUNCE_MS)
 
     return () => window.clearTimeout(timer)
   }, [
@@ -483,7 +605,9 @@ const useImageEditingSession = ({
     effectiveBackendMediaId,
     effectiveImageSrc,
     renderDecorativePipelineFromBase,
+    resolveDecorativePipelineInputMediaId,
     selectedImageFilterPreset,
+    selectedPreset,
     sourceUrl,
   ])
 
@@ -495,11 +619,7 @@ const useImageEditingSession = ({
   }, [])
 
   const applyColorAdjustments = useCallback(async () => {
-    if (!editBaseMediaIdRef.current && effectiveBackendMediaId) {
-      editBaseMediaIdRef.current = effectiveBackendMediaId
-    }
-
-    const baseMediaId = editBaseMediaIdRef.current || effectiveBackendMediaId
+    const baseMediaId = resolveDecorativePipelineInputMediaId()
     if (!baseMediaId) {
       const message = 'Image is not ready on the server yet.'
       setExportError(message)
@@ -518,7 +638,7 @@ const useImageEditingSession = ({
         textOverlay: appliedTextOverlay,
       })
 
-      applyRenderedPipelineResult(file, objectUrl, result)
+      await commitDecorativePipelineResult(file, objectUrl, result)
       return true
     } catch (err) {
       const message = err?.message || 'Could not apply adjustments.'
@@ -528,10 +648,10 @@ const useImageEditingSession = ({
     }
   }, [
     appliedTextOverlay,
-    applyRenderedPipelineResult,
     colorAdjustments,
-    effectiveBackendMediaId,
+    commitDecorativePipelineResult,
     rebuildDecorativePipelineFromBase,
+    resolveDecorativePipelineInputMediaId,
     selectedImageFilterPreset,
   ])
 
@@ -758,6 +878,10 @@ const useImageEditingSession = ({
         color: textRequest?.color || '#111111',
       })
 
+      if (typeof onPreTextWorkingMediaIdChange === 'function') {
+        onPreTextWorkingMediaIdChange(baseMediaId)
+      }
+
       if (result?.noOp) {
         return true
       }
@@ -772,6 +896,8 @@ const useImageEditingSession = ({
         URL.revokeObjectURL(previewUrl)
       }
 
+      // Keep Preset / Color slider state aligned with decorative pipeline — same as preset/color apply flows.
+      skipFilterResetRef.current = true
       applyTransformedImage(file, objectUrl, result)
       setLatestExportResult(null)
       setLastExportLetterbox(null)
@@ -781,7 +907,14 @@ const useImageEditingSession = ({
       setExportError(err?.message || 'Failed to add text to image.')
       return false
     }
-  }, [applyTransformedImage, effectiveBackendMediaId, mediaType, previewUrl, sourceUrl])
+  }, [
+    applyTransformedImage,
+    effectiveBackendMediaId,
+    mediaType,
+    onPreTextWorkingMediaIdChange,
+    previewUrl,
+    sourceUrl,
+  ])
 
   const handleExport = useCallback(async () => {
     if (mediaType !== 'image') return false

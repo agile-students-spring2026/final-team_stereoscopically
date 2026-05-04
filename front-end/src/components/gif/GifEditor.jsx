@@ -1,4 +1,8 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import {
+    getContainedContentFrame,
+    getSafeFrame,
+} from '../../utils/overlayPlacement'
 import { DEFAULT_GIF_SPEED_PLAYBACK_RATE } from './gifSpeedOptions'
 import { resolveGifTrimRange } from '../../hooks/useGifEditingSession'
 import EditorStatus from '../EditorStatus'
@@ -10,6 +14,7 @@ import {
     GIF_RESIZE_PRESET_FRAME_CLASSES,
     GIF_TEXT_COLOR_REGEX,
 } from './gifEditorConstants'
+import { gifTextPreviewOverlayFontCssPx } from '../../utils/gifTextOverlayPreviewSizing'
 const clamp = (value, min, max) => Math.min(Math.max(value, min), max)
 
 const GifEditor = ({
@@ -69,8 +74,12 @@ const GifEditor = ({
     const [duration, setDuration] = useState(0)
     const [trimStart, setTrimStart] = useState(0)
     const [trimEnd, setTrimEnd] = useState(0)
+    const [previewContainerSize, setPreviewContainerSize] = useState({ width: 1, height: 1 })
+    const [videoFrame, setVideoFrame] = useState({ left: 0, top: 0, width: 1, height: 1 })
+    const [naturalVideoSize, setNaturalVideoSize] = useState({ width: 1, height: 1 })
 
     const videoRef = useRef(null)
+    const previewFrameRef = useRef(null)
 
     const handlePreviewUrlError = useCallback((error) => {
         console.error('[GifEditor] Unable to create preview for uploaded video', error)
@@ -98,6 +107,88 @@ const GifEditor = ({
         if (!video) return
         video.playbackRate = selectedSpeedPlaybackRate
     }, [selectedSpeedPlaybackRate])
+
+    /** Match GifTextOverlayEditor + backend: `size` is px on natural video frame, preview scales to letterboxed display. */
+    useEffect(() => {
+        const container = previewFrameRef.current
+        const video = videoRef.current
+        if (!container || !videoUrl) return undefined
+
+        const syncFrame = () => {
+            setPreviewContainerSize({
+                width: container.clientWidth || 1,
+                height: container.clientHeight || 1,
+            })
+
+            if (!video.clientWidth || !video.clientHeight) {
+                setNaturalVideoSize({ width: 1, height: 1 })
+                setVideoFrame({
+                    left: 0,
+                    top: 0,
+                    width: container.clientWidth || 1,
+                    height: container.clientHeight || 1,
+                })
+                return
+            }
+
+            const naturalWidth = Math.max(1, video.videoWidth || 1)
+            const naturalHeight = Math.max(1, video.videoHeight || 1)
+
+            setNaturalVideoSize({ width: naturalWidth, height: naturalHeight })
+
+            const containerRect = container.getBoundingClientRect()
+            const videoRect = video.getBoundingClientRect()
+
+            const containedFrame = getContainedContentFrame({
+                frameLeft: videoRect.left - containerRect.left,
+                frameTop: videoRect.top - containerRect.top,
+                frameWidth: videoRect.width,
+                frameHeight: videoRect.height,
+                naturalWidth,
+                naturalHeight,
+            })
+
+            setVideoFrame(containedFrame)
+        }
+
+        const rafId = requestAnimationFrame(syncFrame)
+
+        window.addEventListener('resize', syncFrame)
+        let observer
+        if (typeof ResizeObserver !== 'undefined') {
+            observer = new ResizeObserver(syncFrame)
+            observer.observe(container)
+            observer.observe(video)
+        }
+
+        video.addEventListener('loadedmetadata', syncFrame)
+
+        return () => {
+            cancelAnimationFrame(rafId)
+            window.removeEventListener('resize', syncFrame)
+            observer?.disconnect()
+            video.removeEventListener('loadedmetadata', syncFrame)
+        }
+    }, [videoUrl, resizePreset, resizeBorderColor])
+
+    const renderedVideoBox = getSafeFrame(videoFrame, previewContainerSize)
+    const previewOverlayFontPx = useMemo(
+        () =>
+            gifTextPreviewOverlayFontCssPx({
+                sourceWidth: naturalVideoSize.width,
+                sourceHeight: naturalVideoSize.height,
+                resizePreset,
+                uiTextSize: previewTextSize,
+                contentRectWidthPx: renderedVideoBox.width,
+            }),
+        [
+            naturalVideoSize.height,
+            naturalVideoSize.width,
+            previewTextSize,
+            renderedVideoBox.width,
+            resizePreset,
+        ],
+    )
 
     const resetTransientEditorState = useCallback(() => {
         setStatusMessage(null)
@@ -142,7 +233,7 @@ const GifEditor = ({
 
             <div className="editor-preview editor-preview--resize editor-preview--checkered">
                 {videoUrl ? (
-                    <div className={`gif-preview-frame ${previewFrameClassName}`} style={{ backgroundColor: resizeBorderColor }}>
+                    <div ref={previewFrameRef} className={`gif-preview-frame ${previewFrameClassName}`} style={{ backgroundColor: resizeBorderColor }}>
                         <video ref={videoRef} src={videoUrl} controls className="editor-preview-media gif-preview-video"
                             onLoadedMetadata={() => {
                                 const total = Number.isFinite(videoRef.current?.duration)
@@ -172,7 +263,7 @@ const GifEditor = ({
                                         left: `${previewTextPositionX}%`,
                                         top: `${previewTextPositionY}%`,
                                         color: previewTextColor,
-                                        fontSize: `${previewTextSize}px`,
+                                        fontSize: `${previewOverlayFontPx}px`,
                                         fontFamily: previewTextFontFamily,
                                     }}
                                 >

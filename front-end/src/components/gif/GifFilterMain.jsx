@@ -19,7 +19,7 @@ function GifFilterMain({ onPresetFilters, onTextOverlay, onSpeed, onCancel }) {
       )}
       actions={(
         <button type="button" className="btn-secondary" onClick={onCancel}>
-          Back
+          Back to editor
         </button>
       )}
     />

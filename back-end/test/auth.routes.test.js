@@ -152,6 +152,27 @@ const runAuthIntegration = !!(process.env.MONGODB_URI && process.env.JWT_SECRET)
 		await User.deleteOne({ email: email.trim().toLowerCase() })
 	})
 
+	it('PATCH /api/me accepts uploaded avatar path /api/media/<ObjectId>', async () => {
+		const email = uniqEmail()
+		const fakeMediaId = 'a'.repeat(24)
+		const relativeAvatar = `/api/media/${fakeMediaId}`
+
+		const reg = await request(app).post('/api/auth/register').send({
+			email,
+			password: 'avatarPatch1!',
+		})
+
+		const res = await request(app)
+			.patch('/api/me')
+			.set('Authorization', `Bearer ${reg.body.token}`)
+			.send({ avatarUrl: relativeAvatar })
+
+		expect(res.status).to.equal(200)
+		expect(res.body.avatarUrl).to.equal(relativeAvatar)
+
+		await User.deleteOne({ email: email.trim().toLowerCase() })
+	})
+
 	it('PATCH /api/me/email changes email and returns fresh token', async () => {
 		const email = uniqEmail()
 		const nextEmail = uniqEmail()

@@ -59,6 +59,11 @@ const userSchema = new mongoose.Schema(
 			type: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
 			default: [],
 		},
+		/** Published creations from people you follow (bookmarks; no notifications). */
+		savedFeedCreations: {
+			type: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Creation' }],
+			default: [],
+		},
 	},
 	{
 		timestamps: true,

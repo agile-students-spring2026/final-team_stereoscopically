@@ -8,7 +8,8 @@
 		"start": "node server.js",
 		"dev": "node server.js",
 		"test": "mocha \"test/**/*.test.js\" --file test/integration-root.mjs --exit",
-		"coverage": "c8 --all --src . --reporter=text --reporter=html mocha \"test/**/*.test.js\" --exit"
+		"coverage": "c8 --all --src ./src --reporter=text --reporter=html mocha \"test/**/*.test.js\" --file test/integration-root.mjs --exit",
+		"coverage:check": "c8 --check-coverage --statements 70 --lines 70 --functions 62 --branches 50 --all --src ./src --reporter=text mocha \"test/**/*.test.js\" --file test/integration-root.mjs --exit"
 	},
 	"overrides": {
 		"serialize-javascript": "^7.0.5"

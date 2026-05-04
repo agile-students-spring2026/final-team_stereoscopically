@@ -1,12 +1,20 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import * as usersApi from '../services/usersApi.js'
-import { getCreationPreviewUrl } from '../utils/creationPreviewUrl.js'
+import { getCreationThumbDescriptor } from '../utils/creationPreviewUrl.js'
+import { normalizeUserMediaSrc } from '../utils/mediaPublicUrl.js'
+
+function creationHasRestorablePayload(creation) {
+  const payload = creation?.editorPayload
+  return Boolean(
+    payload && typeof payload === 'object' && (payload.kind === 'image' || payload.kind === 'video'),
+  )
+}
 
 function UserAvatar({ user }) {
   const initial = (user.displayName || user.username || '?').charAt(0).toUpperCase()
   if (user.avatarUrl) {
     return (
-      <img src={user.avatarUrl} alt="" className="home-user-avatar-img" aria-hidden="true" />
+      <img src={normalizeUserMediaSrc(user.avatarUrl)} alt="" className="home-user-avatar-img" aria-hidden="true" />
     )
   }
   return (
@@ -60,37 +68,100 @@ function UserRow({ user, isFollowing, isPending, onFollow, onUnfollow, onClick }
   )
 }
 
-function CreationFeedItem({ creation }) {
+function CreationFeedItem({
+  creation,
+  onPreview,
+  onEditFrom,
+  canEditFrom,
+  isSaved,
+  onToggleSave,
+  savePending,
+}) {
   const creator = creation.userId ? (typeof creation.userId === 'object' ? creation.userId : {}) : {}
   const creatorName = creator.displayName || creator.username || 'Unknown'
-  const previewUrl = getCreationPreviewUrl(creation)
-  const [imageLoadFailed, setImageLoadFailed] = useState(false)
+  const preview = getCreationThumbDescriptor(creation)
+  const [previewFailed, setPreviewFailed] = useState(false)
+  const id = String(creation._id ?? creation.id ?? '')
 
   return (
-    <li className="home-feed-item">
-      <div className="home-feed-item-preview">
-        {previewUrl && !imageLoadFailed ? (
-          <img
-            src={previewUrl}
-            alt={`${creation.title || 'Untitled'} by ${creatorName}`}
-            className="home-feed-item-image"
-            onError={() => setImageLoadFailed(true)}
-          />
-        ) : (
-          <div className="home-feed-item-placeholder" aria-hidden="true">
-            <span className="home-feed-item-placeholder-text">No preview</span>
+    <li className="home-feed-item home-feed-item--with-actions">
+      <div className="home-feed-item-body">
+        <div className="home-feed-item-preview" aria-hidden="true">
+          {preview.url && !previewFailed ? (
+            preview.mode === 'video' ? (
+              <video
+                key={preview.url}
+                className="home-feed-item-image"
+                src={preview.url}
+                poster={preview.posterUrl || undefined}
+                muted
+                autoPlay
+                loop
+                playsInline
+                preload="metadata"
+                onError={() => setPreviewFailed(true)}
+              >
+                <source src={preview.url} type="video/mp4" />
+              </video>
+            ) : (
+              <img
+                src={preview.url}
+                alt=""
+                className="home-feed-item-image"
+                onError={() => setPreviewFailed(true)}
+              />
+            )
+          ) : (
+            <div className="home-feed-item-placeholder" aria-hidden="true">
+              <span className="home-feed-item-placeholder-text">No preview</span>
+            </div>
+          )}
+        </div>
+        <div className="home-feed-item-col">
+          <div className="home-feed-item-content">
+            <span className="home-feed-item-title">{creation.title || 'Untitled'}</span>
+            <span className="home-feed-item-creator">by {creatorName}</span>
           </div>
-        )}
-      </div>
-      <div className="home-feed-item-content">
-        <span className="home-feed-item-title">{creation.title || 'Untitled'}</span>
-        <span className="home-feed-item-creator">by {creatorName}</span>
+          <div className="home-feed-item-actions">
+            <button
+              type="button"
+              className="btn-secondary home-feed-item-btn"
+              onClick={() => onPreview?.(creation)}
+            >
+              Preview
+            </button>
+            <button
+              type="button"
+              className={`btn-secondary home-feed-item-btn${isSaved ? ' home-feed-item-btn--saved' : ''}`}
+              disabled={!id || savePending}
+              onClick={() => onToggleSave?.(id, Boolean(isSaved))}
+              aria-label={isSaved ? 'Remove from saved stickers' : 'Save sticker from feed'}
+            >
+              {savePending ? '…' : isSaved ? 'Saved' : 'Save sticker'}
+            </button>
+            <button
+              type="button"
+              className="btn-primary home-feed-item-btn"
+              disabled={!canEditFrom}
+              title={canEditFrom ? undefined : 'No editable project attached to this share.'}
+              onClick={() => onEditFrom?.(creation)}
+            >
+              Edit from this
+            </button>
+          </div>
+        </div>
       </div>
     </li>
   )
 }
 
-function HomeView({ isAuthenticated, onNavigateToProfile, onGoToProfile, followingRefreshKey = 0 }) {
+function HomeView({
+  isAuthenticated,
+  onNavigateToProfile,
+  onGoToProfile,
+  followingRefreshKey = 0,
+  onOpenFeedSticker,
+}) {
   const [query, setQuery] = useState('')
   const [searchResults, setSearchResults] = useState([])
   const [searchLoading, setSearchLoading] = useState(false)
@@ -102,11 +173,31 @@ function HomeView({ isAuthenticated, onNavigateToProfile, onGoToProfile, followi
 
   const [feed, setFeed] = useState([])
   const [feedLoading, setFeedLoading] = useState(false)
+  const [feedPreviewCreation, setFeedPreviewCreation] = useState(null)
+  const [saveFeedPendingIds, setSaveFeedPendingIds] = useState(() => new Set())
+  const [saveFeedError, setSaveFeedError] = useState(null)
 
   const [pendingIds, setPendingIds] = useState(new Set())
   const [followError, setFollowError] = useState(null)
 
   const followingIds = new Set(following.map((u) => u.id))
+
+  const savedCountOnFeed = useMemo(
+    () => feed.filter((c) => Boolean(c.isSaved)).length,
+    [feed],
+  )
+
+  /** Saved rows first; stable sort keeps original order within each group. */
+  const sortedFeed = useMemo(() => {
+    const list = [...feed]
+    list.sort((a, b) => {
+      const aSaved = Boolean(a.isSaved)
+      const bSaved = Boolean(b.isSaved)
+      if (aSaved === bSaved) return 0
+      return aSaved ? -1 : 1
+    })
+    return list
+  }, [feed])
 
   useEffect(() => {
     if (!isAuthenticated) return
@@ -147,6 +238,48 @@ function HomeView({ isAuthenticated, onNavigateToProfile, onGoToProfile, followi
   const handleKeyDown = (e) => {
     if (e.key === 'Enter') handleSearch()
   }
+
+  const handleFeedPreview = useCallback((creation) => {
+    setFeedPreviewCreation(creation)
+  }, [])
+
+  const handleToggleSaveFeedCreation = useCallback(async (creationId, currentlySaved) => {
+    setSaveFeedError(null)
+    setSaveFeedPendingIds((prev) => new Set([...prev, creationId]))
+    try {
+      if (currentlySaved) {
+        await usersApi.unsaveFeedCreation(creationId)
+        setFeed((prev) =>
+          prev.map((c) =>
+            String(c._id ?? c.id) === creationId ? { ...c, isSaved: false } : c,
+          ),
+        )
+      } else {
+        await usersApi.saveFeedCreation(creationId)
+        setFeed((prev) =>
+          prev.map((c) =>
+            String(c._id ?? c.id) === creationId ? { ...c, isSaved: true } : c,
+          ),
+        )
+      }
+    } catch (err) {
+      setSaveFeedError(err?.message || 'Could not update saved sticker.')
+    } finally {
+      setSaveFeedPendingIds((prev) => {
+        const next = new Set(prev)
+        next.delete(creationId)
+        return next
+      })
+    }
+  }, [])
+
+  const handleFeedEditFrom = useCallback(
+    (creation) => {
+      if (!creationHasRestorablePayload(creation) || typeof onOpenFeedSticker !== 'function') return
+      onOpenFeedSticker(creation)
+    },
+    [onOpenFeedSticker],
+  )
 
   const handleFollow = useCallback(
     async (userId) => {
@@ -203,8 +336,89 @@ function HomeView({ isAuthenticated, onNavigateToProfile, onGoToProfile, followi
     )
   }
 
+  const feedPreviewDesc = feedPreviewCreation ? getCreationThumbDescriptor(feedPreviewCreation) : null
+  const canEditFeedPreview =
+    Boolean(feedPreviewCreation) &&
+    creationHasRestorablePayload(feedPreviewCreation) &&
+    typeof onOpenFeedSticker === 'function'
+
+  const feedPreviewCreator = feedPreviewCreation?.userId && typeof feedPreviewCreation.userId === 'object'
+    ? feedPreviewCreation.userId
+    : {}
+  const feedPreviewCreatorName =
+    feedPreviewCreator.displayName || feedPreviewCreator.username || 'Unknown'
+
   return (
     <section className="home-shell" aria-label="Home">
+      {feedPreviewCreation ? (
+        <div
+          className="feed-sticker-modal"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="feed-sticker-modal-title"
+        >
+          <button
+            type="button"
+            className="feed-sticker-modal-backdrop"
+            aria-label="Close preview"
+            onClick={() => setFeedPreviewCreation(null)}
+          />
+          <div className="feed-sticker-modal-card">
+            <h3 id="feed-sticker-modal-title" className="feed-sticker-modal-title">
+              {feedPreviewCreation.title || 'Untitled'}
+            </h3>
+            <p className="feed-sticker-modal-sub">by {feedPreviewCreatorName}</p>
+            {feedPreviewDesc?.url ? (
+              <div className="feed-sticker-modal-image-wrap">
+                {feedPreviewDesc.mode === 'video' ? (
+                  <video
+                    key={feedPreviewDesc.url}
+                    className="feed-sticker-modal-image"
+                    src={feedPreviewDesc.url}
+                    poster={feedPreviewDesc.posterUrl || undefined}
+                    muted
+                    autoPlay
+                    loop
+                    playsInline
+                    controls
+                    preload="metadata"
+                  >
+                    <source src={feedPreviewDesc.url} type="video/mp4" />
+                  </video>
+                ) : (
+                  <img
+                    key={feedPreviewDesc.url}
+                    src={feedPreviewDesc.url}
+                    alt=""
+                    className="feed-sticker-modal-image feed-sticker-modal-image--bitmap"
+                    decoding="async"
+                  />
+                )}
+              </div>
+            ) : (
+              <p className="editor-status">No preview available for this sticker.</p>
+            )}
+            <div className="feed-sticker-modal-footer">
+              <button type="button" className="btn-secondary feed-sticker-modal-close" onClick={() => setFeedPreviewCreation(null)}>
+                Close
+              </button>
+              {canEditFeedPreview ? (
+                <button
+                  type="button"
+                  className="btn-primary"
+                  onClick={() => {
+                    const c = feedPreviewCreation
+                    setFeedPreviewCreation(null)
+                    onOpenFeedSticker(c)
+                  }}
+                >
+                  Edit from this
+                </button>
+              ) : null}
+            </div>
+          </div>
+        </div>
+      ) : null}
       {/* ── Discover Creators ── */}
       <article className="card home-card" aria-labelledby="home-search-heading">
         <h2 id="home-search-heading">Discover Creators</h2>
@@ -274,6 +488,16 @@ function HomeView({ isAuthenticated, onNavigateToProfile, onGoToProfile, followi
       {/* ── Feed ── */}
       <article className="card home-card" aria-labelledby="home-feed-heading">
         <h2 id="home-feed-heading">From People You Follow</h2>
+        <p className="editor-status home-feed-hint">
+          <strong>Save sticker</strong> keeps a post on your list for you only—the person who posted it will not know.
+          {savedCountOnFeed > 0 ? ` You have saved ${savedCountOnFeed} here.` : ''}
+        </p>
+
+        {saveFeedError ? (
+          <p className="editor-status editor-status--error" role="alert">
+            {saveFeedError}
+          </p>
+        ) : null}
 
         {feedLoading ? (
           <p className="editor-status editor-status--loading">Loading…</p>
@@ -284,10 +508,16 @@ function HomeView({ isAuthenticated, onNavigateToProfile, onGoToProfile, followi
           </p>
         ) : (
           <ul className="home-feed-list" role="list">
-            {feed.map((creation) => (
+            {sortedFeed.map((creation) => (
               <CreationFeedItem
                 key={creation._id ?? creation.id}
                 creation={creation}
+                onPreview={handleFeedPreview}
+                onEditFrom={handleFeedEditFrom}
+                canEditFrom={creationHasRestorablePayload(creation) && typeof onOpenFeedSticker === 'function'}
+                isSaved={Boolean(creation.isSaved)}
+                onToggleSave={handleToggleSaveFeedCreation}
+                savePending={saveFeedPendingIds.has(String(creation._id ?? creation.id))}
               />
             ))}
           </ul>

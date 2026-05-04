@@ -4,6 +4,7 @@ import mongoose from 'mongoose'
 
 import { BCRYPT_COST } from '../config/constants.js'
 import { User } from '../models/userModel.js'
+import { isAllowedAvatarUrl } from '../utils/avatarUrlPolicy.js'
 
 const getJwtExpiresIn = () => process.env.JWT_EXPIRES_IN || '7d'
 
@@ -260,10 +261,11 @@ export const updateMe = async (req, res) => {
 	}
 
 	if (avatarUrl !== undefined) {
-		if (avatarUrl && !/^https?:\/\/.+/.test(avatarUrl)) {
+		const trimmed = typeof avatarUrl === 'string' ? avatarUrl.trim() : ''
+		if (trimmed && !isAllowedAvatarUrl(trimmed)) {
 			return res.status(400).json({ error: 'avatarUrl must be a valid URL.', code: 'INVALID_AVATAR_URL' })
 		}
-		doc.avatarUrl = typeof avatarUrl === 'string' ? avatarUrl.trim() : ''
+		doc.avatarUrl = trimmed
 	}
 
 	if (instagram !== undefined) {
