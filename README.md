@@ -22,7 +22,7 @@ Per [`instructions-3-database.md`](./instructions-3-database.md), dynamic data i
 
 ## Deployed app
 
-Production URL: http://67.205.189.121
+Production URL: https://67.205.189.121.nip.io/
 Deployment notes: [`instructions-4-deployment.md`](./instructions-4-deployment.md).
 
 ## Run locally
