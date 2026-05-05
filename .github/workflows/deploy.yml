@@ -4,6 +4,9 @@ on:
   push:
     branches: [main, master]
 
+  pull_request:
+    branches: [main, master]
+
   workflow_dispatch:
 
 concurrency:
@@ -30,14 +33,14 @@ jobs:
         if: steps.gate.outputs.enabled == 'true'
 
       - name: Deploy via SSH
-        if: steps.gate.outputs.enabled == 'true'
-        uses: appleboy/ssh-action@v1.2.6
+        # PR runs validate the workflow (including action resolution); only push deploys.
+        if: github.event_name == 'push' && steps.gate.outputs.enabled == 'true'
+        uses: appleboy/ssh-action@v1.2.5
         with:
           host: ${{ secrets.DROPLET_HOST }}
           username: ${{ secrets.DROPLET_USER }}
           key: ${{ secrets.DROPLET_SSH_KEY }}
-          script_stop: true
           script: |
             cd "${{ secrets.DROPLET_APP_PATH }}"
             git pull --ff-only
-            docker compose up -d --build
+            docker-compose up -d --build
